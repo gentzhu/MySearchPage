@@ -500,6 +500,7 @@
             });
 
             // 单独处理编辑历史和导出历史按钮
+            // 单独处理编辑历史和导出历史按钮
             document.querySelectorAll('#edit-history, #export-history, #import-history').forEach(button => {
                 button.addEventListener('click', (e) => {
                     e.preventDefault();
@@ -507,11 +508,6 @@
                     button.click(); // 直接触发原生点击事件
                 });
             });
-            
-                
-            
-                
-
             // 保存编辑的历史记录
             saveEditBtn.addEventListener('click', () => {
                 if (currentEditItem && historyEditInput.value.trim()) {
@@ -600,24 +596,24 @@
 
                 // ESC退出输入框或多选模式
                 if (e.key === 'Escape') {
-                    e.preventDefault();
-                    if (document.activeElement === searchInput) {
-                        searchInput.blur();
-                        const firstButton = document.querySelector('.btn-group button, .control-buttons button');
-                        if (firstButton) {
-                            firstButton.focus();
-                            currentFocusElement = firstButton;
-                        }
-                    } else if (selectedElements.length > 0) {
-                        clearSelection();
-                    } else if (quickSearchKeys) {
-                        quickSearchKeys = '';
-                        updateQuickSearchDisplay();
-                        clearMatches();
-                        quickSearchActive = false;
+                e.preventDefault();
+                if (document.activeElement === searchInput) {
+                    searchInput.blur();
+                    const firstButton = document.querySelector('.btn-group button, .control-buttons button');
+                    if (firstButton) {
+                        firstButton.focus();
+                        currentFocusElement = firstButton;
                     }
-                    return;
+                } else if (selectedElements.length > 0) {
+                    clearSelection(); // 添加这行代码
+                } else if (quickSearchKeys) {
+                    quickSearchKeys = '';
+                    updateQuickSearchDisplay();
+                    clearMatches();
+                    quickSearchActive = false;
                 }
+                return;
+            }
 
                 // 方向键导航
                 if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
@@ -679,21 +675,10 @@
             });}
             quickSearchHint.addEventListener('touchstart', (e) => {
             e.preventDefault();
-            // 创建临时输入框触发输入法
-            const dummyInput = document.createElement('input');
-            dummyInput.style.position = 'fixed';
-            dummyInput.style.top = '0';
-            dummyInput.style.left = '0';
-            dummyInput.style.opacity = '0';
-            dummyInput.style.pointerEvents = 'none';
-            document.body.appendChild(dummyInput);
-            
-            // 聚焦并立即移除
-            dummyInput.focus();
-            setTimeout(() => {
-                document.body.removeChild(dummyInput);
-                searchInput.focus(); // 聚焦到主搜索框
-            }, 100);
+            // 直接聚焦到搜索输入框
+            searchInput.focus();
+            // 确保输入法弹出
+            searchInput.click();
         });
         
         // 清除选中状态
@@ -712,15 +697,7 @@
         
         // 输入框键盘事件处理
         function handleInputKeyDown(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                if (selectedElements.length > 0) {
-                    const sites = selectedElements.map(el => el.getAttribute('data-site')).filter(site => site);
-                    if (sites.length > 0) {
-                        batchSearch(sites);
-                    }
-                }
-            }
+    // 此  函数现在为空，因为Enter键处理已移到全局键盘事件
         }
         
         // 改进的方向键导航
@@ -842,10 +819,11 @@
     if (document.activeElement === searchInput) return;
     
     // 忽略功能键组合
-    if (e.ctrlKey || e.altKey || e.metaKey) {
-        return;
-    }
-    
+            // 只忽略组合键，不影响单独功能键
+        if (e.ctrlKey && e.key.length === 1) {
+            return;
+        }
+        
     if (e.key === 'Escape') {
         if (quickSearchKeys) {
             quickSearchKeys = '';
@@ -1115,10 +1093,11 @@
 
         // 批量搜索函数
         // 找到原batchSearch函数（约在1580行左右）
-        function batchSearch(sites) {
+            function batchSearch(sites) {
         const keyword = searchInput.value.trim();
         const processedSites = new Set(); // 用集合去重
         
+        // 只执行一次搜索
         sites.forEach(site => {
             if (processedSites.has(site)) return;
             processedSites.add(site);
@@ -1223,23 +1202,14 @@
         historyEditInput.value = keyword;
         editHistoryModal.style.display = 'block';
         
-        // 设置光标位置
+        // 设置光标位置（使用更准确的方法）
         setTimeout(() => {
             historyEditInput.focus();
-            // 计算光标位置：根据点击位置和输入框的字体大小估算
-            const style = window.getComputedStyle(historyEditInput);
-            const fontSize = parseInt(style.fontSize) || 14;
-            // 假设每个字符的平均宽度为字体大小的0.6倍（这是一个估算值）
-            const charWidth = fontSize * 0.6;
-            // 计算光标位置（字符数）
-            const cursorPos = Math.min(
-                Math.floor(clickPosition / charWidth),
-                keyword.length
-            );
-            historyEditInput.setSelectionRange(cursorPos, cursorPos);
+            // 使用更简单的逻辑：光标定位到开头
+            historyEditInput.setSelectionRange(0, 0);
         }, 50);
-    }
-}
+        }
+        }
 
         // 输入框输入事件处理
         function handleInput() {
