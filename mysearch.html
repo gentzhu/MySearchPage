@@ -23,7 +23,7 @@
             position: relative;
         }
         #search-input {
-            padding: 10px 25px 10px 10px;
+            padding: 10px 30px 10px 10px;
             font-size: 16px;
             flex-grow: 1;
             border: 1px solid #000;
@@ -33,10 +33,11 @@
             position: absolute;
             right: 5px;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 20px;
             color: #999;
-            padding: 5px;
-            margin: -5px;
+            padding: 8px;
+            margin: -8px;
+            line-height: 0.8;
         }
         .btn-group {
             display: flex;
@@ -92,11 +93,6 @@
         .history-item.editable {
             border: 1px dashed #000;
             background-color: #fff9f9;
-        }
-        .history-item .delete-btn {
-            margin-left: 5px;
-            color: red;
-            cursor: pointer;
         }
         .control-buttons {
             display: flex;
@@ -243,7 +239,7 @@
         editHistoryBtn.addEventListener('click', () => {
             isEditMode = !isEditMode;
             editHistoryBtn.textContent = isEditMode ? '退出编辑' : '编辑历史';
-            toggleEditMode();
+            renderHistory();
         });
 
         // 导出历史按钮
@@ -339,19 +335,12 @@
                 item.textContent = keyword;
                 item.setAttribute('data-keyword', keyword);
                 
-                if (isEditMode) {
-                    const deleteBtn = document.createElement('span');
-                    deleteBtn.className = 'delete-btn';
-                    deleteBtn.textContent = '×';
-                    deleteBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        removeFromHistory(keyword);
-                    });
-                    item.appendChild(deleteBtn);
-                }
-                
                 item.addEventListener('click', (e) => {
-                    if (!isEditMode) {
+                    if (isEditMode) {
+                        if (confirm(`确定要删除"${keyword}"吗？`)) {
+                            removeFromHistory(keyword);
+                        }
+                    } else {
                         searchInput.value = keyword;
                     }
                 });
@@ -365,33 +354,6 @@
             searchHistory = searchHistory.filter(item => item !== keyword);
             localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
             renderHistory();
-        }
-
-        // 切换编辑模式
-        function toggleEditMode() {
-            const items = document.querySelectorAll('.history-item');
-            items.forEach(item => {
-                item.classList.toggle('editable');
-                
-                if (isEditMode) {
-                    if (!item.querySelector('.delete-btn')) {
-                        const deleteBtn = document.createElement('span');
-                        deleteBtn.className = 'delete-btn';
-                        deleteBtn.textContent = '×';
-                        deleteBtn.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            const keyword = item.getAttribute('data-keyword');
-                            removeFromHistory(keyword);
-                        });
-                        item.appendChild(deleteBtn);
-                    }
-                } else {
-                    const deleteBtn = item.querySelector('.delete-btn');
-                    if (deleteBtn) {
-                        item.removeChild(deleteBtn);
-                    }
-                }
-            });
         }
 
         // 导出历史记录
