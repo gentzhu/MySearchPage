@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MySearchPage</title>
+    <title>我的搜索页面</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -55,10 +55,20 @@
             font-size: 14px;
             transition: all 0.2s;
             text-align: center;
+            white-space: normal;
+            word-wrap: break-word;
         }
-        button:hover, button.highlight {
+        button.small {
+            font-size: 12px;
+            padding: 4px 6px;
+            line-height: 1.2;
+        }
+        button.highlight {
             background-color: #f0f0f0;
             box-shadow: 0 0 0 2px #4a90e2;
+        }
+        button.selected {
+            background-color: #e0e0e0;
         }
         .history-container {
             margin-top: 5px;
@@ -155,50 +165,53 @@
             margin-right: 5px;
         }
 
-        /* 新增的CSS规则，确保按钮在移动端与屏幕左边缘对齐，并且紧凑排列 */
         @media (max-width: 768px) {
             body {
-            margin: 5px;
-        }
-        .search-container {
-            margin-bottom: 8px;
-            gap: 4px;
-        }
-        #search-input {
-            padding: 4px 4px;
-            font-size: 16px;
-            border: 1px solid #000;
-        }
-        .btn-group, .control-buttons {
-            justify-content: flex-start; /* 左对齐 */
-            width: 100%; /* 宽度为100% */
-            padding: 0; /* 移除内边距 */
-        }
-        button {
-            padding: 2px 1px; /* 减少内边距 */
-            font-size: 14px; /* 减小字体大小 */
-            margin: 0px; /* 减少按钮之间的间距 */
-            width: auto; /* 按钮宽度自动调整 */
-        }
-        button:hover, button.highlight {
-            box-shadow: 0 0 0 1px #4a90e2;
-        }
-         .history-container {
-            margin-top: 0px;
-            width: 100%;
-        }
-        .history-title {
-        font-size: 14px;
-        justify-content: flex-start; /* 左对齐 */
-        margin-bottom: 2px;
-    }
-        .history-item {
-            display: inline-block;
-            padding: 2px 2px;
-            border: 1px solid #ddd;
-            font-size: 14px;
-            margin: 1px; 
-        }
+                margin: 5px;
+            }
+            .search-container {
+                margin-bottom: 8px;
+                gap: 4px;
+            }
+            #search-input {
+                padding: 4px 4px;
+                font-size: 16px;
+                border: 1px solid #000;
+            }
+            .btn-group, .control-buttons {
+                justify-content: flex-start;
+                width: 100%;
+                padding: 0;
+            }
+            button {
+                padding: 2px 1px;
+                font-size: 14px;
+                margin: 0px;
+                width: auto;
+            }
+            button.small {
+                font-size: 10px;
+                padding: 2px 4px;
+            }
+            button.highlight {
+                box-shadow: 0 0 0 1px #4a90e2;
+            }
+            .history-container {
+                margin-top: 0px;
+                width: 100%;
+            }
+            .history-title {
+                font-size: 14px;
+                justify-content: flex-start;
+                margin-bottom: 2px;
+            }
+            .history-item {
+                display: inline-block;
+                padding: 2px 2px;
+                border: 1px solid #ddd;
+                font-size: 14px;
+                margin: 1px; 
+            }
         }
     </style>
 </head>
@@ -222,14 +235,14 @@
     <div class="btn-group">
         <button data-site="xiaohongshu">小红书</button>
         <button data-site="douyin">抖音</button>
-        <button data-site="douyin-history">搜索记录</button>
-        <button data-site="douyin-fav">收藏夹</button>
+        <button data-site="douyin-history" class="small">抖音历史</button>
+        <button data-site="douyin-fav" class="small">抖音收藏夹</button>
         <button data-site="zhihu">知乎</button>
-        <button data-site="zhihu-history">搜索记录</button>
-        <button data-site="zhihu-fav">收藏夹</button>
+        <button data-site="zhihu-history" class="small">知乎历史</button>
+        <button data-site="zhihu-fav" class="small">知乎收藏</button>
         <button data-site="bilibili">哔哩哔哩</button>
-        <button data-site="bilibili-history">搜索记录</button>
-        <button data-site="bilibili-fav">收藏夹</button>
+        <button data-site="bilibili-history" class="small">哔哩哔哩历史</button>
+        <button data-site="bilibili-fav" class="small">哔哩哔哩收藏夹</button>
         <button data-site="bing">必应</button>
         <button data-site="baidu">百度</button>
         <button data-site="github">GitHub</button>
@@ -297,8 +310,8 @@
             wandoujia: 'https://www.wandoujia.com/',
             greasyfork: 'https://greasyfork.org/zh-CN/scripts?q=',
             coolapk: 'https://www.coolapk.com/search?q=',
-            tongyi: 'https://tongyi.aliyun.com/qianwen/?search=',
-            kimi: 'https://kimi.moonshot.cn/?q=',
+            tongyi: 'https://tongyi.aliyun.com/qianwen/',
+            kimi: 'https://kimi.moonshot.cn/',
             deepseek: 'https://chat.deepseek.com/',
             ximalaya: 'https://www.ximalaya.com/so/',
             pinduoduo: 'https://yangkeduo.com/search_result.html?search_key=',
@@ -309,6 +322,14 @@
             lingfengyun: 'https://www.lingfengyun.com/Search/Search?wd=',
             wangpanzhijia: 'https://www.lingfengyun.com/?wd='
         };
+
+        // 链接按钮列表（直接打开，不需要关键词）
+        const linkButtons = [
+            'douyin-history', 'douyin-fav',
+            'zhihu-history', 'zhihu-fav',
+            'bilibili-history', 'bilibili-fav',
+            'tongyi', 'kimi', 'deepseek'
+        ];
 
         // 常用网站列表
         const commonSites = ['xiaohongshu', 'douyin', 'zhihu', 'bilibili', 'bing', 'baidu', 'github', 'mubu', 'anki', 'tongyi', 'kimi', 'deepseek', 'ximalaya'];
@@ -344,6 +365,7 @@
         let currentFocusElement = null;
         let selectedElements = [];
         let lastDeletedItems = [];
+        let quickSearchActive = false;
         
         // 编辑状态标志
         let isEditMode = false;
@@ -371,6 +393,8 @@
             searchInput.addEventListener('keydown', handleInputKeyDown);
             searchInput.addEventListener('focus', () => {
                 currentFocusElement = searchInput;
+                quickSearchActive = false;
+                clearSelection();
             });
             
             // 清空输入框按钮
@@ -421,11 +445,16 @@
             foreignSitesBtn.addEventListener('click', () => batchSearch(foreignSites));
 
             // 为所有搜索按钮添加事件监听
-            document.querySelectorAll('.btn-group button').forEach(button => {
+            document.querySelectorAll('.btn-group button, .control-buttons button').forEach(button => {
                 button.addEventListener('click', (e) => {
                     const site = button.getAttribute('data-site');
                     if (e.button === 0) { // 左键点击
-                        search(site, true);
+                        if (selectedElements.length > 0 && selectedElements.includes(button)) {
+                            // 如果是在多选模式下点击已选中的按钮，则取消选择
+                            toggleSelectElement(button);
+                        } else {
+                            search(site, true);
+                        }
                     } else if (e.button === 2) { // 右键点击
                         toggleSelectElement(button);
                     }
@@ -437,7 +466,13 @@
                 });
                 
                 button.addEventListener('focus', () => {
-                    currentFocusElement = button;
+                    if (!quickSearchActive) {
+                        currentFocusElement = button;
+                        // 清除快速搜索状态
+                        quickSearchKeys = '';
+                        updateQuickSearchDisplay();
+                        clearMatches();
+                    }
                 });
             });
 
@@ -490,10 +525,20 @@
                     searchInput.value = '';
                     searchInput.focus();
                 }
-                // ESC退出输入框
-                else if (e.key === 'Escape' && document.activeElement === searchInput) {
+                // ESC退出输入框或多选模式
+                else if (e.key === 'Escape') {
                     e.preventDefault();
-                    searchInput.blur();
+                    if (document.activeElement === searchInput) {
+                        searchInput.blur();
+                        // 移动焦点到第一个按钮
+                        const firstButton = document.querySelector('.btn-group button, .control-buttons button');
+                        if (firstButton) {
+                            firstButton.focus();
+                            currentFocusElement = firstButton;
+                        }
+                    } else if (selectedElements.length > 0) {
+                        clearSelection();
+                    }
                 }
                 // 方向键导航
                 else if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key) && currentFocusElement) {
@@ -522,7 +567,7 @@
                         searchInput.value = keyword;
                         searchInput.focus();
                         // 移动焦点到第一个按钮
-                        const firstButton = document.querySelector('.btn-group button');
+                        const firstButton = document.querySelector('.btn-group button, .control-buttons button');
                         if (firstButton) {
                             firstButton.focus();
                             currentFocusElement = firstButton;
@@ -552,6 +597,12 @@
             });
         }
         
+        // 清除选中状态
+        function clearSelection() {
+            selectedElements.forEach(el => el.classList.remove('selected'));
+            selectedElements = [];
+        }
+        
         // 显示错误弹窗
         function showErrorModal() {
             errorModal.style.display = 'flex';
@@ -571,35 +622,80 @@
             }
         }
         
-        // 方向键导航
+        // 方向键导航 - 改进版
         function navigateWithArrowKeys(key) {
             if (!currentFocusElement) return;
             
-            let nextElement = null;
             const allFocusableElements = Array.from(document.querySelectorAll('button, .history-item'));
             const currentIndex = allFocusableElements.indexOf(currentFocusElement);
             
+            if (currentIndex === -1) return;
+            
+            let nextElement = null;
+            const currentRect = currentFocusElement.getBoundingClientRect();
+            
             if (key === 'ArrowUp') {
-                // 向上移动到上一行的元素
-                const rect = currentFocusElement.getBoundingClientRect();
-                nextElement = allFocusableElements.slice(0, currentIndex).reverse().find(el => {
-                    const elRect = el.getBoundingClientRect();
-                    return Math.abs(elRect.left - rect.left) < 20 && elRect.top < rect.top;
-                });
-            } else if (key === 'ArrowDown') {
-                // 向下移动到下一行的元素
-                const rect = currentFocusElement.getBoundingClientRect();
-                nextElement = allFocusableElements.slice(currentIndex + 1).find(el => {
-                    const elRect = el.getBoundingClientRect();
-                    return Math.abs(elRect.left - rect.left) < 20 && elRect.top > rect.top;
-                });
-            } else if (key === 'ArrowLeft') {
-                // 向左移动
+                // 向上移动 - 找到上方最近的元素
+                let closestElement = null;
+                let minDistance = Infinity;
+                
+                for (let i = 0; i < currentIndex; i++) {
+                    const element = allFocusableElements[i];
+                    const rect = element.getBoundingClientRect();
+                    const distance = Math.abs(rect.left - currentRect.left);
+                    
+                    // 检查是否在上方
+                    if (rect.bottom <= currentRect.top) {
+                        // 优先选择垂直对齐的
+                        if (distance < 50) { // 50px以内的水平偏移认为是垂直对齐
+                            nextElement = element;
+                            break;
+                        }
+                        // 如果没有完全垂直对齐的，选择最近的
+                        if (distance < minDistance) {
+                            minDistance = distance;
+                            closestElement = element;
+                        }
+                    }
+                }
+                
+                if (!nextElement) nextElement = closestElement;
+            } 
+            else if (key === 'ArrowDown') {
+                // 向下移动 - 找到下方最近的元素
+                let closestElement = null;
+                let minDistance = Infinity;
+                
+                for (let i = currentIndex + 1; i < allFocusableElements.length; i++) {
+                    const element = allFocusableElements[i];
+                    const rect = element.getBoundingClientRect();
+                    const distance = Math.abs(rect.left - currentRect.left);
+                    
+                    // 检查是否在下方
+                    if (rect.top >= currentRect.bottom) {
+                        // 优先选择垂直对齐的
+                        if (distance < 50) { // 50px以内的水平偏移认为是垂直对齐
+                            nextElement = element;
+                            break;
+                        }
+                        // 如果没有完全垂直对齐的，选择最近的
+                        if (distance < minDistance) {
+                            minDistance = distance;
+                            closestElement = element;
+                        }
+                    }
+                }
+                
+                if (!nextElement) nextElement = closestElement;
+            } 
+            else if (key === 'ArrowLeft') {
+                // 向左移动 - 找到左侧最近的元素
                 if (currentIndex > 0) {
                     nextElement = allFocusableElements[currentIndex - 1];
                 }
-            } else if (key === 'ArrowRight') {
-                // 向右移动
+            } 
+            else if (key === 'ArrowRight') {
+                // 向右移动 - 找到右侧最近的元素
                 if (currentIndex < allFocusableElements.length - 1) {
                     nextElement = allFocusableElements[currentIndex + 1];
                 }
@@ -667,33 +763,16 @@
             
             // ESC键处理逻辑
             if (e.key === 'Escape') {
-                if (isEditMode) {
-                    // 优先退出快速搜索
-                    if (quickSearchKeys) {
-                        quickSearchKeys = '';
-                        updateQuickSearchDisplay();
-                        clearMatches();
-                    } else {
-                        // 退出编辑模式
-                        isEditMode = false;
-                        editHistoryBtn.textContent = '编辑历史';
-                        renderHistory();
-                    }
-                } else {
-                    // 清除快速搜索
+                if (quickSearchKeys) {
                     quickSearchKeys = '';
                     updateQuickSearchDisplay();
                     clearMatches();
-                }
-                // 关闭编辑历史模态框
-                if (isEditingHistory) {
-                    editHistoryModal.style.display = 'none';
-                    isEditingHistory = false;
-                    currentEditItem = null;
-                }
-                // 关闭错误弹窗
-                if (errorModal.style.display === 'flex') {
-                    errorModal.style.display = 'none';
+                    quickSearchActive = false;
+                    
+                    // 恢复之前的光标位置
+                    if (currentFocusElement) {
+                        currentFocusElement.focus();
+                    }
                 }
                 return;
             }
@@ -701,6 +780,7 @@
             // 只处理字母键
             if (e.key.length === 1 && e.key.match(/[a-z]/i)) {
                 e.preventDefault();
+                quickSearchActive = true;
                 
                 // 添加按键到快速搜索字符串
                 quickSearchKeys += e.key.toLowerCase();
@@ -708,6 +788,12 @@
                 
                 // 执行快速搜索
                 performQuickSearch();
+                
+                // 如果有匹配项，移动光标到第一个匹配项
+                if (matchedItems.length > 0) {
+                    matchedItems[0].element.focus();
+                    currentFocusElement = matchedItems[0].element;
+                }
             }
             // Enter键激活当前匹配项
             else if (e.key === 'Enter' && matchedItems.length > 0) {
@@ -718,6 +804,12 @@
             else if (e.key === 'Tab' && matchedItems.length > 0) {
                 e.preventDefault();
                 cycleMatches(e.shiftKey ? -1 : 1);
+                
+                // 更新光标位置
+                if (currentMatchIndex >= 0 && currentMatchIndex < matchedItems.length) {
+                    matchedItems[currentMatchIndex].element.focus();
+                    currentFocusElement = matchedItems[currentMatchIndex].element;
+                }
             }
         }
 
@@ -737,32 +829,17 @@
             const searchTerms = quickSearchKeys.toLowerCase().split(' ').filter(term => term);
             
             // 匹配所有按钮（包括顶部按钮）
-            document.querySelectorAll('button').forEach(button => {
-                const text = button.textContent;
+            document.querySelectorAll('button, .history-item').forEach(element => {
+                const text = element.textContent;
                 const pinyinInitials = getPinyinInitials(text);
                 const lowerText = text.toLowerCase();
                 
                 if (matchQuickSearch(lowerText, pinyinInitials, searchTerms)) {
                     matchedItems.push({
-                        element: button,
-                        type: 'button'
+                        element: element,
+                        type: element.tagName === 'BUTTON' ? 'button' : 'history'
                     });
-                    button.classList.add('highlight');
-                }
-            });
-            
-            // 匹配历史记录
-            historyItems.forEach(item => {
-                const text = item.textContent;
-                const pinyinInitials = getPinyinInitials(text);
-                const lowerText = text.toLowerCase();
-                
-                if (matchQuickSearch(lowerText, pinyinInitials, searchTerms)) {
-                    matchedItems.push({
-                        element: item,
-                        type: 'history'
-                    });
-                    item.classList.add('highlight');
+                    element.classList.add('highlight');
                 }
             });
             
@@ -775,10 +852,6 @@
 
         // 使用拼音库获取拼音首字母
         function getPinyinInitials(text) {
-            // 这里需要引入一个拼音库，例如 https://github.com/u sessun/pinyin.js
-            // 由于无法直接访问 GitHub，你可以手动下载该库并引入到项目中
-            // 以下是一个简化的示例，实际应用中请使用完整的拼音库
-
             // 简化映射表（示例）
             const pinyinMap = {
                 '小': 'x', '红': 'h', '书': 's', '抖': 'd', '音': 'y', '知': 'z', '乎': 'h',
@@ -883,6 +956,7 @@
                 quickSearchKeys = '';
                 updateQuickSearchDisplay();
                 clearMatches();
+                quickSearchActive = false;
             }
         }
 
@@ -921,9 +995,7 @@
                 
                 item.addEventListener('dblclick', (e) => {
                     e.stopPropagation();
-                    if (isEditMode) {
-                        editHistoryItem(keyword);
-                    }
+                    editHistoryItem(keyword);
                 });
                 
                 item.addEventListener('contextmenu', (e) => {
@@ -931,7 +1003,9 @@
                 });
                 
                 item.addEventListener('focus', () => {
-                    currentFocusElement = item;
+                    if (!quickSearchActive) {
+                        currentFocusElement = item;
+                    }
                 });
                 
                 historyList.appendChild(item);
@@ -959,8 +1033,8 @@
         function search(site, immediate = false) {
             const keyword = searchInput.value.trim();
             
-            // 特殊处理Kimi、DeepSeek和通义千问
-            if (['kimi', 'deepseek', 'tongyi'].includes(site)) {
+            // 检查是否是链接按钮
+            if (linkButtons.includes(site)) {
                 if (keyword) {
                     // 复制到剪贴板
                     navigator.clipboard.writeText(keyword).then(() => {
@@ -968,22 +1042,21 @@
                     }).catch(err => {
                         console.error('无法复制到剪贴板:', err);
                     });
+                    // 添加到历史记录
+                    addToHistory(keyword);
                 }
                 const url = siteUrls[site];
                 window.open(url, '_blank');
                 return;
             }
             
+            // 普通搜索按钮必须有关键词
             if (keyword) {
                 addToHistory(keyword);
                 const url = siteUrls[site] + encodeURIComponent(keyword);
                 window.open(url, '_blank');
-            } else if (!immediate) {
-                showErrorModal();
             } else {
-                // 立即打开网站（无关键词）
-                const url = siteUrls[site];
-                window.open(url, '_blank');
+                showErrorModal();
             }
         }
 
@@ -993,24 +1066,21 @@
             if (keyword) {
                 addToHistory(keyword);
                 
+                // 过滤掉链接按钮
+                const searchSites = sites.filter(site => !linkButtons.includes(site));
+                
                 // 分批打开标签页
                 let delay = 0;
-                for (let i = 0; i < sites.length; i += 2) {
+                for (let i = 0; i < searchSites.length; i++) {
                     setTimeout(() => {
-                        const site1 = sites[i];
-                        if (site1) {
-                            const url1 = siteUrls[site1] + encodeURIComponent(keyword);
-                            window.open(url1, '_blank');
-                        }
-                        
-                        const site2 = sites[i+1];
-                        if (site2) {
-                            const url2 = siteUrls[site2] + encodeURIComponent(keyword);
-                            window.open(url2, '_blank');
+                        const site = searchSites[i];
+                        if (site) {
+                            const url = siteUrls[site] + encodeURIComponent(keyword);
+                            window.open(url, '_blank');
                         }
                     }, delay);
                     
-                    delay += 1000;
+                    delay += 1000; // 每次搜索间隔1秒
                 }
             } else {
                 showErrorModal();
