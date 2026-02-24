@@ -15,7 +15,7 @@
         }
         .search-container {
             display: flex;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             align-items: center;
             gap: 5px;
             width: 80%;
@@ -43,7 +43,7 @@
             display: flex;
             flex-wrap: wrap;
             gap: 5px;
-            margin-bottom: 15px;
+            margin-bottom: 8px;
             width: 80%;
             max-width: 800px;
         }
@@ -78,9 +78,14 @@
             box-shadow: 0 0 10px rgba(0,0,0,0.3);
         }
         .history-container {
-            margin-top: 15px;
+            margin-top: 8px;
             width: 80%;
             max-width: 800px;
+        }
+        .history-title {
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 5px;
         }
         .history-item {
             display: inline-block;
@@ -89,6 +94,7 @@
             padding: 4px 8px;
             border: 1px solid #ddd;
             cursor: pointer;
+            font-size: 14px;
         }
         .history-item.editable {
             border: 1px dashed #000;
@@ -97,7 +103,7 @@
         .control-buttons {
             display: flex;
             gap: 5px;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             flex-wrap: wrap;
             width: 80%;
             max-width: 800px;
@@ -106,7 +112,7 @@
 </head>
 <body>
     <div class="search-container">
-        <input type="text" id="search-input" placeholder="输入搜索关键词...">
+        <input type="text" id="search-input">
         <span class="clear-input" title="清空输入">×</span>
     </div>
 
@@ -141,7 +147,7 @@
     </div>
 
     <div class="history-container">
-        <h3>搜索历史</h3>
+        <div class="history-title">搜索历史</div>
         <div id="history-list"></div>
     </div>
 
@@ -228,11 +234,9 @@
 
         // 清除历史按钮
         clearHistoryBtn.addEventListener('click', () => {
-            if (confirm('确定要清除所有搜索历史吗？')) {
-                searchHistory = [];
-                localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
-                renderHistory();
-            }
+            searchHistory = [];
+            localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
+            renderHistory();
         });
 
         // 编辑历史按钮
@@ -335,11 +339,9 @@
                 item.textContent = keyword;
                 item.setAttribute('data-keyword', keyword);
                 
-                item.addEventListener('click', (e) => {
+                item.addEventListener('click', () => {
                     if (isEditMode) {
-                        if (confirm(`确定要删除"${keyword}"吗？`)) {
-                            removeFromHistory(keyword);
-                        }
+                        removeFromHistory(keyword);
                     } else {
                         searchInput.value = keyword;
                     }
