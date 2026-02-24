@@ -16,13 +16,13 @@
         }
         
         /* 固定顶部区域 */
-        .fixed-header {
-        background: white;
-        z-index: 100;
-        padding: 10px 20px 5px 20px; /* 减小底部内边距 */
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        margin-bottom: 5px; /* 增加底部外边距 */
-        }
+.fixed-header {
+    background: white;
+    z-index: 100;
+    padding: 10px 20px 8px 20px; /* 调整底部内边距 */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    margin-bottom: 10px; /* 增大底部外边距 */
+}
         
         .search-container {
             display: flex;
@@ -106,15 +106,15 @@
             margin-top: 5px;
             width: 100%;
         }
-        
+                
         .history-title {
             font-weight: bold;
             font-size: 14px;
-            margin-bottom: 5px;
+            margin-bottom: 2px; /* 减小与冻结线的间距 */
             position: sticky;
             top: 0;
             background: white;
-            padding: 5px 0;
+            padding: 3px 0; /* 调整内边距 */
             z-index: 10;
         }
         
@@ -633,21 +633,25 @@ if (e.key === ' ' && currentFocusElement && currentFocusElement !== searchInput)
 }
 
                 // Enter键执行操作
-                if (e.key === 'Enter' && currentFocusElement) {
-                    e.preventDefault();
-                    if (currentFocusElement === searchInput) {
-                        const defaultSites = ['bing', 'baidu', 'google'];
-                        batchSearch(defaultSites);
-                    } else if (currentFocusElement.classList.contains('history-item')) {
-                        const keyword = currentFocusElement.getAttribute('data-keyword');
-                        searchInput.value = keyword;
-                        searchInput.focus();
-                    } else if (currentFocusElement.hasAttribute('data-site')) {
-                        const site = currentFocusElement.getAttribute('data-site');
-                        search(site, true);
-                    }
-                    return;
-                }
+                // Enter键执行操作
+if (e.key === 'Enter' && currentFocusElement) {
+    e.preventDefault();
+    if (quickSearchActive && matchedItems.length > 0) {
+        searchInput.value = matchedItems[0].element.textContent;
+        searchInput.focus();
+    } else if (currentFocusElement === searchInput) {
+        const defaultSites = ['bing', 'baidu', 'google'];
+        batchSearch(defaultSites);
+    } else if (currentFocusElement.classList.contains('history-item')) {
+        const keyword = currentFocusElement.getAttribute('data-keyword');
+        searchInput.value = keyword;
+        searchInput.focus();
+    } else if (currentFocusElement.hasAttribute('data-site')) {
+        const site = currentFocusElement.getAttribute('data-site');
+        search(site, true);
+    }
+    return;
+}
 
                 // F2编辑历史记录
                 if (e.key === 'F2' && currentFocusElement && currentFocusElement.classList.contains('history-item')) {
@@ -682,13 +686,22 @@ if (e.key === ' ' && currentFocusElement && currentFocusElement !== searchInput)
     tempInput.style.width = '100%';
     tempInput.style.height = '100%';
     tempInput.style.opacity = '0';
-    tempInput.style.fontSize = '16px'; // 确保输入法正常弹出
+    tempInput.style.fontSize = '16px';
     
     tempInput.addEventListener('input', (e) => {
         quickSearchActive = true;
         quickSearchKeys = e.data || '';
         updateQuickSearchDisplay();
         performQuickSearch();
+    });
+    
+    tempInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && matchedItems.length > 0) {
+            e.preventDefault();
+            searchInput.value = matchedItems[0].element.textContent;
+            searchInput.focus();
+            document.body.removeChild(tempInput);
+        }
     });
     
     tempInput.addEventListener('blur', () => {
