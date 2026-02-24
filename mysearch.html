@@ -58,6 +58,8 @@
             margin-bottom: 5px;
             flex-wrap: wrap;
             width: 100%;
+                order: -1; /* 移到前面 */
+    margin-left: 40px;
         }
         
         button {
@@ -154,9 +156,8 @@
             display: block;
             z-index: 100;
             touch-action: manipulation;
-            cursor: text;
-            touch-action: manipulation; /* 允许触摸滚动 */
             cursor: text; /* 显示文本光标 */
+            display: none !important;
         }
         
         #current-keys {
@@ -217,7 +218,9 @@
     display: none;
 }
 .mobile-quick-search-wrapper {
-    display: none;
+    display: none;    
+    right: 120px; /* 调整到历史标题右侧 */
+    top: 10px;
     align-items: center;
     gap: 5px;
     margin-bottom: 5px;
@@ -469,6 +472,7 @@
         let isEditMode = false;
         let isEditingHistory = false;
         let currentEditItem = null;
+let isInputMethodActive = false;
 
         // 快速搜索相关变量
         let quickSearchKeys = '';
@@ -661,13 +665,17 @@ setTimeout(() => {
 }, 100);
 // 点击空白处时重新聚焦
 document.addEventListener('click', function(e) {
-    if (!e.target.closest('button, input, .history-item') && window.innerWidth <= 768) {
-        if (document.activeElement === mobileQuickSearch) {
-            // 第一次点击退出输入法
-            mobileQuickSearch.blur();
-        } else {
-            // 第二次点击重新聚焦
-            mobileQuickSearch.focus();
+    if (!e.target.closest('button, input, .history-item')) {
+        if (window.innerWidth <= 768) {
+            if (!isInputMethodActive) {
+                // 第一次点击：聚焦并弹出输入法
+                mobileQuickSearch.focus();
+                isInputMethodActive = true;
+            } else {
+                // 第二次点击：关闭输入法
+                mobileQuickSearch.blur();
+                isInputMethodActive = false;
+            }
         }
     }
 });
@@ -676,7 +684,10 @@ document.addEventListener('click', function(e) {
 if (mobileQuickSearch) {
     mobileQuickSearch.addEventListener('input', function() {
         const keywords = this.value.toLowerCase().split(/\s+/).filter(Boolean);
-        
+                if (window.innerWidth <= 1200) { // 匹配CSS媒体查询条件
+            quickSearchKeys = this.value.toLowerCase();
+            performQuickSearch();
+        }
         if (keywords.length === 0) {
             showAllHistoryItems();
             return;
@@ -728,18 +739,21 @@ if (mobileQuickSearch) {
 mobileEscBtn.addEventListener('click', function(e) {
     e.stopPropagation();
     if (mobileQuickSearch.value) {
-        // 第一次点击清空搜索框
+        // 第一次点击：清空快速定位框
         mobileQuickSearch.value = '';
-        mobileQuickSearch.dispatchEvent(new Event('input'));
-    } else if (document.activeElement === mobileQuickSearch) {
-        // 第二次点击退出输入法
-        mobileQuickSearch.blur();
+        quickSearchKeys = '';
+        updateQuickSearchDisplay();
+        clearMatches();
+        document.activeElement.blur(); // 取消聚焦
     } else {
-        // 第三次点击重新聚焦
-        mobileQuickSearch.focus();
+        // 第二次点击：关闭输入法
+        if (document.activeElement === mobileQuickSearch) {
+            mobileQuickSearch.blur();
+        } else {
+            mobileQuickSearch.focus();
+        }
     }
 });}
-
 
 // 简化版显示所有历史项
 function showAllHistoryItems() {
@@ -757,6 +771,12 @@ function showAllHistoryItems() {
                         saveEditBtn.click();
                         return;
                     }
+                     if ((e.key === 'F8' || (e.ctrlKey && e.key === 'Delete')) ){
+        e.preventDefault();
+        searchInput.value = '';
+        searchInput.focus();
+    }
+
                     if (e.key === 'Escape') {
                         e.preventDefault();
                         cancelEditBtn.click();
@@ -1007,8 +1027,7 @@ if (e.key === 'Enter' && currentFocusElement) {
     // 全局键盘事件处理（快速搜索）
 // 修改全局键盘事件处理
 function handleGlobalKeyDown(e) {
-    // 电脑端ESC处理
-    if (e.key === 'Escape' && document.activeElement === searchInput && window.innerWidth > 768) {
+    if (e.key === 'Escape' && document.activeElement === searchInput) {
         e.preventDefault();
         searchInput.blur();
         return;
@@ -1091,12 +1110,22 @@ function performQuickSearch() {
     const searchTerms = quickSearchKeys.split('');
     clearMatches();
     
-    // 搜索按钮和历史项
     document.querySelectorAll('button[data-site], .history-item').forEach(element => {
         const text = element.textContent.toLowerCase();
         const pinyin = getPinyinInitials(text);
+        const isChinese = /[\u4e00-\u9fa5]/.test(quickSearchKeys); // 检测是否输入中文
         
-        if (matchQuickSearch(text, pinyin, searchTerms)) {
+        let isMatch = false;
+        
+        if (isChinese) {
+            // 中文直接匹配
+            isMatch = searchTerms.every(term => text.includes(term));
+        } else {
+            // 非中文使用拼音首字母匹配
+            isMatch = searchTerms.every(term => pinyin.includes(term) || text.includes(term));
+        }
+        
+        if (isMatch) {
             matchedItems.push({
                 element: element,
                 type: element.classList.contains('history-item') ? 'history' : 'button'
@@ -1110,7 +1139,6 @@ function performQuickSearch() {
         highlightCurrentMatch();
     }
 }
-
         // 使用拼音库获取拼音首字母
         function getPinyinInitials(text) {
             const pinyinMap = {
