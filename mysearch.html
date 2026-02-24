@@ -17,11 +17,11 @@
         
         /* 固定顶部区域 */
         .fixed-header {
-            background: white;
-            z-index: 100;
-            padding: 10px 20px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            margin-bottom: 5px; /* 添加底部间距 */
+        background: white;
+        z-index: 100;
+        padding: 10px 20px 5px 20px; /* 减小底部内边距 */
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        margin-bottom: 5px; /* 增加底部外边距 */
         }
         
         .search-container {
@@ -116,8 +116,6 @@
             background: white;
             padding: 5px 0;
             z-index: 10;
-            border-bottom: 1px solid #eee;
-            margin-top: -5px; /* 调整顶部间距 */
         }
         
         .history-item {
@@ -128,10 +126,6 @@
             border: 1px solid #ddd;
             cursor: pointer;
             font-size: 14px;
-        }
-        
-        .history-item.hidden {
-            display: none;
         }
         
         .history-item.highlight {
@@ -309,10 +303,7 @@
         <div id="history-list"></div>
     </div>
 
-    <div id="quick-search-hint">
-        快速搜索: 
-        <input type="text" id="quick-search-input" placeholder="[无]" readonly>
-    </div>
+    <div id="quick-search-hint">快速搜索: <span id="current-keys">[无]</span></div>
 
     <div class="modal" id="error-modal">
         <div class="modal-content">
@@ -632,11 +623,15 @@
                 }
 
                 // 空格选择当前元素
-                if (e.key === ' ' && currentFocusElement && currentFocusElement !== searchInput) {
-                    e.preventDefault();
-                    toggleSelectElement(currentFocusElement);
-                    return;
-                }
+// 空格选择当前元素
+if (e.key === ' ' && currentFocusElement && currentFocusElement !== searchInput) {
+    e.preventDefault();
+    // 如果快速搜索没有激活或者第一个字符不是空格，才执行选择操作
+    if (!quickSearchActive || quickSearchKeys === '') {
+        toggleSelectElement(currentFocusElement);
+    }
+    return;
+}
 
                 // Enter键执行操作
                 if (e.key === 'Enter' && currentFocusElement) {
@@ -677,31 +672,12 @@
                     return;
                 }
             });}
-            quickSearchHint.addEventListener('touchstart', (e) => {
-    e.preventDefault();
-    
-    // 直接聚焦到快速搜索输入框
-    quickSearchInput.focus();
-    
-    // 监听输入框的输入事件
-    quickSearchInput.addEventListener('input', (inputEvent) => {
-        quickSearchKeys = inputEvent.target.value.toLowerCase();
-        updateQuickSearchDisplay();
-        performQuickSearch();
+            
+        quickSearchHint.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        searchInput.focus();
+        searchInput.click();
     });
-    
-    // 监听输入框的失去焦点事件
-    quickSearchInput.addEventListener('blur', () => {
-        setTimeout(() => {
-            if (quickSearchKeys) {
-                // 保持输入法聚焦在快速搜索提示框内
-                quickSearchInput.focus();
-            }
-        }, 100);
-    });
-});
-
-        
         // 清除选中状态
         function clearSelection() {
             selectedElements.forEach(el => el.classList.remove('selected'));
@@ -836,127 +812,107 @@
         }
 
         // 全局键盘事件处理（快速搜索）
-        function handleGlobalKeyDown(e) {
-        if (document.activeElement === searchInput) return;
-        
-        // 忽略功能键组合
-        if (e.ctrlKey && e.key.length === 1) {
-            return;
-        }
-        if (e.key === 'Escape') {
-            if (quickSearchKeys) {
-                quickSearchKeys = '';
-                updateQuickSearchDisplay();
-                clearMatches();
-                quickSearchActive = false;
-
-                // 取消隐藏所有元素
-                document.querySelectorAll('.history-item').forEach(item => {
-                    item.classList.remove('hidden');
-                });
-
-                if (currentFocusElement) {
-                    currentFocusElement.focus();
-                }
-            }
-            return;
-        }
-        // 处理Ctrl+Delete清空输入框
-        if (e.key === 'Delete' && e.ctrlKey) {
-            e.preventDefault();
-            searchInput.value = '';
-            searchInput.focus();
-            return;
-        }
-        // 只处理单字符按键（字母、数字、标点符号）
-        if (e.key.length === 1 && /[a-z0-9\W]/i.test(e.key)) {
-            e.preventDefault();
-            quickSearchActive = true;
-            
-            if (e.key === ' ' && !quickSearchKeys) {
-                // 第一个字符是空格时，不进入快速搜索
-                return;
-            }
-            
-            quickSearchKeys += e.key.toLowerCase();
+        // 全局键盘事件处理（快速搜索）
+function handleGlobalKeyDown(e) {
+    if (document.activeElement === searchInput) return;
+    
+    // 忽略功能键组合
+    if (e.ctrlKey && e.key.length === 1) {
+        return;
+    }
+    
+    if (e.key === 'Escape') {
+        if (quickSearchKeys) {
+            quickSearchKeys = '';
             updateQuickSearchDisplay();
-            
-            performQuickSearch();
-            
-            if (matchedItems.length > 0) {
-                matchedItems[0].element.focus();
-                currentFocusElement = matchedItems[0].element;
+            clearMatches();
+            quickSearchActive = false;
+            showAllHistoryItems(); // 新增：显示所有历史项
+            if (currentFocusElement) {
+                currentFocusElement.focus();
             }
         }
-        else if (e.key === 'Enter' && matchedItems.length > 0) {
-            e.preventDefault();
-            activateCurrentMatch();
-        }
-        else if (e.key === 'Tab' && matchedItems.length > 0) {
-            e.preventDefault();
-            cycleMatches(e.shiftKey ? -1 : 1);
-            
-            if (currentMatchIndex >= 0 && currentMatchIndex < matchedItems.length) {
-                matchedItems[currentMatchIndex].element.focus();
-                currentFocusElement = matchedItems[currentMatchIndex].element;
-            }
-        }
-        else if (e.key === ' ') {
-            if (currentFocusElement && currentFocusElement.tagName === 'BUTTON') {
-                toggleSelectElement(currentFocusElement);
-            }
+        return;
+    }
+    
+    // 处理Ctrl+Delete清空输入框
+    if (e.key === 'Delete' && e.ctrlKey) {
+        e.preventDefault();
+        searchInput.value = '';
+        searchInput.focus();
+        return;
+    }
+    
+    // 只处理单字符按键（字母、数字、标点符号），排除空格
+    if (e.key.length === 1 && /[a-z0-9\W]/i.test(e.key) && e.key !== ' ') {
+        e.preventDefault();
+        quickSearchActive = true;
+        
+        quickSearchKeys += e.key.toLowerCase();
+        updateQuickSearchDisplay();
+        
+        performQuickSearch();
+        
+        if (matchedItems.length > 0) {
+            matchedItems[0].element.focus();
+            currentFocusElement = matchedItems[0].element;
         }
     }
-
+    else if (e.key === 'Enter' && matchedItems.length > 0) {
+        e.preventDefault();
+        activateCurrentMatch();
+    }
+    else if (e.key === 'Tab' && matchedItems.length > 0) {
+        e.preventDefault();
+        cycleMatches(e.shiftKey ? -1 : 1);
+        
+        if (currentMatchIndex >= 0 && currentMatchIndex < matchedItems.length) {
+            matchedItems[currentMatchIndex].element.focus();
+            currentFocusElement = matchedItems[currentMatchIndex].element;
+        }
+    }
+}
         // 更新快速搜索显示
         function updateQuickSearchDisplay() {
-            quickSearchInput.value = quickSearchKeys || '[无]';
-            if (quickSearchKeys) {
-                quickSearchInput.style.backgroundColor = '#4a90e2';
-                quickSearchInput.style.color = 'white';
-            } else {
-                quickSearchInput.style.backgroundColor = 'rgba(0,0,0,0.7)';
-                quickSearchInput.style.color = 'white';
-            }
+            currentKeysDisplay.textContent = quickSearchKeys || '[无]';
         }
 
         // 执行快速搜索
-        function performQuickSearch() {
-            clearMatches();
-
-            if (!quickSearchKeys) {
-                // 退出快速搜索时恢复所有元素显示
-                document.querySelectorAll('.history-item').forEach(item => {
-                    item.classList.remove('hidden');
-                });
-                return;
-            }
-            
-            const searchTerms = quickSearchKeys.toLowerCase().split(' ').filter(term => term);
-            
-            document.querySelectorAll('button, .history-item').forEach(element => {
-                const text = element.textContent;
-                const pinyinInitials = getPinyinInitials(text);
-                const lowerText = text.toLowerCase();
-                
-                if (matchQuickSearch(lowerText, pinyinInitials, searchTerms)) {
-                    matchedItems.push({
-                        element: element,
-                        type: element.tagName === 'BUTTON' ? 'button' : 'history'
-                    });
-                    element.classList.add('highlight');
-                } else {
-                    if (element.classList.contains('history-item')) {
-                        element.classList.add('hidden');
-                    }
-                }
+        // 执行快速搜索
+function performQuickSearch() {
+    clearMatches();
+    
+    if (!quickSearchKeys) return;
+    
+    const searchTerms = quickSearchKeys.toLowerCase().split(' ').filter(term => term);
+    
+    // 先隐藏所有不匹配的历史项
+    document.querySelectorAll('.history-item').forEach(item => {
+        item.style.display = 'none';
+    });
+    
+    document.querySelectorAll('button, .history-item').forEach(element => {
+        const text = element.textContent;
+        const pinyinInitials = getPinyinInitials(text);
+        const lowerText = text.toLowerCase();
+        
+        if (matchQuickSearch(lowerText, pinyinInitials, searchTerms)) {
+            matchedItems.push({
+                element: element,
+                type: element.tagName === 'BUTTON' ? 'button' : 'history'
             });
-            
-            if (matchedItems.length > 0) {
-                currentMatchIndex = 0;
-                highlightCurrentMatch();
+            element.classList.add('highlight');
+            if (element.classList.contains('history-item')) {
+                element.style.display = 'inline-block';
             }
         }
+    });
+    
+    if (matchedItems.length > 0) {
+        currentMatchIndex = 0;
+        highlightCurrentMatch();
+    }
+}
 
         // 使用拼音库获取拼音首字母
         function getPinyinInitials(text) {
@@ -1294,6 +1250,12 @@
                 }
             }
         }
+        // 显示所有历史项
+function showAllHistoryItems() {
+    document.querySelectorAll('.history-item').forEach(item => {
+        item.style.display = '';
+    });
+}
     </script>
 </body>
 </html>
