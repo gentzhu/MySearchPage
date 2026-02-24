@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>网址跳转工具</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .input-container {
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            display: block;
+            margin:auto;
+            max-width: 600px;
+            padding: 10px;
+            font-size: 16px;
+            box-sizing: border-box;
+            border: 1px solid #020202;
+            background-color: transparent;
+            border-radius: 4px;
+        }
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+        button {
+            padding: 5%;
+            width: auto;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: transparent;
+            color: rgb(1, 1, 1);
+            border: 1px solid #020202;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button:hover {
+            background-color: #c7d7e8;
+        }
+    </style>
+</head>
+<body>
+    <h1></h1>
+    <div class="input-container">
+        <input type="text" id="searchInput">
+    </div>
+    <div class="buttons">
+        <button onclick="search('https://www.xiaohongshu.com/search_result?keyword=','&source=web_explore_feed&type=51')">小红书</button>
+        <button onclick="search('https://www.douyin.com/search/')">抖音</button>
+        <button onclick="search('https://www.zhihu.com/search?type=content&q=')">知乎</button>
+        <button onclick="search('https://search.bilibili.com/all?vt=83595018&keyword=')">哔哩哔哩</button>
+    </div>
+    <div class="iframe-container">
+        <iframe id="desktopFrame"></iframe>
+    </div>
+    <script>
+        let currentScale = 1;
+        const iframe = document.getElementById('desktopFrame');
+        function search(baseUrl,extraParams) {
+            const inputText = document.getElementById('searchInput').value.trim();
+            if (!inputText) {
+                alert('请输入搜索内容');
+                return;
+            }
+            // 对输入内容进行编码，确保URL安全
+            const encodedText = encodeURIComponent(inputText);
+            const fullUrl = baseUrl + encodedText + (extraParams ? extraParams : '');
+            const desktopUrl = fullUrl + (fullUrl.includes('?') ? '&' : '?') + 'desktop=1';
+            // 在新窗口打开网址
+            iframe.src = desktopUrl;
+            currentScale = 0.8; // 初始缩放
+            updateIframeScale();
+        }
+        function updateIframeScale() {
+            iframe.style.transform = `scale(${currentScale})`;
+            iframe.style.width = `${100/currentScale}%`;
+            iframe.style.height = `${100/currentScale}%`;
+        }
+    </script>
+</body>
+</html>
