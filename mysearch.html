@@ -221,32 +221,25 @@
     align-items: center;
     gap: 5px;
     margin-bottom: 5px;
-    width: 100%;
+    width: auto; /* 改为自动宽度 */
+    float: left; /* 左浮动 */
 }
 
 #mobile-quick-search {
-    width: 120px; /* 调整为2-3个按钮的宽度 */
-    padding: 6px 8px;
+    width: 100px; /* 缩小宽度 */
+    padding: 4px 8px; /* 减小内边距 */
+    height: 8px; /* 固定高度 */
     font-size: 14px;
     border: 1px solid #000;
-    caret-color: transparent; /* 隐藏光标 */
+        caret-color: transparent; /* 隐藏光标 */
+
 }
 
 #mobile-esc-btn {
-    padding: 6px 10px;
-    border: 1px solid #000;
-    background: #f0f0f0;
-    cursor: pointer;
-    font-size: 16px;
+    padding: 4px 8px;
+    height: 28px; /* 与输入框同高 */
     line-height: 1;
 }
-#mobile-quick-search {
-    width: 100%;
-    padding: 8px;
-    font-size: 14px;
-    border: 1px solid #000;
-}
-
         @media (max-width: 768px) {
             #mobile-esc-btn {
         display: inline-block;
@@ -490,6 +483,13 @@
         initEventListeners();
 
         function initEventListeners() {
+            window.addEventListener('DOMContentLoaded', function() {
+    if (window.innerWidth <= 768) {
+        mobileQuickSearch.focus();
+    } else {
+        searchInput.focus();
+    }
+});
             // 全局键盘事件（用于快速搜索）
             document.addEventListener('keydown', handleGlobalKeyDown);
             
@@ -661,10 +661,14 @@ setTimeout(() => {
 }, 100);
 // 点击空白处时重新聚焦
 document.addEventListener('click', function(e) {
-    if (!e.target.closest('button, input, .history-item') && 
-        window.innerWidth <= 768 && 
-        mobileQuickSearch) {
-        mobileQuickSearch.focus();
+    if (!e.target.closest('button, input, .history-item') && window.innerWidth <= 768) {
+        if (document.activeElement === mobileQuickSearch) {
+            // 第一次点击退出输入法
+            mobileQuickSearch.blur();
+        } else {
+            // 第二次点击重新聚焦
+            mobileQuickSearch.focus();
+        }
     }
 });
 
@@ -721,12 +725,21 @@ if (mobileQuickSearch) {
     });
     
     // ESC按钮处理
-    mobileEscBtn.addEventListener('click', function() {
+mobileEscBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    if (mobileQuickSearch.value) {
+        // 第一次点击清空搜索框
         mobileQuickSearch.value = '';
+        mobileQuickSearch.dispatchEvent(new Event('input'));
+    } else if (document.activeElement === mobileQuickSearch) {
+        // 第二次点击退出输入法
+        mobileQuickSearch.blur();
+    } else {
+        // 第三次点击重新聚焦
         mobileQuickSearch.focus();
-        showAllHistoryItems();
-    });
-}
+    }
+});}
+
 
 // 简化版显示所有历史项
 function showAllHistoryItems() {
@@ -992,10 +1005,29 @@ if (e.key === 'Enter' && currentFocusElement) {
 
         // 全局键盘事件处理（快速搜索）
     // 全局键盘事件处理（快速搜索）
-// 全局键盘事件处理（快速搜索）
+// 修改全局键盘事件处理
 function handleGlobalKeyDown(e) {
-    // 处理Backspace删除快速搜索字符
-// 处理Backspace删除快速搜索字符
+    // 电脑端ESC处理
+    if (e.key === 'Escape' && document.activeElement === searchInput && window.innerWidth > 768) {
+        e.preventDefault();
+        searchInput.blur();
+        return;
+    }
+    
+    // 电脑端快速搜索激活
+    if (window.innerWidth > 768 && !document.activeElement.matches('input, textarea') && 
+        e.key.length === 1 && /[a-z0-9\W]/i.test(e.key) && e.key !== ' ') {
+        e.preventDefault();
+        quickSearchActive = true;
+        quickSearchKeys += e.key.toLowerCase();
+        updateQuickSearchDisplay();
+        performQuickSearch();
+        
+        if (matchedItems.length > 0) {
+            matchedItems[0].element.focus();
+            currentFocusElement = matchedItems[0].element;
+        }
+    }
 if (quickSearchActive && e.key === 'Backspace') {
     e.preventDefault();
     if (quickSearchKeys.length > 0) {
@@ -1055,7 +1087,29 @@ if (e.key.length === 1 && /[a-z0-9\W]/i.test(e.key) && e.key !== ' ') {
 
         // 执行快速搜索
         // 执行快速搜索
-
+function performQuickSearch() {
+    const searchTerms = quickSearchKeys.split('');
+    clearMatches();
+    
+    // 搜索按钮和历史项
+    document.querySelectorAll('button[data-site], .history-item').forEach(element => {
+        const text = element.textContent.toLowerCase();
+        const pinyin = getPinyinInitials(text);
+        
+        if (matchQuickSearch(text, pinyin, searchTerms)) {
+            matchedItems.push({
+                element: element,
+                type: element.classList.contains('history-item') ? 'history' : 'button'
+            });
+            element.classList.add('highlight');
+        }
+    });
+    
+    if (matchedItems.length > 0) {
+        currentMatchIndex = 0;
+        highlightCurrentMatch();
+    }
+}
 
         // 使用拼音库获取拼音首字母
         function getPinyinInitials(text) {
