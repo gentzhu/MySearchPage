@@ -3,85 +3,324 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>网址跳转工具</title>
+    <title>MySearchPage</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 0 auto;
-            padding: 20px;
+            margin: 20px;
+            padding: 0;
         }
-        .input-container {
+        .search-container {
+            display: flex;
             margin-bottom: 20px;
-        }
-        input[type="text"] {
-            display: block;
-            margin:auto;
-            max-width: 600px;
-            padding: 10px;
-            font-size: 16px;
-            box-sizing: border-box;
-            border: 1px solid #020202;
-            background-color: transparent;
-            border-radius: 4px;
-        }
-        .buttons {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            align-items: center;
             gap: 10px;
         }
-        button {
-            padding: 5%;
-            width: auto;
+        #search-input {
+            padding: 10px;
             font-size: 16px;
+            flex-grow: 1;
+            border: 1px solid #000;
+        }
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 8px 12px;
+            border: 1px solid #000;
+            background: transparent;
             cursor: pointer;
-            background-color: transparent;
-            color: rgb(1, 1, 1);
-            border: 1px solid #020202;
-            border-radius: 4px;
-            box-sizing: border-box;
+            font-size: 14px;
+            transition: all 0.2s;
         }
         button:hover {
-            background-color: #c7d7e8;
+            background-color: #f0f0f0;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+        }
+        .history-container {
+            margin-top: 20px;
+        }
+        .history-item {
+            display: inline-block;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            padding: 5px 10px;
+            border: 1px solid #ddd;
+            cursor: pointer;
+        }
+        .history-item.editable {
+            border: 1px dashed #000;
+        }
+        .history-item .delete-btn {
+            margin-left: 5px;
+            color: red;
+            cursor: pointer;
+        }
+        .control-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
         }
     </style>
 </head>
 <body>
-    <h1></h1>
-    <div class="input-container">
-        <input type="text" id="searchInput">
+    <div class="search-container">
+        <input type="text" id="search-input" placeholder="输入搜索关键词...">
+        <button id="save-only">仅保存</button>
+        <button id="all-sites">所有</button>
+        <button id="common-sites">常用</button>
+        <button id="foreign-sites">外网</button>
+        <button id="clear-history">清除历史</button>
+        <button id="edit-history">编辑历史</button>
     </div>
-    <div class="buttons">
-        <button onclick="search('https://www.xiaohongshu.com/search_result?keyword=','&source=web_explore_feed&type=51')">小红书</button>
-        <button onclick="search('https://www.douyin.com/search/')">抖音</button>
-        <button onclick="search('https://www.zhihu.com/search?type=content&q=')">知乎</button>
-        <button onclick="search('https://search.bilibili.com/all?vt=83595018&keyword=')">哔哩哔哩</button>
+
+    <div class="btn-group">
+        <button data-site="xiaohongshu">小红书</button>
+        <button data-site="douyin">抖音</button>
+        <button data-site="zhihu">知乎</button>
+        <button data-site="bilibili">哔哩哔哩</button>
+        <button data-site="bing">必应</button>
+        <button data-site="github">GitHub</button>
+        <button data-site="google">谷歌</button>
+        <button data-site="twitter">推特</button>
+        <button data-site="yandex">Yandex</button>
+        <button data-site="mubu">幕布精选社区</button>
+        <button data-site="anki">Anki卡牌分享社区</button>
+        <button data-site="wandoujia">豌豆荚</button>
+        <button data-site="greasyfork">Greasy Fork</button>
+        <button data-site="coolapk">酷安</button>
+        <button data-site="tongyi">通义千问</button>
+        <button data-site="kimi">Kimi</button>
+        <button data-site="ximalaya">喜马拉雅搜索</button>
     </div>
-    <div class="iframe-container">
-        <iframe id="desktopFrame"></iframe>
+
+    <div class="history-container">
+        <h3>搜索历史</h3>
+        <div id="history-list"></div>
     </div>
+
+    <div class="modal" id="error-modal">
+        <div class="modal-content">
+            <p>请输入搜索关键词！</p>
+        </div>
+    </div>
+
     <script>
-        let currentScale = 1;
-        const iframe = document.getElementById('desktopFrame');
-        function search(baseUrl,extraParams) {
-            const inputText = document.getElementById('searchInput').value.trim();
-            if (!inputText) {
-                alert('请输入搜索内容');
-                return;
+        // 网站搜索URL模板
+        const siteUrls = {
+            xiaohongshu: 'https://www.xiaohongshu.com/search_result?keyword=',
+            douyin: 'https://www.douyin.com/search/',
+            zhihu: 'https://www.zhihu.com/search?q=',
+            bilibili: 'https://search.bilibili.com/all?keyword=',
+            bing: 'https://www.bing.com/search?q=',
+            github: 'https://github.com/search?q=',
+            google: 'https://www.google.com/search?q=',
+            twitter: 'https://twitter.com/search?q=',
+            yandex: 'https://yandex.com/search/?text=',
+            mubu: 'https://mubu.com/explore/community/search?query=',
+            anki: 'https://ankiweb.net/shared/decks/',
+            wandoujia: 'https://www.wandoujia.com/search?key=',
+            greasyfork: 'https://greasyfork.org/zh-CN/scripts?q=',
+            coolapk: 'https://www.coolapk.com/search?q=',
+            tongyi: 'https://tongyi.aliyun.com/qianwen/?search=',
+            kimi: 'https://kimi.moonshot.cn/?q=',
+            ximalaya: 'https://www.ximalaya.com/so/'
+        };
+
+        // 常用网站列表
+        const commonSites = ['xiaohongshu', 'douyin', 'zhihu', 'bilibili', 'bing', 'github', 'mubu', 'anki', 'tongyi', 'kimi', 'ximalaya'];
+        
+        // 外网网站列表
+        const foreignSites = ['google', 'twitter', 'yandex', 'github', 'greasyfork'];
+
+        // 所有网站列表
+        const allSites = Object.keys(siteUrls);
+
+        // 获取DOM元素
+        const searchInput = document.getElementById('search-input');
+        const historyList = document.getElementById('history-list');
+        const errorModal = document.getElementById('error-modal');
+        const saveOnlyBtn = document.getElementById('save-only');
+        const clearHistoryBtn = document.getElementById('clear-history');
+        const editHistoryBtn = document.getElementById('edit-history');
+        const allSitesBtn = document.getElementById('all-sites');
+        const commonSitesBtn = document.getElementById('common-sites');
+        const foreignSitesBtn = document.getElementById('foreign-sites');
+
+        // 加载搜索历史
+        let searchHistory = JSON.parse(localStorage.getItem('searchHistory')) || [];
+        renderHistory();
+
+        // 为所有搜索按钮添加事件监听
+        document.querySelectorAll('.btn-group button').forEach(button => {
+            button.addEventListener('click', () => {
+                const site = button.getAttribute('data-site');
+                search(site);
+            });
+        });
+
+        // 保存但不搜索按钮
+        saveOnlyBtn.addEventListener('click', () => {
+            const keyword = searchInput.value.trim();
+            if (keyword) {
+                addToHistory(keyword);
+                searchInput.value = '';
+            } else {
+                showError();
             }
-            // 对输入内容进行编码，确保URL安全
-            const encodedText = encodeURIComponent(inputText);
-            const fullUrl = baseUrl + encodedText + (extraParams ? extraParams : '');
-            const desktopUrl = fullUrl + (fullUrl.includes('?') ? '&' : '?') + 'desktop=1';
-            // 在新窗口打开网址
-            iframe.src = desktopUrl;
-            currentScale = 0.8; // 初始缩放
-            updateIframeScale();
+        });
+
+        // 清除历史按钮
+        clearHistoryBtn.addEventListener('click', () => {
+            searchHistory = [];
+            localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
+            renderHistory();
+        });
+
+        // 编辑历史按钮
+        editHistoryBtn.addEventListener('click', () => {
+            const items = document.querySelectorAll('.history-item');
+            items.forEach(item => {
+                item.classList.toggle('editable');
+                if (item.classList.contains('editable')) {
+                    const deleteBtn = document.createElement('span');
+                    deleteBtn.className = 'delete-btn';
+                    deleteBtn.textContent = '×';
+                    deleteBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const keyword = item.getAttribute('data-keyword');
+                        searchHistory = searchHistory.filter(item => item !== keyword);
+                        localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
+                        renderHistory();
+                    });
+                    item.appendChild(deleteBtn);
+                } else {
+                    const deleteBtn = item.querySelector('.delete-btn');
+                    if (deleteBtn) {
+                        item.removeChild(deleteBtn);
+                    }
+                }
+            });
+        });
+
+        // 所有网站搜索按钮
+        allSitesBtn.addEventListener('click', () => {
+            batchSearch(allSites);
+        });
+
+        // 常用网站搜索按钮
+        commonSitesBtn.addEventListener('click', () => {
+            batchSearch(commonSites);
+        });
+
+        // 外网网站搜索按钮
+        foreignSitesBtn.addEventListener('click', () => {
+            batchSearch(foreignSites);
+        });
+
+        // 搜索函数
+        function search(site) {
+            const keyword = searchInput.value.trim();
+            if (keyword) {
+                addToHistory(keyword);
+                const url = siteUrls[site] + encodeURIComponent(keyword);
+                window.open(url, '_blank');
+            } else {
+                showError();
+            }
         }
-        function updateIframeScale() {
-            iframe.style.transform = `scale(${currentScale})`;
-            iframe.style.width = `${100/currentScale}%`;
-            iframe.style.height = `${100/currentScale}%`;
+
+        // 批量搜索函数
+        function batchSearch(sites) {
+            const keyword = searchInput.value.trim();
+            if (keyword) {
+                addToHistory(keyword);
+                
+                // 分批打开标签页，防止浏览器卡顿
+                let delay = 0;
+                for (let i = 0; i < sites.length; i += 2) {
+                    setTimeout(() => {
+                        const site1 = sites[i];
+                        if (site1) {
+                            const url1 = siteUrls[site1] + encodeURIComponent(keyword);
+                            window.open(url1, '_blank');
+                        }
+                        
+                        const site2 = sites[i+1];
+                        if (site2) {
+                            const url2 = siteUrls[site2] + encodeURIComponent(keyword);
+                            window.open(url2, '_blank');
+                        }
+                    }, delay);
+                    
+                    delay += 1000; // 每隔1秒打开两个
+                }
+            } else {
+                showError();
+            }
         }
+
+        // 显示错误弹窗
+        function showError() {
+            errorModal.style.display = 'flex';
+        }
+
+        // 关闭弹窗
+        errorModal.addEventListener('click', () => {
+            errorModal.style.display = 'none';
+        });
+
+        // 添加到搜索历史
+        function addToHistory(keyword) {
+            if (!searchHistory.includes(keyword)) {
+                searchHistory.unshift(keyword);
+                localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
+                renderHistory();
+            }
+        }
+
+        // 渲染搜索历史
+        function renderHistory() {
+            historyList.innerHTML = '';
+            searchHistory.forEach(keyword => {
+                const item = document.createElement('div');
+                item.className = 'history-item';
+                item.textContent = keyword;
+                item.setAttribute('data-keyword', keyword);
+                item.addEventListener('click', () => {
+                    searchInput.value = keyword;
+                });
+                historyList.appendChild(item);
+            });
+        }
+
+        // 点击历史记录项填充到搜索框
+        historyList.addEventListener('click', (e) => {
+            if (e.target.classList.contains('history-item')) {
+                const keyword = e.target.getAttribute('data-keyword');
+                searchInput.value = keyword;
+            }
+        });
     </script>
 </body>
 </html>
