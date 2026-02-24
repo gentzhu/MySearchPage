@@ -7,21 +7,31 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 20px;
+            margin: 0;
             padding: 0;
             display: flex;
             flex-direction: column;
-            align-items: center;
+            height: 100vh;
+            overflow: hidden;
         }
+        
+        /* 固定顶部区域 */
+        .fixed-header {
+            background: white;
+            z-index: 100;
+            padding: 10px 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
         .search-container {
             display: flex;
             margin-bottom: 12px;
             align-items: center;
             gap: 5px;
-            width: 80%;
-            max-width: 800px;
+            width: 100%;
             position: relative;
         }
+        
         #search-input {
             padding: 10px 35px 10px 10px;
             font-size: 16px;
@@ -29,6 +39,7 @@
             border: 1px solid #000;
             width: 100%;
         }
+        
         .clear-input {
             position: absolute;
             right: 3px;
@@ -39,14 +50,15 @@
             margin: -8px;
             line-height: 0.7;
         }
-        .btn-group {
+        
+        .control-buttons {
             display: flex;
-            flex-wrap: wrap;
             gap: 5px;
             margin-bottom: 5px;
-            width: 80%;
-            max-width: 1200px;
+            flex-wrap: wrap;
+            width: 100%;
         }
+        
         button {
             padding: 6px 10px;
             border: 1px solid #000;
@@ -58,28 +70,53 @@
             white-space: normal;
             word-wrap: break-word;
         }
+        
         button.small {
             font-size: 12px;
             padding: 4px 6px;
             line-height: 1.2;
         }
+        
         button.highlight {
             background-color: #f0f0f0;
             box-shadow: 0 0 0 2px #4a90e2;
         }
+        
         button.selected {
             background-color: #e0e0e0;
         }
+        
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-bottom: 5px;
+            width: 100%;
+        }
+        
+        /* 可滚动内容区域 */
+        .scrollable-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 20px;
+        }
+        
         .history-container {
             margin-top: 5px;
-            width: 80%;
-            max-width: 1200px;
+            width: 100%;
         }
+        
         .history-title {
             font-weight: bold;
             font-size: 14px;
             margin-bottom: 5px;
+            position: sticky;
+            top: 0;
+            background: white;
+            padding: 5px 0;
+            z-index: 10;
         }
+        
         .history-item {
             display: inline-block;
             margin-right: 8px;
@@ -89,33 +126,21 @@
             cursor: pointer;
             font-size: 14px;
         }
-        .history-item-edit {
-            position: absolute;
-            background: white;
-            z-index: 1001;
-            border: 1px solid #4a90e2;
-            box-shadow: 0 0 5px rgba(0,0,0,0.2);
-            padding: 2px;
-        }
+        
         .history-item.highlight {
             border-color: #4a90e2;
             box-shadow: 0 0 0 2px #4a90e2;
         }
+        
         .history-item.editable {
             border: 1px dashed #000;
             background-color: #fff9f9;
         }
+        
         .history-item.selected {
             background-color: #e0e0e0;
         }
-        .control-buttons {
-            display: flex;
-            gap: 5px;
-            margin-bottom: 5px;
-            flex-wrap: wrap;
-            width: 80%;
-            max-width: 1200px;
-        }
+        
         #quick-search-hint {
             position: fixed;
             bottom: 20px;
@@ -128,10 +153,12 @@
             display: block;
             z-index: 100;
         }
+        
         #current-keys {
             font-weight: bold;
             color: #4a90e2;
         }
+        
         .modal {
             display: none;
             position: fixed;
@@ -144,12 +171,14 @@
             justify-content: center;
             align-items: center;
         }
+        
         .modal-content {
             background-color: white;
             padding: 20px;
             border-radius: 5px;
             box-shadow: 0 0 10px rgba(0,0,0,0.3);
         }
+        
         .edit-history-modal {
             display: none;
             position: fixed;
@@ -161,122 +190,111 @@
             border-radius: 5px;
             box-shadow: 0 0 10px rgba(0,0,0,0.3);
             z-index: 1000;
+            max-width: 90%;
+            width: 300px;
         }
+        
         .edit-history-modal input {
             width: 100%;
             padding: 8px;
             margin-bottom: 10px;
             font-size: 14px;
+            box-sizing: border-box;
         }
+        
         .edit-history-modal button {
             padding: 6px 12px;
             margin-right: 5px;
         }
 
         @media (max-width: 768px) {
-            body {
-                margin: 5px;
+            .fixed-header {
+                padding: 5px 10px;
             }
-            .search-container {
-                margin-bottom: 8px;
-                gap: 4px;
-            }
+            
             #search-input {
                 padding: 4px 4px;
                 font-size: 16px;
-                border: 1px solid #000;
             }
-            .btn-group, .control-buttons {
-                justify-content: flex-start;
-                width: 100%;
-                padding: 0;
-            }
+            
             button {
                 padding: 2px 1px;
                 font-size: 14px;
                 margin: 0px;
                 width: auto;
             }
+            
             button.small {
                 font-size: 10px;
                 padding: 2px 4px;
             }
+            
             button.highlight {
                 box-shadow: 0 0 0 1px #4a90e2;
-            }
-            .history-container {
-                margin-top: 0px;
-                width: 100%;
-            }
-            .history-title {
-                font-size: 14px;
-                justify-content: flex-start;
-                margin-bottom: 2px;
-            }
-            .history-item {
-                display: inline-block;
-                padding: 2px 2px;
-                border: 1px solid #ddd;
-                font-size: 14px;
-                margin: 1px; 
             }
         }
     </style>
 </head>
 <body>
-    <div class="search-container">
-        <input type="text" id="search-input" autocomplete="off">
-        <span class="clear-input" title="清空输入">×</span>
+    <div class="fixed-header">
+        <div class="search-container">
+            <input type="text" id="search-input" autocomplete="off">
+            <span class="clear-input" title="清空输入">×</span>
+        </div>
+
+        <div class="control-buttons">
+            <button id="save-only">仅保存</button>
+            <button id="all-sites">所有</button>
+            <button id="common-sites">常用</button>
+            <button id="foreign-sites">外网</button>
+            <button id="edit-history">编辑历史</button>
+            <button id="export-history">导出历史</button>
+            <button id="import-history">导入历史</button>
+        </div>
+
+        <div class="btn-group">
+            <button data-site="xiaohongshu">小红书</button>
+            <button data-site="douyin">抖音</button>
+            <button data-site="douyin-history" class="small">抖音历史</button>
+            <button data-site="douyin-fav" class="small">抖音收藏夹</button>
+            <button data-site="zhihu">知乎</button>
+            <button data-site="zhihu-history" class="small">知乎历史</button>
+            <button data-site="zhihu-fav" class="small">知乎收藏</button>
+            <button data-site="bilibili">哔哩哔哩</button>
+            <button data-site="bilibili-history" class="small">哔哩哔哩历史</button>
+            <button data-site="bilibili-fav" class="small">哔哩哔哩收藏夹</button>
+            <button data-site="bing">必应</button>
+            <button data-site="baidu">百度</button>
+            <button data-site="tieba">百度贴吧</button>
+            <button data-site="qq-medical">腾讯医典</button>
+            <button data-site="github">GitHub</button>
+            <button data-site="google">谷歌</button>
+            <button data-site="twitter">推特</button>
+            <button data-site="yandex">Yandex</button>
+            <button data-site="mubu">幕布精选社区</button>
+            <button data-site="anki">Anki卡牌分享社区</button>
+            <button data-site="wandoujia">豌豆荚</button>
+            <button data-site="greasyfork">Greasy Fork</button>
+            <button data-site="coolapk">酷安</button>
+            <button data-site="tongyi">通义千问</button>
+            <button data-site="kimi">Kimi</button>
+            <button data-site="deepseek">DeepSeek</button>
+            <button data-site="ximalaya">喜马拉雅搜索</button>
+            <button data-site="pinduoduo">拼多多</button>
+            <button data-site="jd">京东</button>
+            <button data-site="taobao">淘宝</button>
+            <button data-site="weixin">微信搜索</button>
+            <button data-site="quicker">Quicker</button>
+            <button data-site="lingfengyun">凌风云</button>
+            <button data-site="wangpanzhijia">网盘之家</button>
+        </div>
+        
+        <div class="history-container">
+            <div class="history-title">搜索历史</div>
+        </div>
     </div>
 
-    <div class="control-buttons">
-        <button id="save-only">仅保存</button>
-        <button id="all-sites">所有</button>
-        <button id="common-sites">常用</button>
-        <button id="foreign-sites">外网</button>
-        <button id="clear-history">清除历史</button>
-        <button id="edit-history">编辑历史</button>
-        <button id="export-history">导出历史</button>
-        <button id="import-history">导入历史</button>
-    </div>
-
-    <div class="btn-group">
-        <button data-site="xiaohongshu">小红书</button>
-        <button data-site="douyin">抖音</button>
-        <button data-site="douyin-history" class="small">抖音历史</button>
-        <button data-site="douyin-fav" class="small">抖音收藏夹</button>
-        <button data-site="zhihu">知乎</button>
-        <button data-site="zhihu-history" class="small">知乎历史</button>
-        <button data-site="zhihu-fav" class="small">知乎收藏</button>
-        <button data-site="bilibili">哔哩哔哩</button>
-        <button data-site="bilibili-history" class="small">哔哩哔哩历史</button>
-        <button data-site="bilibili-fav" class="small">哔哩哔哩收藏夹</button>
-        <button data-site="bing">必应</button>
-        <button data-site="baidu">百度</button>
-        <button data-site="github">GitHub</button>
-        <button data-site="google">谷歌</button>
-        <button data-site="twitter">推特</button>
-        <button data-site="yandex">Yandex</button>
-        <button data-site="mubu">幕布精选社区</button>
-        <button data-site="anki">Anki卡牌分享社区</button>
-        <button data-site="wandoujia">豌豆荚</button>
-        <button data-site="greasyfork">Greasy Fork</button>
-        <button data-site="coolapk">酷安</button>
-        <button data-site="tongyi">通义千问</button>
-        <button data-site="kimi">Kimi</button>
-        <button data-site="deepseek">DeepSeek</button>
-        <button data-site="ximalaya">喜马拉雅搜索</button>
-        <button data-site="pinduoduo">拼多多</button>
-        <button data-site="jd">京东</button>
-        <button data-site="taobao">淘宝</button>
-        <button data-site="weixin">微信搜索</button>
-        <button data-site="quicker">Quicker</button>
-        <button data-site="lingfengyun">凌风云</button>
-        <button data-site="wangpanzhijia">网盘之家</button>
-    </div>
-
-    <div class="history-container">
-        <div class="history-title">搜索历史</div>
+    <div class="scrollable-content">
         <div id="history-list"></div>
     </div>
 
@@ -296,8 +314,6 @@
 
     <script>
         // 网站搜索URL模板
-        let editInput = null;
-        let currentEditPosition = 0;
         const siteUrls = {
             xiaohongshu: 'https://www.xiaohongshu.com/search_result?keyword=',
             douyin: 'https://www.douyin.com/search/',
@@ -311,6 +327,8 @@
             'bilibili-fav': 'https://space.bilibili.com/249112844/favlist?fid=51323344&ftype=create',
             bing: 'https://www.bing.com/search?q=',
             baidu: 'https://www.baidu.com/s?wd=',
+            tieba: 'https://tieba.baidu.com/f/search/res?ie=utf-8&qw=',
+            'qq-medical': 'https://h5.baike.qq.com/mobile/search.html?search=',
             github: 'https://github.com/search?q=',
             google: 'https://www.google.com/search?q=',
             twitter: 'https://twitter.com/search?q=',
@@ -354,13 +372,12 @@
         const searchInput = document.getElementById('search-input');
         const historyList = document.getElementById('history-list');
         const saveOnlyBtn = document.getElementById('save-only');
-        const clearHistoryBtn = document.getElementById('clear-history');
-        const editHistoryBtn = document.getElementById('edit-history');
-        const exportHistoryBtn = document.getElementById('export-history');
-        const importHistoryBtn = document.getElementById('import-history');
         const allSitesBtn = document.getElementById('all-sites');
         const commonSitesBtn = document.getElementById('common-sites');
         const foreignSitesBtn = document.getElementById('foreign-sites');
+        const editHistoryBtn = document.getElementById('edit-history');
+        const exportHistoryBtn = document.getElementById('export-history');
+        const importHistoryBtn = document.getElementById('import-history');
         const clearInputBtn = document.querySelector('.clear-input');
         const quickSearchHint = document.getElementById('quick-search-hint');
         const currentKeysDisplay = document.getElementById('current-keys');
@@ -404,7 +421,6 @@
             searchInput.addEventListener('focus', () => {
                 currentFocusElement = searchInput;
                 quickSearchActive = false;
-                clearSelection();
             });
             
             // 清空输入框按钮
@@ -419,16 +435,7 @@
                 if (keyword) {
                     addToHistory(keyword);
                     searchInput.value = '';
-                } else {
-                    showErrorModal();
                 }
-            });
-
-            // 清除历史按钮
-            clearHistoryBtn.addEventListener('click', () => {
-                searchHistory = [];
-                localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
-                renderHistory();
             });
 
             // 编辑历史按钮
@@ -460,25 +467,22 @@
                     const site = button.getAttribute('data-site');
                     if (e.button === 0) { // 左键点击
                         if (selectedElements.length > 0 && selectedElements.includes(button)) {
-                            // 如果是在多选模式下点击已选中的按钮，则取消选择
                             toggleSelectElement(button);
                         } else {
                             search(site, true);
                         }
-                    } else if (e.button === 2) { // 右键点击
-                        toggleSelectElement(button);
                     }
                 });
                 
-                // 阻止右键菜单
+                // 右键点击多选
                 button.addEventListener('contextmenu', (e) => {
                     e.preventDefault();
+                    toggleSelectElement(button);
                 });
                 
                 button.addEventListener('focus', () => {
                     if (!quickSearchActive) {
                         currentFocusElement = button;
-                        // 清除快速搜索状态
                         quickSearchKeys = '';
                         updateQuickSearchDisplay();
                         clearMatches();
@@ -508,7 +512,7 @@
                 currentEditItem = null;
             });
 
-            // 点击空白处退出编辑模式
+            // 点击空白处退出编辑模式或关闭模态框
             document.addEventListener('click', (e) => {
                 if (isEditMode && !e.target.closest('.history-item') && e.target !== editHistoryBtn) {
                     isEditMode = false;
@@ -516,39 +520,67 @@
                     renderHistory();
                 }
                 
-                // 关闭错误弹窗
-                if (errorModal.style.display === 'flex' && e.target === errorModal) {
-                    errorModal.style.display = 'none';
+                // 关闭编辑模态框
+                if (isEditingHistory && !e.target.closest('#edit-history-modal') && e.target !== editHistoryBtn) {
+                    editHistoryModal.style.display = 'none';
+                    isEditingHistory = false;
+                    currentEditItem = null;
+                }
+                
+                // 点击空白处保持焦点
+                if (!e.target.closest('button, input, .history-item') && currentFocusElement) {
+                    currentFocusElement.focus();
                 }
             });
             
             // 全局键盘事件
             document.addEventListener('keydown', (e) => {
+                // 处理编辑模态框内的按键
+                if (isEditingHistory) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        saveEditBtn.click();
+                        return;
+                    }
+                    if (e.key === 'Escape') {
+                        e.preventDefault();
+                        cancelEditBtn.click();
+                        return;
+                    }
+                    return;
+                }
+
                 // F7聚焦输入框
+                if (e.key === 'F7') {
+                    e.preventDefault();
+                    searchInput.focus();
+                    return;
+                }
+
+                // 处理控制按钮的Enter键
+                const controlButtons = ['save-only', 'all-sites', 'common-sites', 'foreign-sites', 
+                                      'edit-history', 'export-history', 'import-history'];
+                if (e.key === 'Enter' && currentFocusElement && controlButtons.includes(currentFocusElement.id)) {
+                    e.preventDefault();
+                    currentFocusElement.click();
+                    return;
+                }
+
+                // 处理多选后的Enter键
                 if (e.key === 'Enter' && selectedElements.length > 0) {
-                e.preventDefault();
-                const sites = selectedElements.map(el => el.getAttribute('data-site')).filter(site => site);
-                if (sites.length > 0) {
-                    batchSearch(sites);
-                }
-                return;
-            }
-                else if (e.key === 'F7') {
                     e.preventDefault();
-                    searchInput.focus();
+                    const sites = selectedElements.map(el => el.getAttribute('data-site')).filter(site => site);
+                    if (sites.length > 0) {
+                        batchSearch(sites);
+                    }
+                    return;
                 }
-                // F4清空输入框
-                else if (e.key === 'F4') {
-                    e.preventDefault();
-                    searchInput.value = '';
-                    searchInput.focus();
-                }
+
                 // ESC退出输入框或多选模式
-                else if (e.key === 'Escape') {
+                if (e.key === 'Escape') {
                     e.preventDefault();
                     if (document.activeElement === searchInput) {
                         searchInput.blur();
-                        // 移动焦点到第一个按钮
                         const firstButton = document.querySelector('.btn-group button, .control-buttons button');
                         if (firstButton) {
                             firstButton.focus();
@@ -556,61 +588,71 @@
                         }
                     } else if (selectedElements.length > 0) {
                         clearSelection();
+                    } else if (quickSearchKeys) {
+                        quickSearchKeys = '';
+                        updateQuickSearchDisplay();
+                        clearMatches();
+                        quickSearchActive = false;
                     }
+                    return;
                 }
+
                 // 方向键导航
-                else if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key) && currentFocusElement) {
+                if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                    // 如果焦点在输入框且是左右方向键，不阻止默认行为
+                    if (document.activeElement === searchInput && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+                        return;
+                    }
+                    
                     e.preventDefault();
                     navigateWithArrowKeys(e.key);
+                    return;
                 }
+
                 // 空格选择当前元素
-                else if (e.key === ' ' && currentFocusElement && currentFocusElement !== searchInput) {
+                if (e.key === ' ' && currentFocusElement && currentFocusElement !== searchInput) {
                     e.preventDefault();
                     toggleSelectElement(currentFocusElement);
+                    return;
                 }
+
                 // Enter键执行操作
-                else if (e.key === 'Enter' && currentFocusElement) {
+                if (e.key === 'Enter' && currentFocusElement) {
                     e.preventDefault();
                     if (currentFocusElement === searchInput) {
-                        // 如果有选中的按钮，执行批量搜索
-                        if (selectedElements.length > 0) {
-                            const sites = selectedElements.map(el => el.getAttribute('data-site')).filter(site => site);
-                            if (sites.length > 0) {
-                                batchSearch(sites);
-                            }
-                        }
+                        const defaultSites = ['bing', 'baidu', 'google'];
+                        batchSearch(defaultSites);
                     } else if (currentFocusElement.classList.contains('history-item')) {
-                        // 历史记录填充到输入框
                         const keyword = currentFocusElement.getAttribute('data-keyword');
                         searchInput.value = keyword;
                         searchInput.focus();
-                        // 移动焦点到第一个按钮
-                        const firstButton = document.querySelector('.btn-group button, .control-buttons button');
-                        if (firstButton) {
-                            firstButton.focus();
-                            currentFocusElement = firstButton;
-                        }
                     } else if (currentFocusElement.hasAttribute('data-site')) {
-                        // 按钮点击
                         const site = currentFocusElement.getAttribute('data-site');
                         search(site, true);
                     }
+                    return;
                 }
+
                 // F2编辑历史记录
-                else if (e.key === 'F2' && currentFocusElement && currentFocusElement.classList.contains('history-item')) {
+                if (e.key === 'F2' && currentFocusElement && currentFocusElement.classList.contains('history-item')) {
                     e.preventDefault();
                     const keyword = currentFocusElement.getAttribute('data-keyword');
                     editHistoryItem(keyword);
+                    return;
                 }
+
                 // Delete或F4删除选中的历史记录
-                else if ((e.key === 'Delete' || e.key === 'F4') && selectedElements.length > 0) {
+                if ((e.key === 'Delete' || e.key === 'F4') && selectedElements.length > 0) {
                     e.preventDefault();
                     deleteSelectedHistoryItems();
+                    return;
                 }
+
                 // Ctrl+Z撤销删除
-                else if (e.key === 'z' && e.ctrlKey && lastDeletedItems.length > 0) {
+                if (e.key === 'z' && e.ctrlKey && lastDeletedItems.length > 0) {
                     e.preventDefault();
                     undoDelete();
+                    return;
                 }
             });
         }
@@ -624,13 +666,15 @@
         // 显示错误弹窗
         function showErrorModal() {
             errorModal.style.display = 'flex';
+            setTimeout(() => {
+                errorModal.style.display = 'none';
+            }, 2000);
         }
         
         // 输入框键盘事件处理
         function handleInputKeyDown(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                // 如果有选中的按钮，执行批量搜索
                 if (selectedElements.length > 0) {
                     const sites = selectedElements.map(el => el.getAttribute('data-site')).filter(site => site);
                     if (sites.length > 0) {
@@ -640,90 +684,61 @@
             }
         }
         
-        // 方向键导航 - 改进版
+        // 改进的方向键导航
         function navigateWithArrowKeys(key) {
-            if (!currentFocusElement) return;
+            const allElements = Array.from(document.querySelectorAll('button, .history-item, input'));
+            const currentIndex = allElements.indexOf(currentFocusElement);
             
-            const allFocusableElements = Array.from(document.querySelectorAll('button, .history-item'));
-            const currentIndex = allFocusableElements.indexOf(currentFocusElement);
-            
-            if (currentIndex === -1) return;
-            
-            let nextElement = null;
-            const currentRect = currentFocusElement.getBoundingClientRect();
-            
-            if (key === 'ArrowUp') {
-                // 向上移动 - 找到上方最近的元素
-                let closestElement = null;
-                let minDistance = Infinity;
-                
-                for (let i = 0; i < currentIndex; i++) {
-                    const element = allFocusableElements[i];
-                    const rect = element.getBoundingClientRect();
-                    const distance = Math.abs(rect.left - currentRect.left);
-                    
-                    // 检查是否在上方
-                    if (rect.bottom <= currentRect.top) {
-                        // 优先选择垂直对齐的
-                        if (distance < 50) { // 50px以内的水平偏移认为是垂直对齐
-                            nextElement = element;
-                            break;
-                        }
-                        // 如果没有完全垂直对齐的，选择最近的
-                        if (distance < minDistance) {
-                            minDistance = distance;
-                            closestElement = element;
-                        }
-                    }
+            if (currentIndex === -1) {
+                const firstFocusable = document.querySelector('button, .history-item, input');
+                if (firstFocusable) {
+                    firstFocusable.focus();
+                    currentFocusElement = firstFocusable;
                 }
-                
-                if (!nextElement) nextElement = closestElement;
-            } 
-            else if (key === 'ArrowDown') {
-                // 向下移动 - 找到下方最近的元素
-                let closestElement = null;
-                let minDistance = Infinity;
-                
-                for (let i = currentIndex + 1; i < allFocusableElements.length; i++) {
-                    const element = allFocusableElements[i];
-                    const rect = element.getBoundingClientRect();
-                    const distance = Math.abs(rect.left - currentRect.left);
-                    
-                    // 检查是否在下方
-                    if (rect.top >= currentRect.bottom) {
-                        // 优先选择垂直对齐的
-                        if (distance < 50) { // 50px以内的水平偏移认为是垂直对齐
-                            nextElement = element;
-                            break;
-                        }
-                        // 如果没有完全垂直对齐的，选择最近的
-                        if (distance < minDistance) {
-                            minDistance = distance;
-                            closestElement = element;
-                        }
-                    }
-                }
-                
-                if (!nextElement) nextElement = closestElement;
-            } 
-            else if (key === 'ArrowLeft') {
-                // 向左移动 - 找到左侧最近的元素
-                if (currentIndex > 0) {
-                    nextElement = allFocusableElements[currentIndex - 1];
-                }
-            } 
-            else if (key === 'ArrowRight') {
-                // 向右移动 - 找到右侧最近的元素
-                if (currentIndex < allFocusableElements.length - 1) {
-                    nextElement = allFocusableElements[currentIndex + 1];
-                }
+                return;
             }
             
-            if (nextElement) {
-                nextElement.focus();
-                currentFocusElement = nextElement;
-                // 滚动到可见区域
-                nextElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            const currentRect = currentFocusElement.getBoundingClientRect();
+            let bestCandidate = null;
+            let minDistance = Infinity;
+
+            allElements.forEach((el, index) => {
+                if (index === currentIndex) return;
+                
+                const rect = el.getBoundingClientRect();
+                let isCandidate = false;
+                let distance = 0;
+
+                if (key === 'ArrowDown') {
+                    isCandidate = rect.top > currentRect.bottom - 5;
+                    distance = Math.sqrt(
+                        Math.pow(rect.left - currentRect.left, 2) + 
+                        Math.pow(rect.top - currentRect.bottom, 2)
+                    );
+                } else if (key === 'ArrowUp') {
+                    isCandidate = rect.bottom < currentRect.top + 5;
+                    distance = Math.sqrt(
+                        Math.pow(rect.left - currentRect.left, 2) + 
+                        Math.pow(currentRect.top - rect.bottom, 2)
+                    );
+                } else if (key === 'ArrowLeft') {
+                    isCandidate = index < currentIndex;
+                    distance = currentIndex - index;
+                } else if (key === 'ArrowRight') {
+                    isCandidate = index > currentIndex;
+                    distance = index - currentIndex;
+                }
+
+                if (isCandidate && distance < minDistance) {
+                    minDistance = distance;
+                    bestCandidate = el;
+                }
+            });
+
+            if (bestCandidate) {
+                bestCandidate.focus();
+                currentFocusElement = bestCandidate;
+                bestCandidate.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
         }
         
@@ -743,20 +758,29 @@
             const itemsToDelete = selectedElements.filter(el => el.classList.contains('history-item'));
             if (itemsToDelete.length === 0) return;
             
-            // 保存被删除的项以便撤销
             lastDeletedItems = itemsToDelete.map(item => ({
                 keyword: item.getAttribute('data-keyword'),
                 element: item
             }));
             
-            // 从历史记录中移除
             itemsToDelete.forEach(item => {
                 const keyword = item.getAttribute('data-keyword');
                 removeFromHistory(keyword);
             });
             
-            // 清除选中状态
             selectedElements = selectedElements.filter(el => !el.classList.contains('history-item'));
+            
+            if (itemsToDelete.length > 0) {
+                const firstDeleted = itemsToDelete[0];
+                const allItems = Array.from(document.querySelectorAll('.history-item, button'));
+                const index = allItems.indexOf(firstDeleted);
+                
+                const nextFocus = allItems[index - 1] || allItems[index + 1] || searchInput;
+                if (nextFocus) {
+                    nextFocus.focus();
+                    currentFocusElement = nextFocus;
+                }
+            }
         }
         
         // 撤销删除
@@ -776,10 +800,8 @@
 
         // 全局键盘事件处理（快速搜索）
         function handleGlobalKeyDown(e) {
-            // 如果输入框有焦点，则不处理快速搜索
             if (document.activeElement === searchInput) return;
             
-            // ESC键处理逻辑
             if (e.key === 'Escape') {
                 if (quickSearchKeys) {
                     quickSearchKeys = '';
@@ -787,7 +809,6 @@
                     clearMatches();
                     quickSearchActive = false;
                     
-                    // 恢复之前的光标位置
                     if (currentFocusElement) {
                         currentFocusElement.focus();
                     }
@@ -795,35 +816,28 @@
                 return;
             }
             
-            // 只处理字母键
             if (e.key.length === 1 && e.key.match(/[a-z]/i)) {
                 e.preventDefault();
                 quickSearchActive = true;
                 
-                // 添加按键到快速搜索字符串
                 quickSearchKeys += e.key.toLowerCase();
                 updateQuickSearchDisplay();
                 
-                // 执行快速搜索
                 performQuickSearch();
                 
-                // 如果有匹配项，移动光标到第一个匹配项
                 if (matchedItems.length > 0) {
                     matchedItems[0].element.focus();
                     currentFocusElement = matchedItems[0].element;
                 }
             }
-            // Enter键激活当前匹配项
             else if (e.key === 'Enter' && matchedItems.length > 0) {
                 e.preventDefault();
                 activateCurrentMatch();
             }
-            // Tab键切换匹配项
             else if (e.key === 'Tab' && matchedItems.length > 0) {
                 e.preventDefault();
                 cycleMatches(e.shiftKey ? -1 : 1);
                 
-                // 更新光标位置
                 if (currentMatchIndex >= 0 && currentMatchIndex < matchedItems.length) {
                     matchedItems[currentMatchIndex].element.focus();
                     currentFocusElement = matchedItems[currentMatchIndex].element;
@@ -838,15 +852,12 @@
 
         // 执行快速搜索
         function performQuickSearch() {
-            // 清除之前的高亮
             clearMatches();
             
             if (!quickSearchKeys) return;
             
-            // 将搜索键按空格分割
             const searchTerms = quickSearchKeys.toLowerCase().split(' ').filter(term => term);
             
-            // 匹配所有按钮（包括顶部按钮）
             document.querySelectorAll('button, .history-item').forEach(element => {
                 const text = element.textContent;
                 const pinyinInitials = getPinyinInitials(text);
@@ -861,7 +872,6 @@
                 }
             });
             
-            // 如果有匹配项，默认选中第一个
             if (matchedItems.length > 0) {
                 currentMatchIndex = 0;
                 highlightCurrentMatch();
@@ -870,7 +880,6 @@
 
         // 使用拼音库获取拼音首字母
         function getPinyinInitials(text) {
-            // 简化映射表（示例）
             const pinyinMap = {
                 '小': 'x', '红': 'h', '书': 's', '抖': 'd', '音': 'y', '知': 'z', '乎': 'h',
                 '哔': 'b', '哩': 'l', '必': 'b', '应': 'y', '谷': 'g', '歌': 'g', '推': 't',
@@ -889,11 +898,9 @@
             };
 
             return text.split('').map(char => {
-                // 如果是中文且在映射表中
                 if (/[\u4e00-\u9fa5]/.test(char) && pinyinMap[char]) {
                     return pinyinMap[char];
                 }
-                // 如果是字母
                 else if (/[a-zA-Z]/.test(char)) {
                     return char.toLowerCase();
                 }
@@ -903,14 +910,9 @@
 
         // 快速搜索匹配算法
         function matchQuickSearch(text, pinyinInitials, searchTerms) {
-            // 检查所有搜索词是否都匹配
             return searchTerms.every(term => {
-                // 优先检查拼音首字母
                 if (pinyinInitials.includes(term)) return true;
-                
-                // 然后检查原始文本
                 if (text.includes(term)) return true;
-                
                 return false;
             });
         }
@@ -928,15 +930,12 @@
         function cycleMatches(direction) {
             if (matchedItems.length === 0) return;
             
-            // 移除当前高亮
             if (currentMatchIndex >= 0) {
                 matchedItems[currentMatchIndex].element.classList.remove('highlight');
             }
             
-            // 计算新索引
             currentMatchIndex = (currentMatchIndex + direction + matchedItems.length) % matchedItems.length;
             
-            // 添加新高亮
             highlightCurrentMatch();
         }
 
@@ -955,14 +954,12 @@
                 const currentItem = matchedItems[currentMatchIndex];
                 
                 if (currentItem.type === 'button') {
-                    // 特殊处理有data-site属性的按钮
                     if (currentItem.element.hasAttribute('data-site')) {
                         const site = currentItem.element.getAttribute('data-site');
                         const keyword = searchInput.value.trim() || currentItem.element.textContent;
                         const url = siteUrls[site] + encodeURIComponent(keyword);
                         window.open(url, '_blank');
                     } else {
-                        // 直接触发按钮点击
                         currentItem.element.click();
                     }
                 } else if (currentItem.type === 'history') {
@@ -970,7 +967,6 @@
                     searchInput.focus();
                 }
                 
-                // 重置快速搜索
                 quickSearchKeys = '';
                 updateQuickSearchDisplay();
                 clearMatches();
@@ -991,21 +987,21 @@
                 }
                 item.textContent = keyword;
                 item.setAttribute('data-keyword', keyword);
-                item.tabIndex = 0; // 使历史项可聚焦
+                item.tabIndex = 0;
                 
                 item.addEventListener('click', (e) => {
                     e.stopPropagation();
                     if (isEditMode) {
-                        if (e.button === 0) { // 左键点击
+                        if (e.button === 0) {
                             removeFromHistory(keyword);
-                        } else if (e.button === 2) { // 右键点击
+                        } else if (e.button === 2) {
                             toggleSelectElement(item);
                         }
                     } else {
-                        if (e.button === 0) { // 左键点击
+                        if (e.button === 0) {
                             searchInput.value = keyword;
                             searchInput.focus();
-                        } else if (e.button === 2) { // 右键点击
+                        } else if (e.button === 2) {
                             toggleSelectElement(item);
                         }
                     }
@@ -1013,12 +1009,12 @@
                 
                 item.addEventListener('dblclick', (e) => {
                     e.stopPropagation();
-                    const keyword = item.getAttribute('data-keyword');
-                    editHistoryItem(keyword, e); // 传递点击事件
+                    editHistoryItem(keyword);
                 });
                 
                 item.addEventListener('contextmenu', (e) => {
                     e.preventDefault();
+                    toggleSelectElement(item);
                 });
                 
                 item.addEventListener('focus', () => {
@@ -1052,16 +1048,11 @@
         function search(site, immediate = false) {
             const keyword = searchInput.value.trim();
             
-            // 检查是否是链接按钮
             if (linkButtons.includes(site)) {
                 if (keyword) {
-                    // 复制到剪贴板
-                    navigator.clipboard.writeText(keyword).then(() => {
-                        console.log('关键词已复制到剪贴板');
-                    }).catch(err => {
+                    navigator.clipboard.writeText(keyword).catch(err => {
                         console.error('无法复制到剪贴板:', err);
                     });
-                    // 添加到历史记录
                     addToHistory(keyword);
                 }
                 const url = siteUrls[site];
@@ -1069,13 +1060,10 @@
                 return;
             }
             
-            // 普通搜索按钮必须有关键词
             if (keyword) {
                 addToHistory(keyword);
                 const url = siteUrls[site] + encodeURIComponent(keyword);
                 window.open(url, '_blank');
-            } else {
-                showErrorModal();
             }
         }
 
@@ -1083,7 +1071,6 @@
         function batchSearch(sites) {
             const keyword = searchInput.value.trim();
             
-            // 即使没有关键词也执行搜索（仅对不需要关键词的站点）
             sites.forEach(site => {
                 if (linkButtons.includes(site)) {
                     const url = siteUrls[site];
@@ -1106,13 +1093,53 @@
             const content = searchHistory.join('\n');
             const blob = new Blob([content], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = '搜索历史.txt';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            
+            // 改进的手机端导出处理
+            if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+                // 手机端特殊处理
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const modal = document.createElement('div');
+                    modal.style.position = 'fixed';
+                    modal.style.top = '0';
+                    modal.style.left = '0';
+                    modal.style.right = '0';
+                    modal.style.bottom = '0';
+                    modal.style.backgroundColor = 'rgba(0,0,0,0.7)';
+                    modal.style.display = 'flex';
+                    modal.style.justifyContent = 'center';
+                    modal.style.alignItems = 'center';
+                    modal.style.zIndex = '2000';
+                    
+                    const box = document.createElement('div');
+                    box.style.backgroundColor = 'white';
+                    box.style.padding = '20px';
+                    box.style.borderRadius = '5px';
+                    box.innerHTML = `
+                        <p>请长按下方链接选择"下载"或"保存"</p>
+                        <a href="${url}" download="搜索历史.txt" style="word-break:break-all;">下载搜索历史</a>
+                        <p><button style="margin-top:10px;">关闭</button></p>
+                    `;
+                    
+                    box.querySelector('button').addEventListener('click', () => {
+                        document.body.removeChild(modal);
+                        URL.revokeObjectURL(url);
+                    });
+                    
+                    modal.appendChild(box);
+                    document.body.appendChild(modal);
+                };
+                reader.readAsDataURL(blob);
+            } else {
+                // PC端正常下载
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = '搜索历史.txt';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(url), 100);
+            }
         }
 
         // 导入历史记录
@@ -1138,91 +1165,23 @@
         }
 
         // 编辑历史记录项
-        function editHistoryItem(keyword, clickEvent = null) {
+        function editHistoryItem(keyword) {
             isEditingHistory = true;
             currentEditItem = document.querySelector(`.history-item[data-keyword="${keyword}"]`);
-            
             if (currentEditItem) {
-                // 创建编辑框
-                if (!editInput) {
-                    editInput = document.createElement('input');
-                    editInput.className = 'history-item-edit';
-                    editInput.value = keyword;
-                    document.body.appendChild(editInput);
-                    
-                    // 计算位置
-                    const rect = currentEditItem.getBoundingClientRect();
-                    editInput.style.left = `${rect.left}px`;
-                    editInput.style.top = `${rect.top}px`;
-                    editInput.style.width = `${rect.width}px`;
-                    
-                    // 处理编辑框键盘事件
-                    editInput.addEventListener('keydown', (e) => {
-                        if (e.key === 'Enter') {
-                            saveEditedKeyword();
-                        } else if (e.key === 'Escape') {
-                            cancelEdit();
-                        }
-                    });
-                    
-                    // 点击外部取消编辑
-                    const handleOutsideClick = (e) => {
-                        if (!editInput.contains(e.target) ){
-                            cancelEdit();
-                        }
-                    };
-                    setTimeout(() => document.addEventListener('click', handleOutsideClick));
-                    
-                    // 设置光标位置
-                    if (clickEvent) {
-                        const text = currentEditItem.textContent;
-                        const mouseX = clickEvent.clientX - rect.left;
-                        let charWidth = rect.width / text.length;
-                        currentEditPosition = Math.min(
-                            Math.max(0, Math.floor(mouseX / charWidth)),
-                            text.length
-                        );
-                        setTimeout(() => {
-                            editInput.setSelectionRange(currentEditPosition, currentEditPosition);
-                        }, 10);
-                    }
-                    
-                    editInput.focus();
-                }
-            }
-        }
-        
-        function saveEditedKeyword() {
-            if (editInput && currentEditItem) {
-                const oldKeyword = currentEditItem.getAttribute('data-keyword');
-                const newKeyword = editInput.value.trim();
-                if (newKeyword && oldKeyword !== newKeyword) {
-                    removeFromHistory(oldKeyword);
-                    addToHistory(newKeyword);
-                }
-                cancelEdit();
-            }
-        }
-        
-        function cancelEdit() {
-            if (editInput) {
-                editInput.remove();
-                editInput = null;
-                isEditingHistory = false;
-                currentEditItem = null;
+                historyEditInput.value = keyword;
+                editHistoryModal.style.display = 'block';
+                historyEditInput.focus();
             }
         }
 
         // 输入框输入事件处理
         function handleInput() {
-            // 如果有历史记录匹配，显示匹配项
             if (!isEditMode) {
                 const keyword = searchInput.value.trim();
                 if (keyword) {
                     const matchedHistory = searchHistory.filter(item => item.includes(keyword));
                     if (matchedHistory.length > 0) {
-                        // 在输入框下方显示匹配的历史记录
-                        // 这需要额外的 UI 实现
                         console.log('Matched history:', matchedHistory);
                     }
                 }
