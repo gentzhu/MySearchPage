@@ -524,9 +524,7 @@
                 isEditingHistory = false;
                 currentEditItem = null;
             });
-
-            // 点击空白处退出编辑模式或关闭模态框
-            document.addEventListener('click', (e) => {
+document.addEventListener('click', (e) => {
     // 处理编辑模式
     if (isEditMode && !e.target.closest('.history-item') && e.target !== editHistoryBtn) {
         isEditMode = false;
@@ -555,6 +553,8 @@
         }
     }
 });
+            // 点击空白处退出编辑模式或关闭模态框
+;
             
             // 全局键盘事件
             document.addEventListener('keydown', (e) => {
@@ -600,25 +600,16 @@
                 }
 
                 // ESC退出输入框或多选模式
-                if (e.key === 'Escape') {
-                e.preventDefault();
-                if (document.activeElement === searchInput) {
-                    searchInput.blur();
-                    const firstButton = document.querySelector('.btn-group button, .control-buttons button');
-                    if (firstButton) {
-                        firstButton.focus();
-                        currentFocusElement = firstButton;
-                    }
-                } else if (selectedElements.length > 0) {
-                    clearSelection(); // 添加这行代码取消所有多选
-                } else if (quickSearchKeys) {
-                    quickSearchKeys = '';
-                    updateQuickSearchDisplay();
-                    clearMatches();
-                    quickSearchActive = false;
-                }
-                return;
-            }
+                // ESC只处理快速搜索
+if (e.key === 'Escape' && quickSearchKeys) {
+    e.preventDefault();
+    quickSearchKeys = '';
+    updateQuickSearchDisplay();
+    clearMatches();
+    quickSearchActive = false;
+    showAllHistoryItems();
+    return;
+}
 
                 // 方向键导航
                 if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
@@ -634,7 +625,7 @@
 
                 // 空格选择当前元素
 // 空格选择当前元素
-// 空格键处理（优先级高于快速搜索）
+// 空格选择当前元素
 if (e.key === ' ' && currentFocusElement && currentFocusElement !== searchInput) {
     e.preventDefault();
     toggleSelectElement(currentFocusElement);
@@ -687,13 +678,25 @@ if (e.key === ' ' && currentFocusElement && currentFocusElement !== searchInput)
     const tempInput = document.createElement('input');
     tempInput.style.position = 'fixed';
     tempInput.style.top = '0';
+    tempInput.style.left = '0';
+    tempInput.style.width = '100%';
+    tempInput.style.height = '100%';
     tempInput.style.opacity = '0';
-    document.body.appendChild(tempInput);
-    tempInput.focus();
+    tempInput.style.fontSize = '16px'; // 确保输入法正常弹出
+    
+    tempInput.addEventListener('input', (e) => {
+        quickSearchActive = true;
+        quickSearchKeys = e.data || '';
+        updateQuickSearchDisplay();
+        performQuickSearch();
+    });
     
     tempInput.addEventListener('blur', () => {
         document.body.removeChild(tempInput);
     });
+    
+    document.body.appendChild(tempInput);
+    tempInput.focus();
 });
         // 清除选中状态
         function clearSelection() {
@@ -830,10 +833,13 @@ if (e.key === ' ' && currentFocusElement && currentFocusElement !== searchInput)
 
         // 全局键盘事件处理（快速搜索）
     // 全局键盘事件处理（快速搜索）
+// 全局键盘事件处理（快速搜索）
 function handleGlobalKeyDown(e) {
     // 处理Backspace删除快速搜索字符
-    if (quickSearchActive && e.key === 'Backspace') {
-        e.preventDefault();
+// 处理Backspace删除快速搜索字符
+if (quickSearchActive && e.key === 'Backspace') {
+    e.preventDefault();
+    if (quickSearchKeys.length > 0) {
         quickSearchKeys = quickSearchKeys.slice(0, -1);
         updateQuickSearchDisplay();
         if (quickSearchKeys) {
@@ -841,9 +847,11 @@ function handleGlobalKeyDown(e) {
         } else {
             clearMatches();
             showAllHistoryItems();
+            quickSearchActive = false;
         }
-        return;
     }
+    return;
+}
 
     // 处理Ctrl+-取消所有选中
     if (e.key === '-' && e.ctrlKey) {
@@ -865,35 +873,25 @@ function handleGlobalKeyDown(e) {
         return;
     }
 
-    // 空格键处理（优先级高于快速搜索）
-    if (e.key === ' ' && currentFocusElement && currentFocusElement !== searchInput) {
-        e.preventDefault();
-        toggleSelectElement(currentFocusElement);
-        return;
-    }
-
     // 快速搜索字符输入
-    if (!quickSearchActive && e.key.length === 1 && /[a-z0-9\W]/i.test(e.key) && e.key !== ' ') {
-        e.preventDefault();
-        quickSearchActive = true;
-        quickSearchKeys = e.key.toLowerCase();
-        updateQuickSearchDisplay();
-        performQuickSearch();
-        return;
+    // 快速搜索字符输入
+if (e.key.length === 1 && /[a-z0-9\W]/i.test(e.key) && e.key !== ' ') {
+    e.preventDefault();
+    quickSearchActive = true;
+    quickSearchKeys += e.key.toLowerCase();
+    updateQuickSearchDisplay();
+    performQuickSearch();
+    
+    if (matchedItems.length > 0) {
+        matchedItems[0].element.focus();
+        currentFocusElement = matchedItems[0].element;
     }
-
-    // 快速搜索后续字符输入
-    if (quickSearchActive && e.key.length === 1 && /[a-z0-9\W]/i.test(e.key) && e.key !== ' ') {
-        e.preventDefault();
-        quickSearchKeys += e.key.toLowerCase();
-        updateQuickSearchDisplay();
-        performQuickSearch();
-        return;
-    }
+    return;
 }
         // 更新快速搜索显示
         function updateQuickSearchDisplay() {
             currentKeysDisplay.textContent = quickSearchKeys || '[无]';
+        }
         }
 
         // 执行快速搜索
@@ -1271,7 +1269,12 @@ function performQuickSearch() {
         }
         // 显示所有历史项
 function clearSelection() {
-    selectedElements.forEach(el => el.classList.remove('selected'));
+    selectedElements.forEach(el => {
+        el.classList.remove('selected');
+        if (el === currentFocusElement) {
+            el.focus(); // 保持当前焦点
+        }
+    });
     selectedElements = [];
 }
 
@@ -1279,6 +1282,16 @@ function showAllHistoryItems() {
     document.querySelectorAll('.history-item').forEach(item => {
         item.style.display = '';
     });
+}
+
+function toggleSelectElement(element) {
+    if (element.classList.contains('selected')) {
+        element.classList.remove('selected');
+        selectedElements = selectedElements.filter(el => el !== element);
+    } else {
+        element.classList.add('selected');
+        selectedElements.push(element);
+    }
 }
     </script>
 </body>
