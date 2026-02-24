@@ -95,6 +95,21 @@
             width: 80%;
             max-width: 800px;
         }
+        #quick-search-hint {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            display: block;
+        }
+        #current-keys {
+            font-weight: bold;
+            color: #4a90e2;
+        }
     </style>
 </head>
 <body>
@@ -138,6 +153,8 @@
         <div id="history-list"></div>
     </div>
 
+    <div id="quick-search-hint">快速搜索: <span id="current-keys">[无]</span></div>
+
     <script>
         // 网站搜索URL模板
         const siteUrls = {
@@ -160,14 +177,21 @@
             ximalaya: 'https://www.ximalaya.com/search/'
         };
 
-        // 常用网站列表
-        const commonSites = ['xiaohongshu', 'douyin', 'zhihu', 'bilibili', 'bing', 'github', 'mubu', 'anki', 'tongyi', 'kimi', 'ximalaya'];
-        
-        // 外网网站列表
-        const foreignSites = ['google', 'twitter', 'yandex', 'github', 'greasyfork'];
-
-        // 所有网站列表
-        const allSites = Object.keys(siteUrls);
+        // 拼音首字母映射表（常用汉字）
+        const pinyinMap = {
+            '小':'x', '红':'h', '书':'s', '抖':'d', '音':'y', '知':'z', '乎':'h',
+            '哔':'b', '哩':'l', '必':'b', '应':'y', '谷':'g', '歌':'g', '推':'t',
+            '特':'t', '幕':'m', '布':'b', '安':'a', '卡':'k', '牌':'p', '分':'f',
+            '享':'x', '社':'s', '区':'q', '豌':'w', '豆':'d', '荚':'j', '酷':'k',
+            '通':'t', '义':'y', '千':'q', '问':'w', '喜':'x', '马':'m', '拉':'l',
+            '雅':'y', '微':'w', '信':'x', '淘':'t', '宝':'b', '京':'j', '东':'d',
+            '头':'t', '条':'t', '百':'b', '度':'d', '网':'w', '易':'y', '搜':'s',
+            '狗':'g', '神':'s', '奇':'q', '多':'d', '快':'k', '好':'h', '有':'y',
+            '道':'d', '今':'j', '日':'r', '热':'r', '点':'d', '精':'j', '选':'x',
+            '清':'q', '除':'c', '历':'l', '史':'s', '导':'d', '出':'c', '外':'w',
+            '网':'w', '所':'s', '有':'y', '常':'c', '用':'y', '编':'b', '辑':'j',
+            '保':'b', '存':'c'
+        };
 
         // 获取DOM元素
         const searchInput = document.getElementById('search-input');
@@ -180,12 +204,14 @@
         const commonSitesBtn = document.getElementById('common-sites');
         const foreignSitesBtn = document.getElementById('foreign-sites');
         const clearInputBtn = document.querySelector('.clear-input');
-        const allButtons = document.querySelectorAll('.btn-group button, .control-buttons button');
+        const quickSearchHint = document.getElementById('quick-search-hint');
+        const currentKeysDisplay = document.getElementById('current-keys');
         let historyItems = [];
 
         // 编辑状态标志
         let isEditMode = false;
-        // 匹配项和当前选中索引
+        // 快速搜索相关变量
+        let quickSearchKeys = '';
         let matchedItems = [];
         let currentMatchIndex = -1;
 
@@ -197,15 +223,16 @@
         initEventListeners();
 
         function initEventListeners() {
+            // 全局键盘事件（用于快速搜索）
+            document.addEventListener('keydown', handleGlobalKeyDown);
+            
             // 输入框事件
             searchInput.addEventListener('input', handleInput);
-            searchInput.addEventListener('keydown', handleKeyDown);
             
             // 清空输入框按钮
             clearInputBtn.addEventListener('click', () => {
                 searchInput.value = '';
                 searchInput.focus();
-                clearMatches();
             });
 
             // 保存但不搜索按钮
@@ -214,7 +241,6 @@
                 if (keyword) {
                     addToHistory(keyword);
                     searchInput.value = '';
-                    clearMatches();
                 }
             });
 
@@ -261,57 +287,116 @@
             });
         }
 
-        // 输入处理
-        function handleInput() {
-            const input = searchInput.value.trim();
-            if (!input) {
+        // 全局键盘事件处理（快速搜索）
+        function handleGlobalKeyDown(e) {
+            // 如果输入框有焦点，则不处理快速搜索
+            if (document.activeElement === searchInput) return;
+            
+            // ESC键清除快速搜索
+            if (e.key === 'Escape') {
+                quickSearchKeys = '';
+                updateQuickSearchDisplay();
                 clearMatches();
                 return;
             }
             
-            // 匹配按钮和历史记录
-            matchItems(input);
-        }
-
-        // 键盘事件处理
-        function handleKeyDown(e) {
-            if (e.key === 'Enter') {
+            // 退格键删除最后一个字符
+            if (e.key === 'Backspace') {
+                e.preventDefault();
+                quickSearchKeys = quickSearchKeys.slice(0, -1);
+                updateQuickSearchDisplay();
+                performQuickSearch();
+                return;
+            }
+            
+            // 空格键添加空格（用于分隔匹配词）
+            if (e.key === ' ') {
+                e.preventDefault();
+                quickSearchKeys += ' ';
+                updateQuickSearchDisplay();
+                performQuickSearch();
+                return;
+            }
+            
+            // 只处理字母键
+            if (e.key.length === 1 && e.key.match(/[a-z]/i)) {
+                e.preventDefault();
+                
+                // 添加按键到快速搜索字符串
+                quickSearchKeys += e.key.toLowerCase();
+                updateQuickSearchDisplay();
+                
+                // 执行快速搜索
+                performQuickSearch();
+            }
+            // Enter键激活当前匹配项
+            else if (e.key === 'Enter' && matchedItems.length > 0) {
                 e.preventDefault();
                 activateCurrentMatch();
-            } else if (e.key === 'Tab') {
+            }
+            // Tab键切换匹配项
+            else if (e.key === 'Tab' && matchedItems.length > 0) {
                 e.preventDefault();
                 cycleMatches(e.shiftKey ? -1 : 1);
             }
         }
 
-        // 匹配项目
-        function matchItems(input) {
-            matchedItems = [];
-            currentMatchIndex = -1;
+        // 获取拼音首字母
+        function getPinyinInitial(text) {
+            return text.split('').map(char => {
+                // 如果是中文且在我们映射表中
+                if (/[\u4e00-\u9fa5]/.test(char) && pinyinMap[char]) {
+                    return pinyinMap[char];
+                }
+                return char.toLowerCase();
+            }).join('');
+        }
+
+        // 更新快速搜索显示
+        function updateQuickSearchDisplay() {
+            currentKeysDisplay.textContent = quickSearchKeys || '[无]';
+        }
+
+        // 执行快速搜索
+        function performQuickSearch() {
+            // 清除之前的高亮
+            clearMatches();
             
-            // 匹配按钮
-            allButtons.forEach(button => {
-                if (fuzzyMatch(input, button.textContent)) {
+            if (!quickSearchKeys) return;
+            
+            // 将搜索键按空格分割
+            const searchTerms = quickSearchKeys.toLowerCase().split(' ').filter(term => term);
+            
+            // 匹配所有按钮（包括顶部按钮）
+            document.querySelectorAll('button').forEach(button => {
+                // 排除编辑模式下的删除按钮
+                if (button.classList.contains('delete-btn')) return;
+                
+                const text = button.textContent;
+                const pinyinInitials = getPinyinInitial(text);
+                const lowerText = text.toLowerCase();
+                
+                if (matchQuickSearch(lowerText, pinyinInitials, searchTerms)) {
                     matchedItems.push({
                         element: button,
                         type: 'button'
                     });
                     button.classList.add('highlight');
-                } else {
-                    button.classList.remove('highlight');
                 }
             });
             
             // 匹配历史记录
             historyItems.forEach(item => {
-                if (fuzzyMatch(input, item.textContent)) {
+                const text = item.textContent;
+                const pinyinInitials = getPinyinInitial(text);
+                const lowerText = text.toLowerCase();
+                
+                if (matchQuickSearch(lowerText, pinyinInitials, searchTerms)) {
                     matchedItems.push({
                         element: item,
                         type: 'history'
                     });
                     item.classList.add('highlight');
-                } else {
-                    item.classList.remove('highlight');
                 }
             });
             
@@ -322,53 +407,27 @@
             }
         }
 
-        // 模糊匹配（支持不连续汉字首字母）
-        function fuzzyMatch(input, target) {
-            const inputLower = input.toLowerCase();
-            const targetLower = target.toLowerCase();
-            
-            // 直接匹配
-            if (targetLower.includes(inputLower)) return true;
-            
-            // 首字母匹配
-            const initials = getInitials(target);
-            if (initials.toLowerCase().includes(inputLower)) return true;
-            
-            // 不连续汉字首字母匹配
-            const pattern = inputLower.split('').map(c => `(.*?${c})`).join('');
-            const regex = new RegExp(pattern, 'i');
-            return regex.test(initials);
-        }
-
-        // 获取字符串的首字母
-        function getInitials(str) {
-            return str.replace(/[^a-zA-Z\u4e00-\u9fa5]/g, '')
-                     .split('')
-                     .map(char => {
-                         // 如果是汉字，取拼音首字母
-                         if (/^[\u4e00-\u9fa5]$/.test(char)) {
-                             return pinyinUtil.getFirstLetter(char);
-                         }
-                         return char;
-                     })
-                     .join('');
-        }
-
-        // 拼音工具（简化版）
-        const pinyinUtil = {
-            getFirstLetter: function(char) {
-                // 简化的拼音首字母映射（实际项目中应使用完整拼音库）
-                const map = {
-                    '小':'x', '红':'h', '书':'s', '抖':'d', '音':'y', '知':'z', '乎':'h',
-                    '哔':'b', '哩':'l', '必':'b', '应':'y', '谷':'g', '歌':'g', '推':'t',
-                    '特':'t', '幕':'m', '布':'b', '安':'a', '卡':'k', '豌':'w', '豆':'d',
-                    '荚':'j', '酷':'k', '安':'a', '通':'t', '义':'y', '千':'q', '问':'w',
-                    '喜':'x', '马':'m', '拉':'l', '雅':'y'
-                    // 可以继续添加更多汉字映射
-                };
-                return map[char] || char;
+        // 快速搜索匹配算法
+        function matchQuickSearch(text, pinyinInitials, searchTerms) {
+            // 特殊处理"anki卡牌分享社区"和"幕布精选社区"
+            if (text.includes('anki卡牌分享社区')) {
+                pinyinInitials = 'ankpfxsq'; // a-n-k-p-f-x-s-q
             }
-        };
+            if (text.includes('幕布精选社区')) {
+                pinyinInitials = 'mbjxsq'; // m-b-j-x-s-q
+            }
+            
+            // 检查所有搜索词是否都匹配
+            return searchTerms.every(term => {
+                // 优先检查拼音首字母
+                if (pinyinInitials.includes(term)) return true;
+                
+                // 然后检查原始文本
+                if (text.includes(term)) return true;
+                
+                return false;
+            });
+        }
 
         // 清除所有匹配高亮
         function clearMatches() {
@@ -408,12 +467,27 @@
         function activateCurrentMatch() {
             if (currentMatchIndex >= 0 && currentMatchIndex < matchedItems.length) {
                 const currentItem = matchedItems[currentMatchIndex];
+                
                 if (currentItem.type === 'button') {
-                    currentItem.element.click();
+                    // 特殊处理有data-site属性的按钮
+                    if (currentItem.element.hasAttribute('data-site')) {
+                        const site = currentItem.element.getAttribute('data-site');
+                        const keyword = searchInput.value.trim() || currentItem.element.textContent;
+                        const url = siteUrls[site] + encodeURIComponent(keyword);
+                        window.open(url, '_blank');
+                    } else {
+                        // 直接触发按钮点击
+                        currentItem.element.click();
+                    }
                 } else if (currentItem.type === 'history') {
                     searchInput.value = currentItem.element.textContent;
                     searchInput.focus();
                 }
+                
+                // 重置快速搜索
+                quickSearchKeys = '';
+                updateQuickSearchDisplay();
+                clearMatches();
             }
         }
 
