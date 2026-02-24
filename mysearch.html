@@ -501,13 +501,7 @@
 
             // 单独处理编辑历史和导出历史按钮
             // 单独处理编辑历史和导出历史按钮
-            document.querySelectorAll('#edit-history, #export-history, #import-history').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    button.click(); // 直接触发原生点击事件
-                });
-            });
+            
             // 保存编辑的历史记录
             saveEditBtn.addEventListener('click', () => {
                 if (currentEditItem && historyEditInput.value.trim()) {
@@ -605,7 +599,7 @@
                         currentFocusElement = firstButton;
                     }
                 } else if (selectedElements.length > 0) {
-                    clearSelection(); // 添加这行代码
+                    clearSelection(); // 添加这行代码取消所有多选
                 } else if (quickSearchKeys) {
                     quickSearchKeys = '';
                     updateQuickSearchDisplay();
@@ -675,10 +669,18 @@
             });}
             quickSearchHint.addEventListener('touchstart', (e) => {
             e.preventDefault();
-            // 直接聚焦到搜索输入框
-            searchInput.focus();
-            // 确保输入法弹出
-            searchInput.click();
+            // 创建临时输入框确保触发输入法
+            const tempInput = document.createElement('input');
+            tempInput.style.position = 'fixed';
+            tempInput.style.top = '-100px';
+            document.body.appendChild(tempInput);
+            tempInput.focus();
+            
+            setTimeout(() => {
+                document.body.removeChild(tempInput);
+                searchInput.focus();
+                searchInput.click();
+            }, 100);
         });
         
         // 清除选中状态
@@ -823,8 +825,7 @@
         if (e.ctrlKey && e.key.length === 1) {
             return;
         }
-        
-    if (e.key === 'Escape') {
+        if (e.key === 'Escape') {
         if (quickSearchKeys) {
             quickSearchKeys = '';
             updateQuickSearchDisplay();
@@ -837,7 +838,13 @@
         }
         return;
     }
-    
+    // 处理Ctrl+Delete清空输入框
+    if (e.key === 'Delete' && e.ctrlKey) {
+        e.preventDefault();
+        searchInput.value = '';
+        searchInput.focus();
+        return;
+    }
     // 只处理单字符按键（字母、数字、标点符号）
     if (e.key.length === 1 && /[a-z0-9\W]/i.test(e.key)) {
         e.preventDefault();
@@ -1010,24 +1017,20 @@
                 item.textContent = keyword;
                 item.setAttribute('data-keyword', keyword);
                 item.tabIndex = 0;
-                
                 item.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    if (isEditMode) {
-                        if (e.button === 0) {
-                            removeFromHistory(keyword);
-                        } else if (e.button === 2) {
-                            toggleSelectElement(item);
-                        }
-                    } else {
-                        if (e.button === 0) {
-                            searchInput.value = keyword;
-                            searchInput.focus();
-                        } else if (e.button === 2) {
-                            toggleSelectElement(item);
-                        }
+                e.stopPropagation();
+                if (isEditMode) {
+                    // 编辑模式下点击直接删除
+                    removeFromHistory(keyword);
+                } else {
+                    if (e.button === 0) {
+                        searchInput.value = keyword;
+                        searchInput.focus();
+                    } else if (e.button === 2) {
+                        toggleSelectElement(item);
                     }
-                });
+                }
+            });
                 
                     item.addEventListener('dblclick', (e) => {
                 e.stopPropagation();
@@ -1202,14 +1205,31 @@
         historyEditInput.value = keyword;
         editHistoryModal.style.display = 'block';
         
-        // 设置光标位置（使用更准确的方法）
+        // 设置光标位置（使用点击位置计算）
         setTimeout(() => {
             historyEditInput.focus();
-            // 使用更简单的逻辑：光标定位到开头
-            historyEditInput.setSelectionRange(0, 0);
+            // 使用精确计算方法
+            const text = historyEditInput.value;
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            context.font = window.getComputedStyle(historyEditInput).font;
+            let position = 0;
+            
+            for (let i = 0; i <= text.length; i++) {
+                const width = context.measureText(text.substring(0, i)).width;
+                if (width > clickPosition) {
+                    position = i - 1;
+                    break;
+                }
+                if (i === text.length) {
+                    position = i;
+                }
+            }
+            
+            historyEditInput.setSelectionRange(position, position);
         }, 50);
-        }
-        }
+    }
+}
 
         // 输入框输入事件处理
         function handleInput() {
