@@ -444,25 +444,26 @@
 
             // 编辑历史按钮
             // 编辑历史按钮
+            // 编辑历史按钮（完全移除搜索逻辑）
             editHistoryBtn.addEventListener('click', (e) => {
-                e.preventDefault(); // 新增
+                e.preventDefault();
                 e.stopPropagation();
                 isEditMode = !isEditMode;
                 editHistoryBtn.textContent = isEditMode ? '退出编辑' : '编辑历史';
                 renderHistory();
             });
 
-            // 导出历史按钮
+            // 导出历史按钮（仅触发导出功能）
             exportHistoryBtn.addEventListener('click', (e) => {
-                e.preventDefault(); // 新增
-                e.stopPropagation(); // 新增
+                e.preventDefault();
+                e.stopPropagation();
                 exportHistory();
             });
 
-            // 导入历史按钮
+            // 导入历史按钮（仅触发导入功能）
             importHistoryBtn.addEventListener('click', (e) => {
-                e.preventDefault(); // 新增
-                e.stopPropagation(); // 新增
+                e.preventDefault();
+                e.stopPropagation();
                 importHistory();
             });
 
@@ -544,21 +545,20 @@
             });
             
             // 全局键盘事件
-            document.addEventListener('keydown', (e) => {
-                // 处理编辑模态框内的按键
-                if (isEditingHistory) {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        saveEditBtn.click();
-                        return;
-                    }
-                    if (e.key === 'Escape') {
-                        e.preventDefault();
-                        cancelEditBtn.click();
-                        return;
-                    }
-                    return;
+        // 编辑模态框内监听Enter和Esc
+        document.addEventListener('keydown', (e) => {
+            if (isEditingHistory) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    saveEditBtn.click();
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    cancelEditBtn.click();
                 }
+                e.stopImmediatePropagation(); // 阻止事件冒泡
+        return false; // 确保其他监听器不处理
+            }
+        
 
                 // F7聚焦输入框
                 if (e.key === 'F7') {
@@ -665,37 +665,37 @@
                     return;
                 }
             });
-            quickSearchHint.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-                const dummyInput = document.createElement('input');
-                dummyInput.style.position = 'fixed';
-                dummyInput.style.opacity = 0;
-                dummyInput.setAttribute('inputmode', 'search');
-                document.body.appendChild(dummyInput);
-                dummyInput.focus();
-                setTimeout(() => {
-                    document.body.removeChild(dummyInput);
-                }, 100);
-            }
             // 手机端点击提示框触发输入法
+            // 手机端点击右下角提示框弹出输入法
         quickSearchHint.addEventListener('touchstart', (e) => {
             e.preventDefault();
             if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-                // 创建隐藏的临时输入框
                 const dummyInput = document.createElement('input');
                 dummyInput.style.position = 'fixed';
                 dummyInput.style.opacity = 0;
                 dummyInput.setAttribute('inputmode', 'search');
                 document.body.appendChild(dummyInput);
                 dummyInput.focus();
-                // 短暂聚焦后移除
                 setTimeout(() => {
                     document.body.removeChild(dummyInput);
                 }, 100);
             }
         });
-        });
+        quickSearchHint.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+            const dummyInput = document.createElement('input');
+            dummyInput.style.position = 'fixed';
+            dummyInput.style.opacity = 0;
+            dummyInput.setAttribute('inputmode', 'search');
+            document.body.appendChild(dummyInput);
+            dummyInput.focus();
+            setTimeout(() => {
+                document.body.removeChild(dummyInput);
+        }, 100);
+    }
+});
+
         }
         
         // 清除选中状态
@@ -1017,59 +1017,69 @@
 
         // 渲染搜索历史
         function renderHistory() {
-            historyList.innerHTML = '';
-            historyItems = [];
-            
-            searchHistory.forEach(keyword => {
-                const item = document.createElement('div');
-                item.className = 'history-item';
-                if (isEditMode) {
-                    item.classList.add('editable');
-                }
-                item.textContent = keyword;
-                item.setAttribute('data-keyword', keyword);
-                item.tabIndex = 0;
-                
-                item.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    if (isEditMode) {
-                        if (e.button === 0) {
-                            removeFromHistory(keyword);
-                        } else if (e.button === 2) {
-                            toggleSelectElement(item);
-                        }
-                    } else {
-                        if (e.button === 0) {
-                            searchInput.value = keyword;
-                            searchInput.focus();
-                        } else if (e.button === 2) {
-                            toggleSelectElement(item);
-                        }
-                    }
-                });
-                
-                    item.addEventListener('dblclick', (e) => {
-                e.stopPropagation();
-                const rect = e.target.getBoundingClientRect();
-                const clickPosition = e.clientX - rect.left; // 计算点击位置
-                editHistoryItem(keyword, clickPosition); // 传递位置参数
-            });
-                            
-                item.addEventListener('contextmenu', (e) => {
-                    e.preventDefault();
-                    toggleSelectElement(item);
-                });
-                
-                item.addEventListener('focus', () => {
-                    if (!quickSearchActive) {
-                        currentFocusElement = item;
-                    }
-                });
-                
-                historyList.appendChild(item);
-                historyItems.push(item);
-            });
+        historyList.innerHTML = '';
+        historyItems = [];
+    
+    // 新增过滤逻辑
+    const showHistory = quickSearchActive ? 
+        searchHistory.filter(keyword => 
+            keyword.toLowerCase().includes(quickSearchKeys.toLowerCase()) || 
+            getPinyinInitials(keyword).includes(quickSearchKeys.toLowerCase())
+        ) : 
+        searchHistory;
+
+    showHistory.forEach(keyword => {
+        const item = document.createElement('div');
+        item.className = 'history-item';
+        if (isEditMode) {
+            item.classList.add('editable');
         }
+        item.textContent = keyword;
+        item.setAttribute('data-keyword', keyword);
+        item.tabIndex = 0;
+        
+        // 原有事件监听代码（完全保持不变）
+        item.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (isEditMode) {
+                if (e.button === 0) {
+                    removeFromHistory(keyword);
+                } else if (e.button === 2) {
+                    toggleSelectElement(item);
+                }
+            } else 
+                {
+                if (e.button === 0) {
+                    searchInput.value = keyword;
+                    searchInput.focus();
+                } else if (e.button === 2) {
+                    toggleSelectElement(item);
+                }
+                }}
+        );
+        
+        item.addEventListener('dblclick', (e) => {
+            e.stopPropagation();
+            const rect = e.target.getBoundingClientRect();
+            const clickPosition = e.clientX - rect.left;
+            editHistoryItem(keyword, clickPosition);
+        });
+        
+        item.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            toggleSelectElement(item);
+        });
+        
+        item.addEventListener('focus', () => {
+            if (!quickSearchActive) {
+                currentFocusElement = item;
+            }
+        });
+        
+        historyList.appendChild(item);
+        historyItems.push(item);
+    });
+}
 
         // 从历史记录中移除
         function removeFromHistory(keyword) {
@@ -1114,7 +1124,7 @@
         // 找到原batchSearch函数（约在1580行左右）
         function batchSearch(sites) {
     const keyword = searchInput.value.trim();
-    const processedSites = new Set(); // 用集合去重
+    const processedSites = new Set(); // 确保每个网站只搜一次
     
     sites.forEach(site => {
         if (processedSites.has(site)) return;
@@ -1131,7 +1141,7 @@
     
     if (keyword) {
         addToHistory(keyword);
-    }
+        }
     }
 
         // 导出历史记录
@@ -1223,11 +1233,15 @@
         
         // 新增：根据点击位置设置光标
         setTimeout(() => {
-            const charWidth = 8; // 根据实际字体调整（14px字体≈8px/字符）
-            const cursorPos = Math.min(
-                Math.floor(clickPosition / charWidth),
-                keyword.length
-            );
+            // 动态计算字符宽度
+        // 动态计算实际字符宽度
+    const tempSpan = document.createElement('span');
+    tempSpan.style.visibility = 'hidden';
+    tempSpan.style.font = window.getComputedStyle(historyEditInput).font;
+    tempSpan.textContent = '测'; // 使用中文字符测量
+    document.body.appendChild(tempSpan);
+    const charWidth = tempSpan.offsetWidth;
+    document.body.removeChild(tempSpan);
             historyEditInput.setSelectionRange(cursorPos, cursorPos);
         }, 50);
     }
