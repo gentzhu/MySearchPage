@@ -12,16 +12,20 @@
             display: flex;
             flex-direction: column;
             height: 100vh;
-            overflow: hidden;
+            /* overflow: hidden; */
         }
         
         /* 固定顶部区域 */
 .fixed-header {
+    position: fixed; /* 使用 fixed 而不是 sticky */
+
     background: white;
     z-index: 100;
     padding: 10px 20px 8px 20px; /* 调整底部内边距 */
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     margin-bottom: 10px; /* 增大底部外边距 */
+        touch-action: none;
+    -webkit-overflow-scrolling: touch;
 }
         
         .search-container {
@@ -49,6 +53,7 @@
             color: #999;
             padding: 8px;
             margin: -8px;
+            padding-top: 6px;
             line-height: 0.7;
         }
         
@@ -100,6 +105,9 @@
             flex: 1;
             overflow-y: auto;
             padding: 0 20px;
+                margin-top: 160px; /* 这个值需要等于固定区域的高度 */
+    height: calc(100vh - 150px); /* 计算剩余高度 */
+    -webkit-overflow-scrolling: touch; /* 启用弹性滚动 */
         }
         
         .history-container {
@@ -110,22 +118,25 @@
         .history-title {
             font-weight: bold;
             font-size: 14px;
-            /* margin-bottom: 2px; 减小与冻结线的间距 */
+            margin-bottom: 0px; 
+            /* 减小与冻结线的间距 */
             position: sticky;
             top: 0;
             background: white;
-            padding: 3px 0; /* 调整内边距 */
+            padding: 1px 0; /* 调整内边距 */
+            padding-bottom: 6px;
             z-index: 10;
         }
         
         .history-item {
             display: inline-block;
             /* margin-right: 8px; */
-            margin-bottom: 5px;
+            margin-bottom: 0px;
             padding: 2px 4px;
             border: 1px solid #ddd;
             cursor: pointer;
             font-size: 14px;
+            line-height: 1.2; /* 统一行高 */
         }
         
         .history-item.highlight {
@@ -219,15 +230,15 @@
             }
             .search-container {
             display: flex;
-            margin-bottom: 2px;
+            margin-bottom: 3px;
             align-items: center;
             gap: 1px;
             width: 100%;
             position: relative;
         }
             #search-input {
-                padding: 2px 1px;
-                font-size: 14px;
+                padding: 3px 1px;
+                font-size: 16px;
             }
             .control-buttons {
             display: flex;
@@ -237,14 +248,14 @@
             width: 100%;
             }
             button {
-                padding: 0px 1px;
-                font-size: 14px;
-                margin: 0px;
+                padding: 1px 1px;
+                font-size: 16px;
+                margin: 1px;
                 width: auto;
             }
             
             button.small {
-                font-size: 10px;
+                font-size: 12px;
                 padding: 1px 1px;
             }
             
@@ -260,18 +271,19 @@
         }
                 .scrollable-content {
             padding: 0 2px;
+                    margin-top: 120px; /* 移动端较小的固定高度 */
+        height: calc(100vh - 120px);
         }
             .history-title {
             font-size: 14px;
             background: white;
-            padding: 1px 0; /* 调整内边距 */
+            padding: 0px 0; /* 调整内边距 */
         }
                 .history-item {
-            margin-bottom: 1px;
             /* gap: 10px; */
             margin: 1px;
-            padding: 0px 2px;
-            font-size: 12px;
+            padding: 1px 1px;
+            font-size: 14px;
         }
         }
     </style>
@@ -451,7 +463,18 @@
 
         // 初始化事件监听
         initEventListeners();
+        function adjustScrollableArea() {
+                const fixedHeader = document.querySelector('.fixed-header');
+                const scrollableContent = document.querySelector('.scrollable-content');
+                const fixedHeight = fixedHeader.offsetHeight;
+                
+                scrollableContent.style.marginTop = fixedHeight + 'px';
+                scrollableContent.style.height = `calc(100vh - ${fixedHeight}px)`;
+            }
 
+            // 初始调整和窗口大小变化时调整
+            window.addEventListener('load', adjustScrollableArea);
+            window.addEventListener('resize', adjustScrollableArea);
         function initEventListeners() {
             // 全局键盘事件（用于快速搜索）
             document.addEventListener('keydown', handleGlobalKeyDown);
@@ -519,6 +542,7 @@
                         }
                     }
                 });
+                
                 
                 // 右键点击多选
                 button.addEventListener('contextmenu', (e) => {
