@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>多功能搜索页面</title>
+    <title>mysearch</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -15,7 +15,7 @@
         }
         .search-container {
             display: flex;
-            margin-bottom: 8px;
+            margin-bottom: 5px;
             align-items: center;
             gap: 5px;
             width: 80%;
@@ -23,7 +23,7 @@
             position: relative;
         }
         #search-input {
-            padding: 10px 30px 10px 10px;
+            padding: 10px 35px 10px 10px;
             font-size: 16px;
             flex-grow: 1;
             border: 1px solid #000;
@@ -31,19 +31,19 @@
         }
         .clear-input {
             position: absolute;
-            right: 5px;
+            right: 14px;
             cursor: pointer;
-            font-size: 20px;
+            font-size: 42px;
             color: #999;
-            padding: 8px;
+            padding: 0px;
             margin: -8px;
-            line-height: 0.8;
+            line-height: 0.7;
         }
         .btn-group {
             display: flex;
             flex-wrap: wrap;
             gap: 5px;
-            margin-bottom: 8px;
+            margin-bottom: 5px;
             width: 80%;
             max-width: 800px;
         }
@@ -78,7 +78,7 @@
             box-shadow: 0 0 10px rgba(0,0,0,0.3);
         }
         .history-container {
-            margin-top: 8px;
+            margin-top: 5px;
             width: 80%;
             max-width: 800px;
         }
@@ -103,7 +103,7 @@
         .control-buttons {
             display: flex;
             gap: 5px;
-            margin-bottom: 8px;
+            margin-bottom: 5px;
             flex-wrap: wrap;
             width: 80%;
             max-width: 800px;
@@ -208,6 +208,15 @@
         let searchHistory = JSON.parse(localStorage.getItem('searchHistory')) || [];
         renderHistory();
 
+        // 点击空白处退出编辑模式
+        document.addEventListener('click', (e) => {
+            if (isEditMode && !e.target.closest('.history-item') && e.target !== editHistoryBtn) {
+                isEditMode = false;
+                editHistoryBtn.textContent = '编辑历史';
+                renderHistory();
+            }
+        });
+
         // 为所有搜索按钮添加事件监听
         document.querySelectorAll('.btn-group button').forEach(button => {
             button.addEventListener('click', () => {
@@ -240,7 +249,8 @@
         });
 
         // 编辑历史按钮
-        editHistoryBtn.addEventListener('click', () => {
+        editHistoryBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
             isEditMode = !isEditMode;
             editHistoryBtn.textContent = isEditMode ? '退出编辑' : '编辑历史';
             renderHistory();
@@ -339,7 +349,8 @@
                 item.textContent = keyword;
                 item.setAttribute('data-keyword', keyword);
                 
-                item.addEventListener('click', () => {
+                item.addEventListener('click', (e) => {
+                    e.stopPropagation();
                     if (isEditMode) {
                         removeFromHistory(keyword);
                     } else {
