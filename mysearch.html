@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>智能搜索页面</title>
+    <title>多功能搜索页面</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -15,7 +15,7 @@
         }
         .search-container {
             display: flex;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
             align-items: center;
             gap: 5px;
             width: 80%;
@@ -23,7 +23,7 @@
             position: relative;
         }
         #search-input {
-            padding: 10px 35px 10px 10px;
+            padding: 10px 30px 10px 10px;
             font-size: 16px;
             flex-grow: 1;
             border: 1px solid #000;
@@ -31,19 +31,19 @@
         }
         .clear-input {
             position: absolute;
-            right: 3px;
+            right: 5px;
             cursor: pointer;
-            font-size: 24px;
+            font-size: 20px;
             color: #999;
             padding: 8px;
             margin: -8px;
-            line-height: 0.7;
+            line-height: 0.8;
         }
         .btn-group {
             display: flex;
             flex-wrap: wrap;
             gap: 5px;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
             width: 80%;
             max-width: 800px;
         }
@@ -56,12 +56,29 @@
             transition: all 0.2s;
             text-align: center;
         }
-        button:hover, button.highlight {
+        button:hover {
             background-color: #f0f0f0;
-            box-shadow: 0 0 0 2px #4a90e2;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
         }
         .history-container {
-            margin-top: 5px;
+            margin-top: 8px;
             width: 80%;
             max-width: 800px;
         }
@@ -79,42 +96,40 @@
             cursor: pointer;
             font-size: 14px;
         }
-        .history-item.highlight {
-            border-color: #4a90e2;
-            box-shadow: 0 0 0 2px #4a90e2;
-        }
         .history-item.editable {
             border: 1px dashed #000;
             background-color: #fff9f9;
         }
+        .history-item.matching, button.matching {
+            background-color: #e0f7fa;
+            color: #0288d1;
+        }
         .control-buttons {
             display: flex;
             gap: 5px;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
             flex-wrap: wrap;
             width: 80%;
             max-width: 800px;
         }
-        #quick-search-hint {
+        /* 提示词容器样式 */
+        #prompt-container {
             position: fixed;
             bottom: 20px;
             right: 20px;
-            background: rgba(0,0,0,0.7);
-            color: white;
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-size: 12px;
-            display: block;
-        }
-        #current-keys {
-            font-weight: bold;
-            color: #4a90e2;
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            z-index: 100;
+            max-width: 300px;
         }
     </style>
 </head>
 <body>
     <div class="search-container">
-        <input type="text" id="search-input" autocomplete="off">
+        <input type="text" id="search-input">
         <span class="clear-input" title="清空输入">×</span>
     </div>
 
@@ -153,7 +168,16 @@
         <div id="history-list"></div>
     </div>
 
-    <div id="quick-search-hint">快速搜索: <span id="current-keys">[无]</span></div>
+    <div class="modal" id="error-modal">
+        <div class="modal-content">
+            <p>请输入搜索关键词！</p>
+        </div>
+    </div>
+
+    <!-- 提示词容器 -->
+    <div id="prompt-container" style="display: none;">
+        <span id="prompt-text"></span>
+    </div>
 
     <script>
         // 网站搜索URL模板
@@ -177,25 +201,19 @@
             ximalaya: 'https://www.ximalaya.com/search/'
         };
 
-        // 拼音首字母映射表（常用汉字）
-        const pinyinMap = {
-            '小':'x', '红':'h', '书':'s', '抖':'d', '音':'y', '知':'z', '乎':'h',
-            '哔':'b', '哩':'l', '必':'b', '应':'y', '谷':'g', '歌':'g', '推':'t',
-            '特':'t', '幕':'m', '布':'b', '安':'a', '卡':'k', '牌':'p', '分':'f',
-            '享':'x', '社':'s', '区':'q', '豌':'w', '豆':'d', '荚':'j', '酷':'k',
-            '通':'t', '义':'y', '千':'q', '问':'w', '喜':'x', '马':'m', '拉':'l',
-            '雅':'y', '微':'w', '信':'x', '淘':'t', '宝':'b', '京':'j', '东':'d',
-            '头':'t', '条':'t', '百':'b', '度':'d', '网':'w', '易':'y', '搜':'s',
-            '狗':'g', '神':'s', '奇':'q', '多':'d', '快':'k', '好':'h', '有':'y',
-            '道':'d', '今':'j', '日':'r', '热':'r', '点':'d', '精':'j', '选':'x',
-            '清':'q', '除':'c', '历':'l', '史':'s', '导':'d', '出':'c', '外':'w',
-            '网':'w', '所':'s', '有':'y', '常':'c', '用':'y', '编':'b', '辑':'j',
-            '保':'b', '存':'c'
-        };
+        // 常用网站列表
+        const commonSites = ['xiaohongshu', 'douyin', 'zhihu', 'bilibili', 'bing', 'github', 'mubu', 'anki', 'tongyi', 'kimi', 'ximalaya'];
+        
+        // 外网网站列表
+        const foreignSites = ['google', 'twitter', 'yandex', 'github', 'greasyfork'];
+
+        // 所有网站列表
+        const allSites = Object.keys(siteUrls);
 
         // 获取DOM元素
         const searchInput = document.getElementById('search-input');
         const historyList = document.getElementById('history-list');
+        const errorModal = document.getElementById('error-modal');
         const saveOnlyBtn = document.getElementById('save-only');
         const clearHistoryBtn = document.getElementById('clear-history');
         const editHistoryBtn = document.getElementById('edit-history');
@@ -204,345 +222,189 @@
         const commonSitesBtn = document.getElementById('common-sites');
         const foreignSitesBtn = document.getElementById('foreign-sites');
         const clearInputBtn = document.querySelector('.clear-input');
-        const quickSearchHint = document.getElementById('quick-search-hint');
-        const currentKeysDisplay = document.getElementById('current-keys');
-        let historyItems = [];
 
         // 编辑状态标志
         let isEditMode = false;
-        // 快速搜索相关变量
-        let quickSearchKeys = '';
-        let matchedItems = [];
-        let currentMatchIndex = -1;
 
         // 加载搜索历史
         let searchHistory = JSON.parse(localStorage.getItem('searchHistory')) || [];
         renderHistory();
 
-        // 初始化事件监听
-        initEventListeners();
+        // 为所有搜索按钮添加事件监听
+        document.querySelectorAll('.btn-group button').forEach(button => {
+            button.addEventListener('click', () => {
+                const site = button.getAttribute('data-site');
+                search(site);
+            });
+        });
 
-        function initEventListeners() {
-            // 全局键盘事件（用于快速搜索）
-            document.addEventListener('keydown', handleGlobalKeyDown);
-            
-            // 输入框事件
-            searchInput.addEventListener('input', handleInput);
-            
-            // 清空输入框按钮
-            clearInputBtn.addEventListener('click', () => {
+        // 清空输入框按钮
+        clearInputBtn.addEventListener('click', () => {
+            searchInput.value = '';
+        });
+
+        // 保存但不搜索按钮
+        saveOnlyBtn.addEventListener('click', () => {
+            const keyword = searchInput.value.trim();
+            if (keyword) {
+                addToHistory(keyword);
                 searchInput.value = '';
-                searchInput.focus();
-            });
-
-            // 保存但不搜索按钮
-            saveOnlyBtn.addEventListener('click', () => {
-                const keyword = searchInput.value.trim();
-                if (keyword) {
-                    addToHistory(keyword);
-                    searchInput.value = '';
-                }
-            });
-
-            // 清除历史按钮
-            clearHistoryBtn.addEventListener('click', () => {
-                searchHistory = [];
-                localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
-                renderHistory();
-            });
-
-            // 编辑历史按钮
-            editHistoryBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                isEditMode = !isEditMode;
-                editHistoryBtn.textContent = isEditMode ? '退出编辑' : '编辑历史';
-                renderHistory();
-            });
-
-            // 导出历史按钮
-            exportHistoryBtn.addEventListener('click', () => {
-                exportHistory();
-            });
-
-            // 批量搜索按钮
-            allSitesBtn.addEventListener('click', () => batchSearch(allSites));
-            commonSitesBtn.addEventListener('click', () => batchSearch(commonSites));
-            foreignSitesBtn.addEventListener('click', () => batchSearch(foreignSites));
-
-            // 点击空白处退出编辑模式
-            document.addEventListener('click', (e) => {
-                if (isEditMode && !e.target.closest('.history-item') && e.target !== editHistoryBtn) {
-                    isEditMode = false;
-                    editHistoryBtn.textContent = '编辑历史';
-                    renderHistory();
-                }
-            });
-
-            // 为所有搜索按钮添加事件监听
-            document.querySelectorAll('.btn-group button').forEach(button => {
-                button.addEventListener('click', () => {
-                    const site = button.getAttribute('data-site');
-                    search(site);
-                });
-            });
-        }
-
-        // 全局键盘事件处理（快速搜索）
-        function handleGlobalKeyDown(e) {
-            // 如果输入框有焦点，则不处理快速搜索
-            if (document.activeElement === searchInput) return;
-            
-            // ESC键清除快速搜索
-            if (e.key === 'Escape') {
-                quickSearchKeys = '';
-                updateQuickSearchDisplay();
-                clearMatches();
-                return;
+            } else {
+                showError();
             }
-            
-            // 退格键删除最后一个字符
-            if (e.key === 'Backspace') {
-                e.preventDefault();
-                quickSearchKeys = quickSearchKeys.slice(0, -1);
-                updateQuickSearchDisplay();
-                performQuickSearch();
-                return;
-            }
-            
-            // 空格键添加空格（用于分隔匹配词）
-            if (e.key === ' ') {
-                e.preventDefault();
-                quickSearchKeys += ' ';
-                updateQuickSearchDisplay();
-                performQuickSearch();
-                return;
-            }
-            
-            // 只处理字母键
-            if (e.key.length === 1 && e.key.match(/[a-z]/i)) {
-                e.preventDefault();
-                
-                // 添加按键到快速搜索字符串
-                quickSearchKeys += e.key.toLowerCase();
-                updateQuickSearchDisplay();
-                
-                // 执行快速搜索
-                performQuickSearch();
-            }
-            // Enter键激活当前匹配项
-            else if (e.key === 'Enter' && matchedItems.length > 0) {
-                e.preventDefault();
-                activateCurrentMatch();
-            }
-            // Tab键切换匹配项
-            else if (e.key === 'Tab' && matchedItems.length > 0) {
-                e.preventDefault();
-                cycleMatches(e.shiftKey ? -1 : 1);
-            }
-        }
+        });
 
-        // 获取拼音首字母
-        function getPinyinInitial(text) {
-            return text.split('').map(char => {
-                // 如果是中文且在我们映射表中
-                if (/[\u4e00-\u9fa5]/.test(char) && pinyinMap[char]) {
-                    return pinyinMap[char];
-                }
-                return char.toLowerCase();
-            }).join('');
-        }
-
-        // 更新快速搜索显示
-        function updateQuickSearchDisplay() {
-            currentKeysDisplay.textContent = quickSearchKeys || '[无]';
-        }
-
-        // 执行快速搜索
-        function performQuickSearch() {
-            // 清除之前的高亮
-            clearMatches();
-            
-            if (!quickSearchKeys) return;
-            
-            // 将搜索键按空格分割
-            const searchTerms = quickSearchKeys.toLowerCase().split(' ').filter(term => term);
-            
-            // 匹配所有按钮（包括顶部按钮）
-            document.querySelectorAll('button').forEach(button => {
-                // 排除编辑模式下的删除按钮
-                if (button.classList.contains('delete-btn')) return;
-                
-                const text = button.textContent;
-                const pinyinInitials = getPinyinInitial(text);
-                const lowerText = text.toLowerCase();
-                
-                if (matchQuickSearch(lowerText, pinyinInitials, searchTerms)) {
-                    matchedItems.push({
-                        element: button,
-                        type: 'button'
-                    });
-                    button.classList.add('highlight');
-                }
-            });
-            
-            // 匹配历史记录
-            historyItems.forEach(item => {
-                const text = item.textContent;
-                const pinyinInitials = getPinyinInitial(text);
-                const lowerText = text.toLowerCase();
-                
-                if (matchQuickSearch(lowerText, pinyinInitials, searchTerms)) {
-                    matchedItems.push({
-                        element: item,
-                        type: 'history'
-                    });
-                    item.classList.add('highlight');
-                }
-            });
-            
-            // 如果有匹配项，默认选中第一个
-            if (matchedItems.length > 0) {
-                currentMatchIndex = 0;
-                highlightCurrentMatch();
-            }
-        }
-
-        // 快速搜索匹配算法
-        function matchQuickSearch(text, pinyinInitials, searchTerms) {
-            // 特殊处理"anki卡牌分享社区"和"幕布精选社区"
-            if (text.includes('anki卡牌分享社区')) {
-                pinyinInitials = 'ankpfxsq'; // a-n-k-p-f-x-s-q
-            }
-            if (text.includes('幕布精选社区')) {
-                pinyinInitials = 'mbjxsq'; // m-b-j-x-s-q
-            }
-            
-            // 检查所有搜索词是否都匹配
-            return searchTerms.every(term => {
-                // 优先检查拼音首字母
-                if (pinyinInitials.includes(term)) return true;
-                
-                // 然后检查原始文本
-                if (text.includes(term)) return true;
-                
-                return false;
-            });
-        }
-
-        // 清除所有匹配高亮
-        function clearMatches() {
-            matchedItems.forEach(item => {
-                item.element.classList.remove('highlight');
-            });
-            matchedItems = [];
-            currentMatchIndex = -1;
-        }
-
-        // 循环切换匹配项
-        function cycleMatches(direction) {
-            if (matchedItems.length === 0) return;
-            
-            // 移除当前高亮
-            if (currentMatchIndex >= 0) {
-                matchedItems[currentMatchIndex].element.classList.remove('highlight');
-            }
-            
-            // 计算新索引
-            currentMatchIndex = (currentMatchIndex + direction + matchedItems.length) % matchedItems.length;
-            
-            // 添加新高亮
-            highlightCurrentMatch();
-        }
-
-        // 高亮当前匹配项
-        function highlightCurrentMatch() {
-            if (currentMatchIndex >= 0 && currentMatchIndex < matchedItems.length) {
-                const currentItem = matchedItems[currentMatchIndex];
-                currentItem.element.classList.add('highlight');
-                currentItem.element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }
-        }
-
-        // 激活当前匹配项
-        function activateCurrentMatch() {
-            if (currentMatchIndex >= 0 && currentMatchIndex < matchedItems.length) {
-                const currentItem = matchedItems[currentMatchIndex];
-                
-                if (currentItem.type === 'button') {
-                    // 特殊处理有data-site属性的按钮
-                    if (currentItem.element.hasAttribute('data-site')) {
-                        const site = currentItem.element.getAttribute('data-site');
-                        const keyword = searchInput.value.trim() || currentItem.element.textContent;
-                        const url = siteUrls[site] + encodeURIComponent(keyword);
-                        window.open(url, '_blank');
-                    } else {
-                        // 直接触发按钮点击
-                        currentItem.element.click();
-                    }
-                } else if (currentItem.type === 'history') {
-                    searchInput.value = currentItem.element.textContent;
-                    searchInput.focus();
-                }
-                
-                // 重置快速搜索
-                quickSearchKeys = '';
-                updateQuickSearchDisplay();
-                clearMatches();
-            }
-        }
-
-        // 渲染搜索历史
-        function renderHistory() {
-            historyList.innerHTML = '';
-            historyItems = [];
-            
-            searchHistory.forEach(keyword => {
-                const item = document.createElement('div');
-                item.className = 'history-item';
-                if (isEditMode) {
-                    item.classList.add('editable');
-                }
-                item.textContent = keyword;
-                item.setAttribute('data-keyword', keyword);
-                
-                item.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    if (isEditMode) {
-                        removeFromHistory(keyword);
-                    } else {
-                        searchInput.value = keyword;
-                        searchInput.focus();
-                    }
-                });
-                
-                historyList.appendChild(item);
-                historyItems.push(item);
-            });
-        }
-
-        // 从历史记录中移除
-        function removeFromHistory(keyword) {
-            searchHistory = searchHistory.filter(item => item !== keyword);
+        // 清除历史按钮
+        clearHistoryBtn.addEventListener('click', () => {
+            searchHistory = [];
             localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
             renderHistory();
-        }
+        });
 
-        // 添加到搜索历史
-        function addToHistory(keyword) {
-            if (!searchHistory.includes(keyword)) {
-                searchHistory.unshift(keyword);
-                localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
-                renderHistory();
+        // 编辑历史按钮
+        editHistoryBtn.addEventListener('click', () => {
+            isEditMode = !isEditMode;
+            editHistoryBtn.textContent = isEditMode ? '退出编辑' : '编辑历史';
+            renderHistory();
+        });
+
+        // 导出历史按钮
+        exportHistoryBtn.addEventListener('click', () => {
+            exportHistory();
+        });
+
+        // 所有网站搜索按钮
+        allSitesBtn.addEventListener('click', () => {
+            batchSearch(allSites);
+        });
+
+        // 常用网站搜索按钮
+        commonSitesBtn.addEventListener('click', () => {
+            batchSearch(commonSites);
+        });
+
+        // 外网网站搜索按钮
+        foreignSitesBtn.addEventListener('click', () => {
+            batchSearch(foreignSites);
+        });
+
+        // 提示词相关变量
+        const promptContainer = document.getElementById('prompt-container');
+        const promptText = document.getElementById('prompt-text');
+        let currentMatches = [];
+        let currentMatchIndex = -1;
+        let currentInput = '';
+
+        // 监听键盘事件
+        document.addEventListener('keydown', (event) => {
+            if (event.target !== searchInput) { // 当焦点不在输入框时
+                const key = event.key;
+
+                // 处理提示框显示和隐藏
+                if (key === 'Escape') {
+                    promptContainer.style.display = 'none';
+                    currentMatches = [];
+                    currentMatchIndex = -1;
+                    currentInput = '';
+                    document.querySelectorAll('.matching').forEach(el => el.classList.remove('matching'));
+                } else if (key === 'Backspace') {
+                    // 删除键逻辑
+                    if (currentInput.length > 0) {
+                        currentInput = currentInput.slice(0, -1);
+                        findMatches();
+                    }
+                } else if (key === ' ') {
+                    // 空格键逻辑
+                    currentInput += ' ';
+                    findMatches();
+                } else if (key.length === 1) {
+                    // 处理字母、数字和汉字输入
+                    currentInput += key;
+                    findMatches();
+                } else if (key === 'Tab') {
+                    // 切换匹配项
+                    if (currentMatches.length > 0) {
+                        currentMatchIndex = (currentMatchIndex + 1) % currentMatches.length;
+                        updateMatchingHighlight();
+                    }
+                } else if (key === 'Enter') {
+                    // 选中当前匹配项
+                    if (currentMatches.length > 0 && currentMatchIndex !== -1) {
+                        const matchedElement = currentMatches[currentMatchIndex];
+                        if (matchedElement.type === 'button') {
+                            const site = matchedElement.element.getAttribute('data-site');
+                            search(site);
+                        } else if (matchedElement.type === 'history') {
+                            searchInput.value = matchedElement.element.textContent;
+                        }
+                    }
+                }
+            }
+        });
+
+        // 匹配逻辑
+        function findMatches() {
+            // 清除之前的高亮
+            document.querySelectorAll('.matching').forEach(el => el.classList.remove('matching'));
+
+            // 获取所有按钮和历史项
+            const buttons = document.querySelectorAll('.btn-group button');
+            const historyItems = document.querySelectorAll('.history-item');
+
+            currentMatches = [];
+            const inputText = currentInput;
+
+            // 匹配按钮
+            buttons.forEach((button, index) => {
+                const buttonText = button.textContent;
+                if (matchText(buttonText, inputText)) {
+                    currentMatches.push({ type: 'button', element: button, index });
+                }
+            });
+
+            // 匹配历史
+            historyItems.forEach((item, index) => {
+                const historyText = item.textContent;
+                if (matchText(historyText, inputText)) {
+                    currentMatches.push({ type: 'history', element: item, index });
+                }
+            });
+
+            // 更新高亮
+            if (currentMatches.length > 0) {
+                currentMatchIndex = 0;
+                updateMatchingHighlight();
+                promptContainer.style.display = 'block';
+                promptText.textContent = `找到 ${currentMatches.length} 个匹配项，按 Tab 切换`;
+            } else {
+                promptContainer.style.display = 'none';
             }
         }
 
-        // 搜索函数
+        // 更新匹配高亮
+        function updateMatchingHighlight() {
+            document.querySelectorAll('.matching').forEach(el => el.classList.remove('matching'));
+            if (currentMatches.length > 0 && currentMatchIndex !== -1) {
+                currentMatches[currentMatchIndex].element.classList.add('matching');
+            }
+        }
+
+        // 匹配文本逻辑
+        function matchText(text, inputText) {
+            // 使用正则表达式匹配汉字
+            const regex = new RegExp(inputText, 'i');
+            return regex.test(text);
+        }
+
+        // 搜索框函数
         function search(site) {
             const keyword = searchInput.value.trim();
             if (keyword) {
                 addToHistory(keyword);
                 const url = siteUrls[site] + encodeURIComponent(keyword);
                 window.open(url, '_blank');
+            } else {
+                showError();
             }
         }
 
@@ -552,7 +414,7 @@
             if (keyword) {
                 addToHistory(keyword);
                 
-                // 分批打开标签页
+                // 分批打开标签页，防止浏览器卡顿
                 let delay = 0;
                 for (let i = 0; i < sites.length; i += 2) {
                     setTimeout(() => {
@@ -569,14 +431,69 @@
                         }
                     }, delay);
                     
-                    delay += 1000;
+                    delay += 1000; // 每隔1秒打开两个
                 }
+            } else {
+                showError();
             }
+        }
+
+        // 显示错误弹窗
+        function showError() {
+            errorModal.style.display = 'flex';
+        }
+
+        // 关闭弹窗
+        errorModal.addEventListener('click', () => {
+            errorModal.style.display = 'none';
+        });
+
+        // 添加到搜索历史
+        function addToHistory(keyword) {
+            if (!searchHistory.includes(keyword)) {
+                searchHistory.unshift(keyword);
+                localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
+                renderHistory();
+            }
+        }
+
+        // 渲染搜索历史
+        function renderHistory() {
+            historyList.innerHTML = '';
+            searchHistory.forEach(keyword => {
+                const item = document.createElement('div');
+                item.className = 'history-item';
+                if (isEditMode) {
+                    item.classList.add('editable');
+                }
+                item.textContent = keyword;
+                item.setAttribute('data-keyword', keyword);
+                
+                item.addEventListener('click', () => {
+                    if (isEditMode) {
+                        removeFromHistory(keyword);
+                    } else {
+                        searchInput.value = keyword;
+                    }
+                });
+                
+                historyList.appendChild(item);
+            });
+        }
+
+        // 从历史记录中移除
+        function removeFromHistory(keyword) {
+            searchHistory = searchHistory.filter(item => item !== keyword);
+            localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
+            renderHistory();
         }
 
         // 导出历史记录
         function exportHistory() {
-            if (searchHistory.length === 0) return;
+            if (searchHistory.length === 0) {
+                alert('没有搜索历史可导出');
+                return;
+            }
             
             const content = searchHistory.join('\n');
             const blob = new Blob([content], { type: 'text/plain' });
