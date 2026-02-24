@@ -216,7 +216,30 @@
     margin-bottom: 5px;
     display: none;
 }
+.mobile-quick-search-wrapper {
+    display: none;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 5px;
+    width: 100%;
+}
 
+#mobile-quick-search {
+    width: 120px; /* 调整为2-3个按钮的宽度 */
+    padding: 6px 8px;
+    font-size: 14px;
+    border: 1px solid #000;
+    caret-color: transparent; /* 隐藏光标 */
+}
+
+#mobile-esc-btn {
+    padding: 6px 10px;
+    border: 1px solid #000;
+    background: #f0f0f0;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+}
 #mobile-quick-search {
     width: 100%;
     padding: 8px;
@@ -241,6 +264,9 @@
     }
     .mobile-quick-search-container {
         display: block;
+    }
+        .mobile-quick-search-wrapper {
+        display: flex;
     }
   #quick-search-hint {
         display: none !important;
@@ -287,9 +313,9 @@
             <input type="text" id="search-input" autocomplete="off">
             <span class="clear-input" title="清空输入">×</span>
         </div>
-    <div class="mobile-quick-search-container">
-    <input type="text" id="mobile-quick-search" class="mobile-only" placeholder="快速搜索(输入首字母)" autocomplete="off">
-</div>
+<div class="mobile-quick-search-wrapper">
+    <button id="mobile-esc-btn" class="mobile-only">×</button>
+    <input type="text" id="mobile-quick-search" class="mobile-only" placeholder="快速搜索" autocomplete="off" spellcheck="false">
 </div>
         <div class="control-buttons">
             <button id="mobile-esc-btn" class="desktop-only">ESC</button>
@@ -437,6 +463,7 @@
         const cancelEditBtn = document.getElementById('cancel-edit');
         const errorModal = document.getElementById('error-modal');
         const mobileQuickSearch = document.getElementById('mobile-quick-search');
+        const mobileEscBtn = document.getElementById('mobile-esc-btn');
         let historyItems = [];
         
         // 导航相关变量
@@ -622,7 +649,16 @@ function focusQuickSearch() {
 
 // 初始化时立即聚焦
 focusQuickSearch();
-
+setTimeout(() => {
+    if (window.innerWidth <= 768 && mobileQuickSearch) {
+        mobileQuickSearch.focus();
+        // 隐藏光标（兼容所有浏览器）
+        mobileQuickSearch.style.color = 'transparent';
+        setTimeout(() => {
+            mobileQuickSearch.style.color = '';
+        }, 100);
+    }
+}, 100);
 // 点击空白处时重新聚焦
 document.addEventListener('click', function(e) {
     if (!e.target.closest('button, input, .history-item') && 
@@ -635,57 +671,59 @@ document.addEventListener('click', function(e) {
 // 移动端快速搜索处理
 if (mobileQuickSearch) {
     mobileQuickSearch.addEventListener('input', function() {
-        const value = this.value.toLowerCase();
+        const keywords = this.value.toLowerCase().split(/\s+/).filter(Boolean);
         
-        // 隐藏所有历史项
-        document.querySelectorAll('.history-item').forEach(item => {
-            item.style.display = 'none';
-        });
-        
-        // 如果没有输入，显示全部
-        if (!value) {
+        if (keywords.length === 0) {
             showAllHistoryItems();
             return;
         }
         
-        // 匹配逻辑
-        document.querySelectorAll('button, .history-item').forEach(element => {
+        document.querySelectorAll('.history-item, button').forEach(element => {
             const text = element.textContent.toLowerCase();
-            const pinyinInitials = getPinyinInitials(text);
+            const pinyin = getPinyinInitials(text);
+            let isMatch = true;
             
-            if (text.includes(value) || pinyinInitials.includes(value)) {
+            // 检查每个关键词是否匹配（支持不连续匹配）
+            for (const keyword of keywords) {
+                if (!text.includes(keyword) && !pinyin.includes(keyword)) {
+                    isMatch = false;
+                    break;
+                }
+            }
+            
+            if (isMatch) {
                 element.classList.add('highlight');
                 if (element.classList.contains('history-item')) {
                     element.style.display = 'inline-block';
                 }
             } else {
                 element.classList.remove('highlight');
+                if (element.classList.contains('history-item')) {
+                    element.style.display = 'none';
+                }
             }
         });
     });
     
+    // 空格键处理（不中断搜索）
     mobileQuickSearch.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-            const firstMatch = document.querySelector('.highlight');
+        if (e.key === ' ') {
+            e.preventDefault(); // 阻止默认空格行为
+            this.value += ' '; // 手动添加空格
+            this.dispatchEvent(new Event('input')); // 触发搜索
+        } else if (e.key === 'Enter') {
+            const firstMatch = document.querySelector('.highlight.history-item, .highlight[data-site]');
             if (firstMatch) {
                 searchInput.value = firstMatch.textContent;
                 searchInput.focus();
-                this.value = '';
-                document.querySelectorAll('.highlight').forEach(el => {
-                    el.classList.remove('highlight');
-                });
-                showAllHistoryItems();
             }
         }
     });
     
     // ESC按钮处理
-    document.getElementById('mobile-esc-btn')?.addEventListener('click', function() {
+    mobileEscBtn.addEventListener('click', function() {
         mobileQuickSearch.value = '';
         mobileQuickSearch.focus();
-        document.querySelectorAll('.highlight').forEach(el => {
-            el.classList.remove('highlight');
-        });
         showAllHistoryItems();
     });
 }
@@ -1037,18 +1075,20 @@ if (e.key.length === 1 && /[a-z0-9\W]/i.test(e.key) && e.key !== ' ') {
                 '云': 'y', '盘': 'p', '之': 'z', '家': 'j', '快': 'k', '速': 's', '搜': 's',
                 '索': 's', '记': 'j', '录': 'l', '藏': 'c'
             };
-
-            return text.split('').map(char => {
-                if (/[\u4e00-\u9fa5]/.test(char) && pinyinMap[char]) {
-                    return pinyinMap[char];
-                }
-                else if (/[a-zA-Z]/.test(char)) {
-                    return char.toLowerCase();
-                }
-                return '';
-            }).join('');
+  return text.split('').map(char => {
+        // 1. 处理中文字符（严格检测Unicode中文范围）
+        if (/[\u4e00-\u9fa5]/.test(char)) {
+            // 优先使用映射表，找不到则尝试其他方法（如使用pinyin库）
+            return pinyinMap[char] || ''; 
         }
-
+        // 2. 处理英文字母
+        else if (/[a-zA-Z]/.test(char)) {
+            return char.toLowerCase();
+        }
+        // 3. 其他字符（数字、符号等）返回空字符串
+        return '';
+    }).join('');
+}
         // 快速搜索匹配算法
         function matchQuickSearch(text, pinyinInitials, searchTerms) {
             return searchTerms.every(term => {
