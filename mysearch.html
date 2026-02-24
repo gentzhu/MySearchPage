@@ -89,6 +89,14 @@
             cursor: pointer;
             font-size: 14px;
         }
+        .history-item-edit {
+            position: absolute;
+            background: white;
+            z-index: 1001;
+            border: 1px solid #4a90e2;
+            box-shadow: 0 0 5px rgba(0,0,0,0.2);
+            padding: 2px;
+        }
         .history-item.highlight {
             border-color: #4a90e2;
             box-shadow: 0 0 0 2px #4a90e2;
@@ -288,6 +296,8 @@
 
     <script>
         // 网站搜索URL模板
+        let editInput = null;
+        let currentEditPosition = 0;
         const siteUrls = {
             xiaohongshu: 'https://www.xiaohongshu.com/search_result?keyword=',
             douyin: 'https://www.douyin.com/search/',
@@ -515,7 +525,15 @@
             // 全局键盘事件
             document.addEventListener('keydown', (e) => {
                 // F7聚焦输入框
-                if (e.key === 'F7') {
+                if (e.key === 'Enter' && selectedElements.length > 0) {
+                e.preventDefault();
+                const sites = selectedElements.map(el => el.getAttribute('data-site')).filter(site => site);
+                if (sites.length > 0) {
+                    batchSearch(sites);
+                }
+                return;
+            }
+                else if (e.key === 'F7') {
                     e.preventDefault();
                     searchInput.focus();
                 }
@@ -995,7 +1013,8 @@
                 
                 item.addEventListener('dblclick', (e) => {
                     e.stopPropagation();
-                    editHistoryItem(keyword);
+                    const keyword = item.getAttribute('data-keyword');
+                    editHistoryItem(keyword, e); // 传递点击事件
                 });
                 
                 item.addEventListener('contextmenu', (e) => {
@@ -1063,27 +1082,20 @@
         // 批量搜索函数
         function batchSearch(sites) {
             const keyword = searchInput.value.trim();
+            
+            // 即使没有关键词也执行搜索（仅对不需要关键词的站点）
+            sites.forEach(site => {
+                if (linkButtons.includes(site)) {
+                    const url = siteUrls[site];
+                    window.open(url, '_blank');
+                } else if (keyword) {
+                    const url = siteUrls[site] + encodeURIComponent(keyword);
+                    window.open(url, '_blank');
+                }
+            });
+            
             if (keyword) {
                 addToHistory(keyword);
-                
-                // 过滤掉链接按钮
-                const searchSites = sites.filter(site => !linkButtons.includes(site));
-                
-                // 分批打开标签页
-                let delay = 0;
-                for (let i = 0; i < searchSites.length; i++) {
-                    setTimeout(() => {
-                        const site = searchSites[i];
-                        if (site) {
-                            const url = siteUrls[site] + encodeURIComponent(keyword);
-                            window.open(url, '_blank');
-                        }
-                    }, delay);
-                    
-                    delay += 1000; // 每次搜索间隔1秒
-                }
-            } else {
-                showErrorModal();
             }
         }
 
@@ -1126,13 +1138,78 @@
         }
 
         // 编辑历史记录项
-        function editHistoryItem(keyword) {
+        function editHistoryItem(keyword, clickEvent = null) {
             isEditingHistory = true;
             currentEditItem = document.querySelector(`.history-item[data-keyword="${keyword}"]`);
+            
             if (currentEditItem) {
-                historyEditInput.value = keyword;
-                editHistoryModal.style.display = 'block';
-                historyEditInput.focus();
+                // 创建编辑框
+                if (!editInput) {
+                    editInput = document.createElement('input');
+                    editInput.className = 'history-item-edit';
+                    editInput.value = keyword;
+                    document.body.appendChild(editInput);
+                    
+                    // 计算位置
+                    const rect = currentEditItem.getBoundingClientRect();
+                    editInput.style.left = `${rect.left}px`;
+                    editInput.style.top = `${rect.top}px`;
+                    editInput.style.width = `${rect.width}px`;
+                    
+                    // 处理编辑框键盘事件
+                    editInput.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') {
+                            saveEditedKeyword();
+                        } else if (e.key === 'Escape') {
+                            cancelEdit();
+                        }
+                    });
+                    
+                    // 点击外部取消编辑
+                    const handleOutsideClick = (e) => {
+                        if (!editInput.contains(e.target) ){
+                            cancelEdit();
+                        }
+                    };
+                    setTimeout(() => document.addEventListener('click', handleOutsideClick));
+                    
+                    // 设置光标位置
+                    if (clickEvent) {
+                        const text = currentEditItem.textContent;
+                        const mouseX = clickEvent.clientX - rect.left;
+                        let charWidth = rect.width / text.length;
+                        currentEditPosition = Math.min(
+                            Math.max(0, Math.floor(mouseX / charWidth)),
+                            text.length
+                        );
+                        setTimeout(() => {
+                            editInput.setSelectionRange(currentEditPosition, currentEditPosition);
+                        }, 10);
+                    }
+                    
+                    editInput.focus();
+                }
+            }
+        }
+        
+        function saveEditedKeyword() {
+            if (editInput && currentEditItem) {
+                const oldKeyword = currentEditItem.getAttribute('data-keyword');
+                const newKeyword = editInput.value.trim();
+                if (newKeyword && oldKeyword !== newKeyword) {
+                    removeFromHistory(oldKeyword);
+                    addToHistory(newKeyword);
+                }
+                cancelEdit();
+            }
+        }
+        
+        function cancelEdit() {
+            if (editInput) {
+                editInput.remove();
+                editInput = null;
+                isEditingHistory = false;
+                currentEditItem = null;
             }
         }
 
