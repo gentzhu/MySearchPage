@@ -152,6 +152,10 @@
             font-size: 12px;
             display: block;
             z-index: 100;
+            touch-action: manipulation;
+            cursor: text;
+            touch-action: manipulation; /* 允许触摸滚动 */
+            cursor: text; /* 显示文本光标 */
         }
         
         #current-keys {
@@ -439,7 +443,9 @@
             });
 
             // 编辑历史按钮
+            // 编辑历史按钮
             editHistoryBtn.addEventListener('click', (e) => {
+                e.preventDefault(); // 新增
                 e.stopPropagation();
                 isEditMode = !isEditMode;
                 editHistoryBtn.textContent = isEditMode ? '退出编辑' : '编辑历史';
@@ -447,12 +453,16 @@
             });
 
             // 导出历史按钮
-            exportHistoryBtn.addEventListener('click', () => {
+            exportHistoryBtn.addEventListener('click', (e) => {
+                e.preventDefault(); // 新增
+                e.stopPropagation(); // 新增
                 exportHistory();
             });
 
             // 导入历史按钮
-            importHistoryBtn.addEventListener('click', () => {
+            importHistoryBtn.addEventListener('click', (e) => {
+                e.preventDefault(); // 新增
+                e.stopPropagation(); // 新增
                 importHistory();
             });
 
@@ -655,6 +665,37 @@
                     return;
                 }
             });
+            quickSearchHint.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+                const dummyInput = document.createElement('input');
+                dummyInput.style.position = 'fixed';
+                dummyInput.style.opacity = 0;
+                dummyInput.setAttribute('inputmode', 'search');
+                document.body.appendChild(dummyInput);
+                dummyInput.focus();
+                setTimeout(() => {
+                    document.body.removeChild(dummyInput);
+                }, 100);
+            }
+            // 手机端点击提示框触发输入法
+        quickSearchHint.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+                // 创建隐藏的临时输入框
+                const dummyInput = document.createElement('input');
+                dummyInput.style.position = 'fixed';
+                dummyInput.style.opacity = 0;
+                dummyInput.setAttribute('inputmode', 'search');
+                document.body.appendChild(dummyInput);
+                dummyInput.focus();
+                // 短暂聚焦后移除
+                setTimeout(() => {
+                    document.body.removeChild(dummyInput);
+                }, 100);
+            }
+        });
+        });
         }
         
         // 清除选中状态
@@ -1007,11 +1048,13 @@
                     }
                 });
                 
-                item.addEventListener('dblclick', (e) => {
-                    e.stopPropagation();
-                    editHistoryItem(keyword);
-                });
-                
+                    item.addEventListener('dblclick', (e) => {
+                e.stopPropagation();
+                const rect = e.target.getBoundingClientRect();
+                const clickPosition = e.clientX - rect.left; // 计算点击位置
+                editHistoryItem(keyword, clickPosition); // 传递位置参数
+            });
+                            
                 item.addEventListener('contextmenu', (e) => {
                     e.preventDefault();
                     toggleSelectElement(item);
@@ -1068,23 +1111,28 @@
         }
 
         // 批量搜索函数
+        // 找到原batchSearch函数（约在1580行左右）
         function batchSearch(sites) {
-            const keyword = searchInput.value.trim();
-            
-            sites.forEach(site => {
-                if (linkButtons.includes(site)) {
-                    const url = siteUrls[site];
-                    window.open(url, '_blank');
-                } else if (keyword) {
-                    const url = siteUrls[site] + encodeURIComponent(keyword);
-                    window.open(url, '_blank');
-                }
-            });
-            
-            if (keyword) {
-                addToHistory(keyword);
-            }
+    const keyword = searchInput.value.trim();
+    const processedSites = new Set(); // 用集合去重
+    
+    sites.forEach(site => {
+        if (processedSites.has(site)) return;
+        processedSites.add(site);
+        
+        if (linkButtons.includes(site)) {
+            const url = siteUrls[site];
+            window.open(url, '_blank');
+        } else if (keyword) {
+            const url = siteUrls[site] + encodeURIComponent(keyword);
+            window.open(url, '_blank');
         }
+    });
+    
+    if (keyword) {
+        addToHistory(keyword);
+    }
+    }
 
         // 导出历史记录
         function exportHistory() {
@@ -1165,15 +1213,25 @@
         }
 
         // 编辑历史记录项
-        function editHistoryItem(keyword) {
-            isEditingHistory = true;
-            currentEditItem = document.querySelector(`.history-item[data-keyword="${keyword}"]`);
-            if (currentEditItem) {
-                historyEditInput.value = keyword;
-                editHistoryModal.style.display = 'block';
-                historyEditInput.focus();
-            }
-        }
+        function editHistoryItem(keyword, clickPosition) {
+    isEditingHistory = true;
+    currentEditItem = document.querySelector(`.history-item[data-keyword="${keyword}"]`);
+    if (currentEditItem) {
+        historyEditInput.value = keyword;
+        editHistoryModal.style.display = 'block';
+        historyEditInput.focus();
+        
+        // 新增：根据点击位置设置光标
+        setTimeout(() => {
+            const charWidth = 8; // 根据实际字体调整（14px字体≈8px/字符）
+            const cursorPos = Math.min(
+                Math.floor(clickPosition / charWidth),
+                keyword.length
+            );
+            historyEditInput.setSelectionRange(cursorPos, cursorPos);
+        }, 50);
+    }
+}
 
         // 输入框输入事件处理
         function handleInput() {
