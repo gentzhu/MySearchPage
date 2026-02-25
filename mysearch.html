@@ -490,6 +490,71 @@
                 white-space: nowrap !important;
             }
 
+            /* 拖拽样式 */
+            .draggable-row {
+                cursor: move;
+                transition: all 0.2s ease;
+            }
+            
+            .draggable-row:hover {
+                background-color: #f0f8ff;
+                transform: translateX(2px);
+            }
+            
+            .dragging {
+                opacity: 0.6;
+                background-color: #e3f2fd;
+                transform: rotate(2deg) scale(1.02);
+                z-index: 1000;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            }
+            
+            .drag-over {
+                border-top: 3px solid #2196f3;
+                background-color: #f8f9fa;
+            }
+            
+            .drag-handle {
+                cursor: move;
+                padding: 4px;
+                color: #666;
+                font-size: 12px;
+                user-select: none;
+                transition: color 0.2s ease;
+                display: inline-block;
+                width: 16px;
+            }
+            
+            .drag-handle:hover {
+                color: #2196f3;
+                transform: scale(1.2);
+            }
+            
+            /* 主界面按钮拖拽样式 */
+            .btn-group .draggable-button {
+                cursor: move;
+                transition: all 0.2s ease;
+            }
+            
+            .btn-group .draggable-button:hover {
+                box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+                transform: translateY(-1px);
+            }
+            
+            .btn-group .draggable-button.dragging {
+                opacity: 0.7;
+                transform: rotate(3deg) scale(1.05);
+                z-index: 1000;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            }
+            
+            .btn-group .drag-over-button {
+                border-left: 4px solid #2196f3;
+                background-color: rgba(33, 150, 243, 0.1);
+                transform: translateX(2px);
+            }
+            
+
             .fixed-header {
                 gap: 1px; /* 更紧凑的统一间距 */
                 padding: 1px 2px; /* 更小的左右边距，保持对齐 */
@@ -1415,9 +1480,12 @@
                 // 缓存状态
                 buttonConfigState = buttonConfig || [];
                 
-                buttonConfigState.forEach(btnConfig => {
+                buttonConfigState.forEach((btnConfig, index) => {
                     const button = document.createElement('button');
                     button.textContent = btnConfig.name;
+                    button.className = 'draggable-button';
+                    button.draggable = true;
+                    button.dataset.index = index;
                     
                     // 兼容性处理：支持旧格式的 datasite 和新格式的 dataSite
                     const dataSite = btnConfig.dataSite || btnConfig.datasite;
@@ -1436,6 +1504,15 @@
                     // 允许主页面高亮逻辑风格，复用 highlight 类
                     button.addEventListener('focus', () => button.classList.add('highlight'));
                     button.addEventListener('blur', () => button.classList.remove('highlight'));
+                    
+                    // 添加拖拽事件
+                    button.addEventListener('dragstart', handleButtonDragStart);
+                    button.addEventListener('dragover', handleButtonDragOver);
+                    button.addEventListener('drop', handleButtonDrop);
+                    button.addEventListener('dragend', handleButtonDragEnd);
+                    button.addEventListener('dragenter', handleButtonDragEnter);
+                    button.addEventListener('dragleave', handleButtonDragLeave);
+                    
                     btnGroup.appendChild(button);
                 });
 
@@ -1466,14 +1543,47 @@
             
             tbody.innerHTML = '';
             
+            // 使用buttonConfigState的顺序来排序，如果不存在则使用原顺序
+            const sortedEntries = [];
+            if (buttonConfigState && buttonConfigState.length > 0) {
+                // 按buttonConfigState的顺序排序
+                buttonConfigState.forEach(btnConfig => {
+                    const dataSite = btnConfig.dataSite || btnConfig.datasite;
+                    if (siteUrls[dataSite]) {
+                        sortedEntries.push([dataSite, siteUrls[dataSite]]);
+                    }
+                });
+                // 添加不在buttonConfigState中的网站
             for (const [site, url] of Object.entries(siteUrls)) {
+                    if (!sortedEntries.find(entry => entry[0] === site)) {
+                        sortedEntries.push([site, url]);
+                    }
+                }
+            } else {
+                sortedEntries.push(...Object.entries(siteUrls));
+            }
+            
+            sortedEntries.forEach(([site, url], index) => {
                 const row = document.createElement('tr');
+                row.className = 'draggable-row';
+                row.draggable = true;
+                row.dataset.site = site;
+                row.dataset.index = index;
                 
+                // 添加拖拽手柄到第一列
                 const nameCell = document.createElement('td');
+                const dragHandle = document.createElement('span');
+                dragHandle.className = 'drag-handle';
+                dragHandle.innerHTML = '⋮⋮';
+                dragHandle.title = '拖拽排序';
+                
                 const nameInput = document.createElement('input');
                 nameInput.type = 'text';
                 nameInput.value = document.querySelector(`button[data-site="${site}"]`)?.textContent || site;
-                nameInput.style.width = '100%';
+                nameInput.style.width = 'calc(100% - 20px)';
+                nameInput.style.marginLeft = '4px';
+                
+                nameCell.appendChild(dragHandle);
                 nameCell.appendChild(nameInput);
                 
                 const siteCell = document.createElement('td');
@@ -1519,10 +1629,227 @@
 
                 // 行选中（点击空白处）
                 row.addEventListener('click', (e) => {
-                    if (e.target.closest('input,button')) return;
+                    if (e.target.closest('input,button,.drag-handle')) return;
                     row.classList.toggle('selected');
                 });
+                
+                // 拖拽事件
+                row.addEventListener('dragstart', handleTableDragStart);
+                row.addEventListener('dragover', handleTableDragOver);
+                row.addEventListener('drop', handleTableDrop);
+                row.addEventListener('dragend', handleTableDragEnd);
+                row.addEventListener('dragenter', handleTableDragEnter);
+                row.addEventListener('dragleave', handleTableDragLeave);
+            });
+        }
+
+        // 表格拖拽功能相关变量
+        let draggedTableRow = null;
+
+        // 表格拖拽事件处理函数
+        function handleTableDragStart(e) {
+            draggedTableRow = this;
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', this.outerHTML);
+        }
+
+        function handleTableDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+        }
+
+        function handleTableDragEnter(e) {
+            e.preventDefault();
+            if (this !== draggedTableRow) {
+                this.classList.add('drag-over');
             }
+        }
+
+        function handleTableDragLeave(e) {
+            e.preventDefault();
+            // 只有当鼠标完全离开当前元素时才移除样式
+            if (!this.contains(e.relatedTarget)) {
+                this.classList.remove('drag-over');
+            }
+        }
+
+        function handleTableDrop(e) {
+            e.preventDefault();
+            if (this !== draggedTableRow) {
+                const tbody = this.parentNode;
+                const draggedIndex = Array.from(tbody.children).indexOf(draggedTableRow);
+                const targetIndex = Array.from(tbody.children).indexOf(this);
+                
+                if (draggedIndex < targetIndex) {
+                    tbody.insertBefore(draggedTableRow, this.nextSibling);
+                } else {
+                    tbody.insertBefore(draggedTableRow, this);
+                }
+                
+                // 更新行的data-index属性
+                Array.from(tbody.children).forEach((row, index) => {
+                    row.dataset.index = index;
+                });
+                
+                // 更新buttonConfigState顺序
+                updateButtonConfigOrder();
+            }
+            this.classList.remove('drag-over');
+        }
+
+        function handleTableDragEnd(e) {
+            this.classList.remove('dragging');
+            // 移除所有drag-over样式
+            document.querySelectorAll('.drag-over').forEach(el => {
+                el.classList.remove('drag-over');
+            });
+            draggedTableRow = null;
+        }
+
+        // 更新按钮配置顺序
+        function updateButtonConfigOrder() {
+            const tbody = document.getElementById('sites-table-body');
+            if (!tbody) return;
+            
+            const newButtonConfig = [];
+            Array.from(tbody.children).forEach(row => {
+                const site = row.dataset.site;
+                const existingConfig = buttonConfigState.find(config => 
+                    (config.dataSite || config.datasite) === site
+                );
+                
+                if (existingConfig) {
+                    newButtonConfig.push(existingConfig);
+                } else {
+                    // 为新网站创建默认配置
+                    const nameInput = row.querySelector('td:first-child input');
+                    newButtonConfig.push({
+                        name: nameInput ? nameInput.value : site,
+                        dataSite: site,
+                        isSmall: false
+                    });
+                }
+            });
+            
+            buttonConfigState = newButtonConfig;
+            // 立即更新主界面按钮顺序
+            applyButtonConfig(buttonConfigState);
+            
+            // 自动保存新顺序到IndexedDB
+            saveSiteConfigLocally({ 
+                siteUrls, 
+                buttonConfig: buttonConfigState, 
+                siteFlags 
+            }).then(() => {
+                console.log('设置表格拖拽顺序已保存：', newButtonConfig.map(b => b.name));
+            }).catch(error => {
+                console.error('保存表格拖拽顺序失败:', error);
+            });
+        }
+
+        // 主界面按钮拖拽功能相关变量
+        let draggedButton = null;
+
+        // 主界面按钮拖拽事件处理函数
+        function handleButtonDragStart(e) {
+            // 阻止触发点击事件
+            e.stopPropagation();
+            draggedButton = this;
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', this.outerHTML);
+        }
+
+        function handleButtonDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+        }
+
+        function handleButtonDragEnter(e) {
+            e.preventDefault();
+            if (this !== draggedButton) {
+                this.classList.add('drag-over-button');
+            }
+        }
+
+        function handleButtonDragLeave(e) {
+            e.preventDefault();
+            if (!this.contains(e.relatedTarget)) {
+                this.classList.remove('drag-over-button');
+            }
+        }
+
+        function handleButtonDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (this !== draggedButton) {
+                const btnGroup = this.parentNode;
+                const draggedIndex = Array.from(btnGroup.children).indexOf(draggedButton);
+                const targetIndex = Array.from(btnGroup.children).indexOf(this);
+                
+                if (draggedIndex < targetIndex) {
+                    btnGroup.insertBefore(draggedButton, this.nextSibling);
+                } else {
+                    btnGroup.insertBefore(draggedButton, this);
+                }
+                
+                // 更新按钮的data-index属性
+                Array.from(btnGroup.children).forEach((btn, index) => {
+                    btn.dataset.index = index;
+                });
+                
+                // 更新buttonConfigState顺序
+                updateButtonConfigFromDOM();
+            }
+            this.classList.remove('drag-over-button');
+        }
+
+        function handleButtonDragEnd(e) {
+            this.classList.remove('dragging');
+            // 移除所有drag-over样式
+            document.querySelectorAll('.drag-over-button').forEach(el => {
+                el.classList.remove('drag-over-button');
+            });
+            draggedButton = null;
+        }
+
+        // 从DOM更新按钮配置顺序
+        function updateButtonConfigFromDOM() {
+            const btnGroup = document.querySelector('.btn-group');
+            if (!btnGroup) return;
+            
+            const newButtonConfig = [];
+            Array.from(btnGroup.children).forEach(button => {
+                const dataSite = button.getAttribute('data-site');
+                const existingConfig = buttonConfigState.find(config => 
+                    (config.dataSite || config.datasite) === dataSite
+                );
+                
+                if (existingConfig) {
+                    newButtonConfig.push(existingConfig);
+                } else {
+                    // 为新按钮创建默认配置
+                    newButtonConfig.push({
+                        name: button.textContent,
+                        dataSite: dataSite,
+                        isSmall: button.classList.contains('small')
+                    });
+                }
+            });
+            
+            buttonConfigState = newButtonConfig;
+            
+            // 自动保存新顺序到IndexedDB
+            saveSiteConfigLocally({ 
+                siteUrls, 
+                buttonConfig: buttonConfigState, 
+                siteFlags 
+            }).then(() => {
+                console.log('主界面按钮顺序已保存：', newButtonConfig.map(b => b.name));
+            }).catch(error => {
+                console.error('保存按钮顺序失败:', error);
+            });
         }
 
         // 已移除linkButtons，所有按钮统一使用三状态逻辑
@@ -2793,9 +3120,9 @@
                     if (currentItem.type === 'button') {
                         const btn = currentItem.element;
                         if (btn.hasAttribute('data-site')) {
-                            clearSelection(); // 清除所有选择
-                            const site = btn.getAttribute('data-site');
-                            search(site, true); // 使用单个搜索函数
+                                clearSelection(); // 清除所有选择
+                                const site = btn.getAttribute('data-site');
+                                search(site, true); // 使用单个搜索函数
                         } else {
                             btn.click();
                         }
@@ -4211,15 +4538,17 @@
                 const newSiteFlags = {};
                 const rows = document.querySelectorAll('#sites-table-body tr');
 
-                rows.forEach(row => {
+                // 按照表格行顺序处理（保持拖拽后的顺序）
+                rows.forEach((row, index) => {
                     const nameInput = row.querySelector('td:nth-child(1) input');
                     const siteInput = row.querySelector('td:nth-child(2) input');
                     const urlInput = row.querySelector('td:nth-child(3) input');
-                    const rightInput = row.querySelector('td:nth-child(4) input[type="checkbox"]');
-                    const requireInput = row.querySelector('td:nth-child(5) input[type="checkbox"]');
+                    const rightCheckbox = row.querySelector('td:nth-child(4) .two-state-checkbox');
+                    const requireCheckbox = row.querySelector('td:nth-child(5) .three-state-checkbox');
 
                     if (siteInput && urlInput && siteInput.value && urlInput.value) {
                         newSiteUrls[siteInput.value] = urlInput.value;
+                        
                         if (nameInput && nameInput.value) {
                             newButtonConfig.push({
                                 name: nameInput.value,
@@ -4227,9 +4556,21 @@
                                 isSmall: siteInput.value.length > 10
                             });
                         }
+                        
+                        // 处理右键状态（二状态复选框）
+                        const rightClickEnabled = rightCheckbox ? 
+                            (rightCheckbox.getAttribute('data-checked') === '1') : false;
+                        
+                        // 处理单开状态（三状态复选框）
+                        const siteMode = requireCheckbox ? 
+                            parseInt(requireCheckbox.getAttribute('data-state')) : SITE_MODES.NO_BLANK;
+                        
                         newSiteFlags[siteInput.value] = {
-                            rightClick: !!(rightInput && rightInput.checked),
-                            allowBlank: !!(requireInput && requireInput.checked)
+                            rightClick: rightClickEnabled,
+                            mode: siteMode,
+                            // 兼容旧格式
+                            allowBlank: siteMode === SITE_MODES.BOTH,
+                            requireKeyword: siteMode === SITE_MODES.NO_BLANK
                         };
                     }
                 });
@@ -4238,7 +4579,7 @@
                 siteFlags = newSiteFlags;
                 buttonConfigState = newButtonConfig;
 
-                // 更新按钮组
+                // 更新按钮组（应用拖拽后的新顺序）
                 applyButtonConfig(buttonConfigState);
 
                 // 保存到IndexedDB
@@ -4246,8 +4587,11 @@
 
                 // 关闭设置
                 closeSettingsModal();
+                
+                console.log('设置已保存，新的按钮顺序：', newButtonConfig.map(b => b.name));
             } catch (error) {
                 alert('保存设置出错: ' + error.message);
+                console.error('保存设置出错:', error);
             }
         }
 
