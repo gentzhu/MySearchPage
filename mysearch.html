@@ -4,13 +4,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的搜索页面</title>
+    <title>MySearchPage</title>
     <style>
+        .flex1 {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
+        .flex2 {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
         body {
             font-family: Arial, sans-serif;
             margin: 0;
-            padding: 0;
-            display: flex;
+            padding: 20px 40px 8px 20px;
             flex-direction: column;
             height: 100vh;
             overflow: hidden;
@@ -21,28 +32,22 @@
             position: fixed;
             top: 0;
             background: white;
+            gap: 10px;
             z-index: 100;
-            padding: 10px 20px 8px 20px;
+            /* padding: 10px 20px 8px 20px; */
             /* 调整底部内边距 */
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            margin-bottom: 10px;
+            /* margin-bottom: 10px; */
             /* 增大底部外边距 */
             touch-action: none;
             -webkit-overflow-scrolling: touch;
         }
 
-        .header-controls {
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
-            gap: 5px;
-        }
-
         .search-container {
-            display: flex;
-            margin-bottom: 12px;
+            /* display: flex; */
+            /* margin-bottom: 12px; */
             align-items: center;
-            gap: 5px;
+            /* gap: 5px; */
             width: 100%;
             position: relative;
         }
@@ -50,7 +55,7 @@
         #search-input {
             padding: 10px 35px 10px 10px;
             font-size: 16px;
-            flex-grow: 1;
+            /* flex-grow: 1; */
             border: 1px solid #000;
             width: 100%;
         }
@@ -67,9 +72,10 @@
         }
 
         .control-buttons {
-            display: flex;
-            gap: 5px;
-            flex-wrap: wrap;
+            /* display: flex; */
+            /* gap: 5px; */
+            align-items: left;
+            /* flex-wrap: wrap; */
             flex-grow: 1;
         }
 
@@ -79,7 +85,7 @@
             background: transparent;
             cursor: pointer;
             font-size: 14px;
-            transition: all 0.2s;
+            /* transition: all 0.2s; */
             text-align: center;
             white-space: normal;
             word-wrap: break-word;
@@ -101,10 +107,10 @@
         }
 
         .btn-group {
-            display: flex;
-            flex-wrap: wrap;
+            /* display: flex; */
+            /* flex-wrap: wrap; */
             gap: 5px;
-            margin-bottom: 5px;
+            /* margin-bottom: 5px; */
             width: 100%;
         }
 
@@ -112,7 +118,7 @@
         .scrollable-content {
             flex: 1;
             overflow-y: auto;
-            padding: 10px 2px 0;
+            /* padding: 10px 2px 0; */
             margin-top: 60px;
             height: calc(100vh - 160px);
             /* 计算剩余高度 */
@@ -122,35 +128,37 @@
             /* 确保padding包含在高度内 */
         }
 
-        .history-header {
+        /* .history-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-top: 5px;
-        }
+        } */
 
-        .history-container {
-            margin-top: 5px;
+        .history-header {
+            /* margin-top: 5px; */
             width: 100%;
-            display: flex;
+            padding-bottom: 10px;
+            /* display: flex; */
+            /* gap: 5px; */
         }
 
         .history-title {
             font-weight: bold;
             font-size: 14px;
-            margin-bottom: 5px;
-            position: sticky;
+            /* margin-bottom: 5px; */
+            /* position: sticky; */
             top: -15px;
-            margin-bottom: 0;
-            padding: 2px 0;
+            /* margin-bottom: 0; */
+            /* padding: 2px 0; */
             background: white;
             z-index: 10;
         }
 
         .history-item {
             display: inline-block;
-            margin-right: 8px;
-            margin-bottom: 8px;
+            /* margin-right: 8px; */
+            /* margin-bottom: 8px; */
             padding: 4px 8px;
             border: 1px solid #ddd;
             cursor: pointer;
@@ -219,21 +227,22 @@
             margin-right: 5px;
         }
 
-        .mobile-quick-search-wrapper {
+        /* .mobile-quick-search-wrapper {
             display: flex;
             /* 使按钮水平排列 */
-            right: 120px;
-            /* 调整到历史标题右侧 */
-            top: 10px;
+        /* right: 120px; */
+        /* 调整到历史标题右侧 */
+        /* top: 10px;
             align-items: center;
             gap: 5px;
             margin-left: 20px;
             margin-bottom: 5px;
-            width: auto;
-            /* 改为自动宽度 */
-            float: left;
-            /* 左浮动 */
-        }
+            width: auto; */
+        /* 改为自动宽度 */
+        /* float: left; */
+        */
+        /* 左浮动 */
+        /*}*/
 
         #mobile-quick-search {
             width: 100px;
@@ -276,6 +285,14 @@
                 width: auto;
             }
 
+            .btn-group {
+                gap: 2px;
+            }
+
+            .control-buttons {
+                gap: 2px;
+            }
+
             button.small {
                 font-size: 10px;
                 padding: 2px 2px;
@@ -315,25 +332,23 @@
     </style>
 </head>
 
-<body>
-    <div class="fixed-header">
+<body class="flex1">
+    <div class="fixed-header flex1">
         <div class="search-container">
             <input type="text" id="search-input" autocomplete="off">
             <span class="clear-input" title="清空输入">×</span>
         </div>
 
-        <div class="header-controls">
-            <div class="control-buttons">
-                <button id="save-only">仅保存</button>
-                <button id="all-sites">所有</button>
-                <button id="common-sites">常用</button>
-                <button id="foreign-sites">外网</button>
-                <button id="edit-history">编辑历史</button>
-                <button id="export-history">导出历史</button>
-                <button id="import-history">导入历史</button>
-            </div>
+        <div class="control-buttons flex2">
+            <button id="save-only">仅保存</button>
+            <button id="all-sites">所有</button>
+            <button id="common-sites">常用</button>
+            <button id="foreign-sites">外网</button>
+            <button id="edit-history">编辑历史</button>
+            <button id="export-history">导出历史</button>
+            <button id="import-history">导入历史</button>
         </div>
-        <div class="btn-group">
+        <div class="btn-group flex2">
             <button data-site="xiaohongshu">小红书</button>
             <button data-site="douyin">抖音</button>
             <button data-site="douyin-history" class="small">抖音历史</button>
@@ -369,17 +384,15 @@
             <button data-site="wangpanzhijia">网盘之家</button>
         </div>
 
-        <div class="history-container">
+        <div class="history-header flex1">
             <div class="history-title">搜索历史</div>
-            <div class="mobile-quick-search-wrapper ">
-                <button id="mobile-esc-btn" class="mobile-only button"> Esc </button>
-                <input type="text" id="mobile-quick-search" autocomplete="off" spellcheck="false">
-            </div>
+            <button id="mobile-esc-btn" class="mobile-only button"> Esc </button>
+            <input type="text" id="mobile-quick-search" autocomplete="off" spellcheck="false">
         </div>
     </div>
 
     <div class="scrollable-content">
-        <div id="history-list"></div>
+        <div id="history-list" class="flex2"></div>
     </div>
 
     <div class="modal" id="error-modal">
@@ -645,11 +658,12 @@
             mobileQuickSearch.addEventListener('input', focusQuickSearch)
             // 空格键处理（不中断搜索）
             mobileQuickSearch.addEventListener('keydown', function (e) {
-                if (e.key === ' ') {
-                    e.preventDefault(); // 阻止默认空格行为
-                    this.value += ' '; // 手动添加空格
-                    this.dispatchEvent(new Event('input')); // 触发搜索
-                } else if (e.key === 'Enter') {
+                // if (e.key === ' ') {
+                //     e.preventDefault(); // 阻止默认空格行为
+                //     this.value += ' '; // 手动添加空格
+                //     this.dispatchEvent(new Event('input')); // 触发搜索
+                // } else 
+                if (e.key === 'Enter') {
                     const firstMatch = document.querySelector('.highlight.history-item, .highlight[data-site]');
                     if (firstMatch) {
                         searchInput.value = firstMatch.textContent;
@@ -724,6 +738,7 @@
             // 处理Ctrl+-取消所有选中
             if (e.key === '-' && e.ctrlKey) {
                 e.preventDefault();
+                e.stopPropagation();
                 clearSelection();
                 return;
             }
@@ -734,11 +749,7 @@
                     saveEditBtn.click();
                     return;
                 }
-                if ((e.key === 'F8' || (e.ctrlKey && e.key === 'Delete'))) {
-                    e.preventDefault();
-                    searchInput.value = '';
-                    searchInput.focus();
-                }
+
                 return;
             }
 
@@ -793,9 +804,6 @@
                 if (quickSearchActive && matchedItems.length > 0) {
                     searchInput.value = matchedItems[0].element.textContent;
                     searchInput.focus();
-                } else if (currentFocusElement === searchInput) {
-                    const defaultSites = ['bing', 'baidu', 'google'];
-                    batchSearch(defaultSites);
                 } else if (currentFocusElement.classList.contains('history-item')) {
                     const keyword = currentFocusElement.getAttribute('data-keyword');
                     searchInput.value = keyword;
@@ -816,10 +824,15 @@
             }
 
             // Delete或F4删除选中的历史记录
-            if ((e.key === 'Delete' || e.key === 'F4') && selectedElements.length > 0) {
+            if (e.key === 'Delete' && selectedElements.length > 0) {
                 e.preventDefault();
                 deleteSelectedHistoryItems();
                 return;
+            }
+
+            if ((e.key === 'F8' || (e.ctrlKey && e.key === 'Delete'))) {
+                e.preventDefault();
+                searchInput.value = '';
             }
 
             // Ctrl+Z撤销删除
@@ -843,16 +856,16 @@
                 return;
             }
             // ESC只取消快速搜索，不影响选中状态
-            else if (quickSearchKeys.length > 0) {
+            else if (mobileQuickSearch.value) {
                 // e.preventDefault();
-                quickSearchKeys = '';
-                updateQuickSearchDisplay();
+                mobileQuickSearch.value = '';
+                // updateQuickSearchDisplay();
                 // quickSearchActive = false;
                 mobileQuickSearch.blur();
                 return;
             }
             // 第一次按ESC：清空快速搜索状态
-            else if (!quickSearchKeys && matchedItems.length < document.querySelectorAll('.history-item').length) {
+            else if (!mobileQuickSearch.value && matchedItems.length < document.querySelectorAll('.history-item').length) {
                 clearMatches();
                 showAllHistoryItems();
                 // 显示所有元素
@@ -900,7 +913,7 @@
                     isMatch = searchTerms.every(term => text.includes(term));
                 } else {
                     isMatch = searchTerms.every(term =>
-                        pinyin.includes(term) ||text.includes(term)
+                        pinyin.includes(term) || text.includes(term)
                     );
                 }
                 if (isMatch) {
