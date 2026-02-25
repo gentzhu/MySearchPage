@@ -77,12 +77,12 @@
         }
 
         button {
-            padding: 6px 10px;
+            padding: 4px 6px;
             border: 1px solid #000;
             background: transparent;
             cursor: pointer;
             font-size: 14px;
-            /* transition: all 0.2s; */
+            transition: all 0.2s;
             text-align: center;
             white-space: normal;
             word-wrap: break-word;
@@ -90,7 +90,7 @@
 
         button.small {
             font-size: 12px;
-            padding: 4px 6px;
+            padding: 2px 2px;
             line-height: 1.2;
         }
 
@@ -254,13 +254,13 @@
             /* 隐藏光标 */
         }
 
-        @media (device-width>1200px) {
+        @media (min-width:769px) {
             .mobile-only {
                 display: none !important;
             }
         }
 
-        @media (max-device-width:1200px) {
+        @media (max-width:768px) {
             .desktop-only {
                 display: none !important;
             }
@@ -271,13 +271,13 @@
             }
 
             #search-input {
-                padding: 2px 4px;
+                padding: 3px 1px;
                 font-size: 16px;
             }
 
             button {
-                padding: 2px 1px;
-                font-size: 14px;
+                padding: 1px 1px;
+                font-size: 16px;
                 margin: 0px;
                 width: auto;
             }
@@ -291,8 +291,8 @@
             }
 
             button.small {
-                font-size: 10px;
-                padding: 2px 2px;
+                font-size: 12px;
+                padding: 1px 1px;
             }
 
             button.highlight {
@@ -553,7 +553,7 @@
             state.ascending = !state.ascending; // 切换方向
             
             searchHistory.sort((a, b) =>
-                state.ascending ? a.localeCompare(b) : b.localeCompare(a)
+                state.ascending ? a.keyword.localeCompare(b.keyword) : b.keyword.localeCompare(a.keyword)
             );
             
             // 更新按钮文本
@@ -566,10 +566,14 @@
         function sortByTime() {
             const state = sortStates.time;
             state.ascending = !state.ascending; // 切换方向
-            
-            const history = JSON.parse(localStorage.getItem('searchHistory')) || [];
-            searchHistory = state.ascending ? [...history].reverse() : [...history];
-            
+
+            // 根据时间戳排序
+            searchHistory.sort((a, b) => {
+                const timeA = new Date(a.timestamp).getTime();
+                const timeB = new Date(b.timestamp).getTime();
+                return state.ascending ? timeA - timeB : timeB - timeA;
+            });
+
             // 更新按钮文本
             document.getElementById('sort-by-time').textContent =
                 `时间 ${state.ascending ? '↑' : '↓'}`;
@@ -582,7 +586,7 @@
             state.ascending = !state.ascending; // 切换方向
             
             searchHistory.sort((a, b) =>
-                state.ascending ? a.length - b.length : b.length - a.length
+                state.ascending ? a.keyword.length - b.keyword.length : b.keyword.length - a.keyword.length
             );
             
             // 更新按钮文本
@@ -593,7 +597,22 @@
         }
         
         // 加载搜索历史
-        let searchHistory = JSON.parse(localStorage.getItem('searchHistory')) || [];
+        let searchHistory = [];
+        const storedHistory = localStorage.getItem('searchHistory');
+        if (storedHistory) {
+            // 尝试解析为数组
+            const parsed = JSON.parse(storedHistory);
+            if (Array.isArray(parsed)) {
+                // 检查第一个元素是字符串还是对象
+                if (parsed.length > 0 && typeof parsed[0] === 'string') {
+                    // 旧格式：字符串数组，转换为对象数组，时间戳设为当前时间
+                    searchHistory = parsed.map(keyword => ({ keyword, timestamp: new Date().toISOString() }));
+                } else {
+                    // 新格式：对象数组
+                    searchHistory = parsed;
+                }
+            }
+        }
         renderHistory();
         
         // 排序按钮事件
@@ -690,8 +709,16 @@
                 const oldKeyword = currentEditItem.getAttribute('data-keyword');
                 const newKeyword = historyEditInput.value.trim();
                 if (oldKeyword !== newKeyword) {
-                    removeFromHistory(oldKeyword);
-                    addToHistory(newKeyword);
+                    // 找到原始历史项（包含时间戳）
+                    const historyItem = searchHistory.find(item => item.keyword === oldKeyword);
+                    if (historyItem) {
+                        // 更新关键词但保留原时间戳
+                        historyItem.keyword = newKeyword;
+                        // 保存到localStorage
+                        localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
+                        // 重新渲染历史记录
+                        renderHistory();
+                    }
                 }
                 editHistoryModal.style.display = 'none';
                 isEditingHistory = false;
@@ -1354,8 +1381,8 @@
                 if (isEditMode) {
                     item.classList.add('editable');
                 }
-                item.textContent = keyword;
-                item.setAttribute('data-keyword', keyword);
+                item.textContent = keyword.keyword;
+                item.setAttribute('data-keyword', keyword.keyword);
                 item.tabIndex = 0;
                 item.addEventListener('click', (e) => {
                     e.stopPropagation();
@@ -1397,18 +1424,22 @@
 
         // 从历史记录中移除
         function removeFromHistory(keyword) {
-            searchHistory = searchHistory.filter(item => item !== keyword);
+            searchHistory = searchHistory.filter(item => item.keyword !== keyword);
             localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
             renderHistory();
         }
 
         // 添加到搜索历史
         function addToHistory(keyword) {
-            if (!searchHistory.includes(keyword)) {
-                searchHistory.unshift(keyword);
-                localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
-                renderHistory();
+            // 避免重复添加（根据关键词判断），如果存在则先移除
+            const existingIndex = searchHistory.findIndex(item => item.keyword === keyword);
+            if (existingIndex !== -1) {
+                searchHistory.splice(existingIndex, 1);
             }
+            // 添加到最前面
+            searchHistory.unshift({ keyword, timestamp: new Date().toISOString() });
+            localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
+            renderHistory();
         }
 
         // 搜索功能
@@ -1476,8 +1507,9 @@
         function exportHistory() {
             if (searchHistory.length === 0) return;
 
-            const content = searchHistory.join('\n');
-            const blob = new Blob([content], { type: 'text/plain' });
+            // 使用JSON格式导出
+            const content = JSON.stringify(searchHistory, null, 2);
+            const blob = new Blob([content], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
 
             // 改进的手机端导出处理
@@ -1503,7 +1535,7 @@
                     box.style.borderRadius = '5px';
                     box.innerHTML = `
                         <p>请长按下方链接选择"下载"或"保存"</p>
-                        <a href="${url}" download="搜索历史.txt" style="word-break:break-all;">下载搜索历史</a>
+                        <a href="${url}" download="搜索历史.json" style="word-break:break-all;">下载搜索历史</a>
                         <p><button style="margin-top:10px;">关闭</button></p>
                     `;
 
@@ -1520,7 +1552,7 @@
                 // PC端正常下载
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = '搜索历史.txt';
+                a.download = '搜索历史.json';
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
@@ -1532,15 +1564,39 @@
         function importHistory() {
             const input = document.createElement('input');
             input.type = 'file';
-            input.accept = '.txt';
+            input.accept = '.json,.txt';
             input.onchange = (e) => {
                 const file = e.target.files[0];
                 if (file) {
                     const reader = new FileReader();
                     reader.onload = (e) => {
                         const content = e.target.result;
-                        const lines = content.split('\n').filter(line => line.trim());
-                        searchHistory = lines.concat(searchHistory);
+                        let newItems = [];
+                        
+                        try {
+                            // 尝试解析为JSON
+                            newItems = JSON.parse(content);
+                            if (!Array.isArray(newItems)) {
+                                throw new Error("Invalid JSON format");
+                            }
+                        } catch (jsonError) {
+                            // 如果不是JSON，尝试解析为旧格式
+                            const lines = content.split('\n').filter(line => line.trim());
+                            lines.forEach(line => {
+                                // 尝试按制表符分割
+                                const parts = line.split('\t');
+                                if (parts.length >= 2) {
+                                    // 旧格式：关键词\t时间戳
+                                    newItems.push({ keyword: parts[0], timestamp: parts[1] });
+                                } else {
+                                    // 旧格式：只有关键词
+                                    newItems.push({ keyword: line.trim(), timestamp: new Date().toISOString() });
+                                }
+                            });
+                        }
+                        
+                        // 将新导入的记录添加到现有记录的前面
+                        searchHistory = [...newItems, ...searchHistory];
                         localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
                         renderHistory();
                     };
@@ -1627,10 +1683,16 @@
             const itemsToDelete = selectedElements.filter(el => el.classList.contains('history-item'));
             if (itemsToDelete.length === 0) return;
 
-            lastDeletedItems = itemsToDelete.map(item => ({
-                keyword: item.getAttribute('data-keyword'),
-                element: item
-            }));
+            lastDeletedItems = itemsToDelete.map(item => {
+                const keyword = item.getAttribute('data-keyword');
+                // 从searchHistory中找到对应的完整对象（包含时间戳）
+                const historyItem = searchHistory.find(item => item.keyword === keyword);
+                return {
+                    keyword,
+                    element: item,
+                    historyItem // 存储完整的历史项对象
+                };
+            });
 
             itemsToDelete.forEach(item => {
                 const keyword = item.getAttribute('data-keyword');
@@ -2039,8 +2101,11 @@
             if (lastDeletedItems.length === 0) return;
 
             lastDeletedItems.forEach(item => {
-                if (!searchHistory.includes(item.keyword)) {
-                    searchHistory.unshift(item.keyword);
+                // 检查是否已经存在相同关键词的历史项
+                const exists = searchHistory.some(historyItem => historyItem.keyword === item.keyword);
+                if (!exists && item.historyItem) {
+                    // 使用原始的历史项对象（包含时间戳）恢复
+                    searchHistory.unshift(item.historyItem);
                 }
             });
 
