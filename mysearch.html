@@ -1143,32 +1143,55 @@
 
             allElements.forEach(element => {
                 const text = element.textContent.toLowerCase();
-                const pinyin = getPinyinInitials(text).toLowerCase(); // 转换为小写
+                // 获取每个字符的可能首字母数组（数组的数组）
+                const pinyinArray = getPinyinInitials(text);   // 返回示例：[['x'], ['h','g'], ['s']]
+
+                // 生成所有组合
+                function generateCombinations(arrays) {
+                    if (arrays.length === 0) return [''];
+                    const [first, ...rest] = arrays;
+                    const restCombinations = generateCombinations(rest);
+                    const results = [];
+                    for (let i = 0; i < first.length; i++) {
+                        for (let j = 0; j < restCombinations.length; j++) {
+                            results.push(first[i] + restCombinations[j]);
+                        }
+                    }
+                    return results;
+                }
+
+                const combinations = generateCombinations(pinyinArray).map(combo => combo.toLowerCase());
                 let isMatch = false;
 
-                // 统一处理逻辑：每个查询词必须连续出现（子串匹配），顺序不限
+                // 先检查文本匹配（原逻辑）：每个查询词必须是连续子串
                 let textMatch = true;
-                let pinyinMatch = true;
-                
-                // 检查每个查询词是否在文本中出现（不要求顺序）
                 for (const query of queries) {
                     if (text.indexOf(query) === -1) {
                         textMatch = false;
                         break;
                     }
                 }
-                
-                // 如果文本匹配失败，再尝试拼音匹配
-                if (!textMatch) {
+                if (textMatch) {
+                    isMatch = true;
+                } else {
+                    // 拼音匹配：检查每个查询词是否在任何一个组合中连续出现
+                    let pinyinMatch = true;
                     for (const query of queries) {
-                        if (pinyin.indexOf(query) === -1) {
+                        let queryMatched = false;
+                        // 检查这个查询词是否在任何一个组合中连续出现
+                        for (const combo of combinations) {
+                            if (combo.indexOf(query) !== -1) {
+                                queryMatched = true;
+                                break;
+                            }
+                        }
+                        if (!queryMatched) {
                             pinyinMatch = false;
                             break;
                         }
                     }
+                    isMatch = pinyinMatch;
                 }
-
-                isMatch = textMatch || pinyinMatch;
 
                 if (isMatch) {
                     matchedItems.push({
@@ -1200,13 +1223,13 @@
         // 使用拼音库获取拼音首字母
         function getPinyinInitials(text) {
             console.log('[DEBUG] getPinyinInitials called with text:', text);
-            if (!text) return '';
-            let result = '';
+            if (!text) return [];
+            let result = [];
             for (let i = 0; i < text.length; i++) {
                 const char = text[i];
                 const unicode = char.charCodeAt(0);
                 console.log(`[DEBUG] Processing char: ${char}, unicode: ${unicode}`);
-                
+                let charSet = [];
                 // 处理中文字符（Unicode范围：19968-40869）
                 if (unicode >= 19968 && unicode <= 40869) {
                     console.log(`[DEBUG] Chinese char detected: ${char} (${unicode})`);
@@ -1215,7 +1238,8 @@
                     if (pinyin_dict_firstletter.polyphone[unicode]) {
                         const poly = pinyin_dict_firstletter.polyphone[unicode];
                         console.log(`[DEBUG] Found polyphone mapping: ${poly}`);
-                        result += poly;
+                        // 将多音字字符串拆分成单个字母，例如 'hg' -> ['h','g']
+                        charSet = poly.split('');
                     }
                     // 再检查常规字典
                     else {
@@ -1224,23 +1248,26 @@
                         if (idx < pinyin_dict_firstletter.all.length) {
                             const dictChar = pinyin_dict_firstletter.all.charAt(idx);
                             console.log(`[DEBUG] Found dict char: ${dictChar}`);
-                            result += dictChar;
+                            charSet = [dictChar];
                         } else {
                             console.log(`[DEBUG] Index ${idx} out of range (max: ${pinyin_dict_firstletter.all.length})`);
+                            charSet = [''];
                         }
                     }
                 }
                 // 处理非中文字符（原逻辑）
                 else if (/[a-zA-Z]/.test(char)) {
                     console.log(`[DEBUG] Non-Chinese letter: ${char}`);
-                    result += char.toLowerCase();
+                    charSet = [char.toLowerCase()];
                 }
                 // 其他字符忽略（保持原样）
                 else {
                     console.log(`[DEBUG] Skipping non-letter char: ${char}`);
+                    charSet = [''];
                 }
+                result.push(charSet);
             }
-            console.log('[DEBUG] Final result:', result);
+            console.log('[DEBUG] Final result array:', result);
             return result;
         }
 
