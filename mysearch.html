@@ -143,6 +143,7 @@
         /* 确保历史列表与头部对齐 */
         #history-list {
             margin: 0;
+            margin-top: 4px; /* 与fixed-header之间留出一点间隙 */
             padding: 0; /* history-list本身不需要padding */
             width: 100%;
             box-sizing: border-box;
@@ -164,7 +165,7 @@
             margin: 0; /* 确保没有额外margin */
             padding-left: 0; /* 确保没有额外左padding */
             padding-right: 0; /* 确保没有额外右padding */
-            margin-top: 6px; /* 与上方按钮组的间距 */
+            margin-top: 2px; /* 减少与上方的间距 */
         }
 
         .history-title {
@@ -2132,7 +2133,9 @@
 
             // 处理控制按钮的Enter键
             const controlButtons = ['save-only', 'all-sites', 'common-sites', 'foreign-sites',
-                'edit-history', 'export-history', 'import-history'];
+                'edit-history', 'export-history', 'import-history',
+                'sort-by-name', 'sort-by-time', 'sort-by-length', 'sort-by-first-time', 'sort-by-count',
+                'sync-gitee', 'sync-from-gitee', 'gitee-config', 'mobile-esc-btn'];
             if (e.key === 'Enter' && currentFocusElement && controlButtons.includes(currentFocusElement.id) && !isSettingsModalOpen()) {
                 e.preventDefault();
                 currentFocusElement.click();
@@ -2218,10 +2221,15 @@
                 if (quickSearchActive && matchedItems.length > 0) {
                     const currentItem = matchedItems[currentMatchIndex];
                     if (currentItem.type === 'button') {
-                        if (searchInput.value.trim()) {
-                            clearSelection(); // 清除所有选择
-                            const site = currentItem.element.getAttribute('data-site');
-                            search(site, true); // 使用单个搜索函数
+                        const btn = currentItem.element;
+                        if (btn.hasAttribute('data-site')) {
+                            if (searchInput.value.trim()) {
+                                clearSelection(); // 清除所有选择
+                                const site = btn.getAttribute('data-site');
+                                search(site, true); // 使用单个搜索函数
+                            }
+                        } else {
+                            btn.click();
                         }
                     } else if (currentItem.type === 'history') {
                         searchInput.value = currentItem.element.textContent;
@@ -2301,9 +2309,16 @@
             // e.preventDefault();
             if (isEditMode) {
                 e.preventDefault();
+                isEditMode = false;
+                if (typeof editHistoryBtn !== 'undefined' && editHistoryBtn) {
+                    editHistoryBtn.textContent = '编辑历史';
+                }
                 editHistoryModal.style.display = 'none';
                 isEditingHistory = false;
                 currentEditItem = null;
+                if (typeof renderHistory === 'function') {
+                    renderHistory();
+                }
                 return;
             }
             else if (document.activeElement === searchInput) {
