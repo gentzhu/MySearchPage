@@ -528,6 +528,7 @@
         let selectedElements = [];
         let lastDeletedItems = [];
         let quickSearchActive = false;
+        let lastFocusArea = null; // 记录最后聚焦的区域：'buttons' 或 'history'
 
         // 动态添加设置按钮
         const settingsBtn = document.createElement('button');
@@ -878,8 +879,71 @@
             currentMatchIndex = -1;
         }
 
-        // 全局键盘事件处理（快速搜索）
+        // 全局键盘事件处理（快速搜索）- 修复quick search导航问题
         function handleGlobalKeyDown(e) {
+            // 优先处理quick search状态下的按键
+            if (quickSearchActive) {
+                console.log(`[QUICK SEARCH] Key: ${e.key}, Matches: ${matchedItems.length}, Index: ${currentMatchIndex}`);
+                
+                // 处理方向键导航（只在匹配项间移动）
+                if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    if (matchedItems.length === 0) return;
+                    
+                    console.log(`[QUICK ARROW] Before: ${currentMatchIndex}`);
+                    
+                    // 计算新位置
+                    let direction = 0;
+                    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+                        direction = 1;
+                    } else {
+                        direction = -1;
+                    }
+                    
+                    currentMatchIndex = (currentMatchIndex + direction + matchedItems.length) % matchedItems.length;
+                    
+                    highlightCurrentMatch();
+                    console.log(`[QUICK ARROW] After: ${currentMatchIndex}`);
+                    return;
+                }
+                
+                // 处理Tab键切换（在按钮和历史项间切换）
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    if (matchedItems.length === 0) return;
+                    
+                    console.log(`[QUICK TAB] Before: ${currentMatchIndex}`);
+                    
+                    // 获取当前匹配项类型
+                    const currentType = matchedItems[currentMatchIndex].type;
+                    
+                    // 查找下一个不同类型的匹配项
+                    let found = false;
+                    for (let i = 1; i < matchedItems.length; i++) {
+                        const nextIndex = (currentMatchIndex + i) % matchedItems.length;
+                        if (matchedItems[nextIndex].type !== currentType) {
+                            currentMatchIndex = nextIndex;
+                            found = true;
+                            break;
+                        }
+                    }
+                    
+                    // 如果没有不同类型，则循环到第一个
+                    if (!found) {
+                        currentMatchIndex = 0;
+                    }
+                    
+                    highlightCurrentMatch();
+                    console.log(`[QUICK TAB] After: ${currentMatchIndex}`);
+                    return;
+                }
+            }
+            
+            // 非quick search状态下的全局按键处理
             if (e.key === 'Escape') {
                 GlobalQuit(e);
             }
@@ -900,10 +964,18 @@
                     return;
                 }
             }
+            
             // 电脑端快速搜索触发（包括空格）
             if (window.screen.width > 768 && !document.activeElement.matches('input, textarea') &&
                 e.key.length === 1 && /[a-z0-9\s]/i.test(e.key)) {
-
+                console.log(`[QUICK START] Key: ${e.key}`);
+                quickSearchActive = true;
+                // 激活快速搜索
+                mobileQuickSearch.focus();
+                quickSearchKeys = e.key;
+                updateQuickSearchDisplay();
+                performQuickSearch();
+                return;
                 // 空格键需要特殊处理
                 // if (e.key === ' ') {
                 //     // e.preventDefault();
@@ -935,53 +1007,53 @@
                 return;
             }
 
-            // Tab键切换下一个匹配项
-            if (e.key === 'Tab' && quickSearchActive && matchedItems.length > 0) {
+            // Tab键处理 - 非quick search状态
+            if (e.key === 'Tab') {
+                console.log(`[TAB] QuickSearch: ${quickSearchActive}, Matches: ${matchedItems.length}`);
                 e.preventDefault();
-                cycleMatches(1); // 下一个匹配项
-                return;
-            }
-
-            // Ctrl+Tab切换上一个匹配项
-            if (e.key === 'Tab' && e.ctrlKey && quickSearchActive && matchedItems.length > 0) {
-                e.preventDefault();
-                cycleMatches(-1); // 上一个匹配项
-                return;
-            }
-
-            // 普通Tab键切换焦点
-            if (e.key === 'Tab' && !quickSearchActive) {
-                e.preventDefault();
-                const allElements = Array.from(document.querySelectorAll('button, .history-item, input'));
-                const currentIndex = allElements.indexOf(currentFocusElement);
-                const nextIndex = (currentIndex + 1) % allElements.length;
-                currentFocusElement = allElements[nextIndex];
+                
+                // 非quick search状态下的Tab键切换
+                const buttons = Array.from(document.querySelectorAll('.btn-group button, .control-buttons button'));
+                const historyItems = Array.from(document.querySelectorAll('.history-item'));
+                
+                // 初始化lastFocusArea
+                if (!lastFocusArea) {
+                    lastFocusArea = buttons.length > 0 ? 'buttons' : 'history';
+                }
+                
+                // 根据最后聚焦区域确定当前聚焦区域
+                let currentArea = lastFocusArea;
+                let currentIndex;
+                
+                if (currentArea === 'buttons') {
+                    currentIndex = buttons.indexOf(currentFocusElement);
+                    if (currentIndex === -1 || currentIndex === buttons.length - 1) {
+                        // 切换到history区域
+                        currentArea = 'history';
+                        currentIndex = 0;
+                        currentFocusElement = historyItems[currentIndex] || buttons[0];
+                    } else {
+                        // 在buttons区域内下一个
+                        currentIndex++;
+                        currentFocusElement = buttons[currentIndex];
+                    }
+                } else {
+                    currentIndex = historyItems.indexOf(currentFocusElement);
+                    if (currentIndex === -1 || currentIndex === historyItems.length - 1) {
+                        // 切换到buttons区域
+                        currentArea = 'buttons';
+                        currentIndex = 0;
+                        currentFocusElement = buttons[currentIndex] || historyItems[0];
+                    } else {
+                        // 在history区域内下一个
+                        currentIndex++;
+                        currentFocusElement = historyItems[currentIndex];
+                    }
+                }
+                
+                lastFocusArea = currentArea;
                 currentFocusElement.focus();
-                return;
-            }
-
-            // Ctrl+Tab返回上一个焦点
-            if (e.key === 'Tab' && e.ctrlKey && !quickSearchActive) {
-                e.preventDefault();
-                const allElements = Array.from(document.querySelectorAll('button, .history-item, input'));
-                const currentIndex = allElements.indexOf(currentFocusElement);
-                const prevIndex = (currentIndex - 1 + allElements.length) % allElements.length;
-                currentFocusElement = allElements[prevIndex];
-                currentFocusElement.focus();
-                return;
-            }
-
-            // Tab键切换下一个匹配项
-            if (e.key === 'Tab' && quickSearchActive && matchedItems.length > 0) {
-                e.preventDefault();
-                cycleMatches(1); // 下一个匹配项
-                return;
-            }
-
-            // Ctrl+Tab切换上一个匹配项
-            if (e.key === 'Tab' && e.ctrlKey && quickSearchActive && matchedItems.length > 0) {
-                e.preventDefault();
-                cycleMatches(-1); // 上一个匹配项
+                console.log(`[TAB] New focus: ${currentFocusElement.textContent}`);
                 return;
             }
 
@@ -1027,30 +1099,27 @@
                 return;
             }
 
-            // 方向键导航
+            // 方向键导航 - 非quick search状态
             if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                console.log(`[ARROW] Key: ${e.key}, QuickSearch: ${quickSearchActive}`);
+                
                 // 如果焦点在输入框且是左右方向键，不阻止默认行为
                 if (document.activeElement === searchInput && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
                     return;
                 }
 
                 e.preventDefault();
-
-                // 快速搜索激活时，使用方向键在匹配项间导航
-                if (quickSearchActive && matchedItems.length > 0) {
-                    // 如果是第一次按方向键，从第一个匹配项开始
-                    if (currentMatchIndex === -1) {
-                        currentMatchIndex = 0;
-                        highlightCurrentMatch();
-                    } else {
-                        if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
-                            cycleMatches(1); // 下一个
-                        } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
-                            cycleMatches(-1); // 上一个
-                        }
+                
+                // 非quick search状态下保持原有导航逻辑
+                navigateWithArrowKeys(e.key);
+                
+                // 更新最后聚焦区域
+                if (currentFocusElement) {
+                    if (currentFocusElement.classList.contains('history-item')) {
+                        lastFocusArea = 'history';
+                    } else if (currentFocusElement.hasAttribute('data-site')) {
+                        lastFocusArea = 'buttons';
                     }
-                } else {
-                    navigateWithArrowKeys(e.key);
                 }
                 return;
             }
@@ -1205,6 +1274,9 @@
         // 执行快速搜索
         // 修改 performQuickSearch 函数
         function performQuickSearch() {
+            // 确保快速搜索处于激活状态
+            if (!quickSearchActive) return;
+            
             // 将输入按空格分割为多个查询词（忽略空字符串）
             const queries = quickSearchKeys.trim().toLowerCase().split(/\s+/).filter(q => q.length > 0);
             clearMatches();
@@ -1213,7 +1285,7 @@
                 return;
             }
             // 获取所有可搜索元素
-            const allElements = document.querySelectorAll('.history-item, button[data-site], .control-buttons button');
+            const allElements = document.querySelectorAll('.history-item, .btn-group button[data-site], .control-buttons button');
 
             // 先显示所有历史项
             showAllHistoryItems();
@@ -1354,22 +1426,20 @@
         }
 
         // 循环切换匹配项
-        function cycleMatches(direction) {
-            if (matchedItems.length === 0) return;
+        function highlightCurrentMatch() {
+            // 移除之前的光标高亮
+            document.querySelectorAll('.cursor-highlight').forEach(el => {
+                el.classList.remove('cursor-highlight');
+            });
 
-            // 移除当前高亮
-            if (currentMatchIndex >= 0) {
-                matchedItems[currentMatchIndex].element.classList.remove('cursor-highlight');
+            if (currentMatchIndex >= 0 && currentMatchIndex < matchedItems.length) {
+                const currentItem = matchedItems[currentMatchIndex];
+                currentItem.element.classList.add('cursor-highlight');
+                currentItem.element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                
+                // 更新当前焦点元素
+                currentFocusElement = currentItem.element;
             }
-
-            // 计算新位置
-            currentMatchIndex = (currentMatchIndex + direction + matchedItems.length) % matchedItems.length;
-
-            // 设置新位置并高亮
-            highlightCurrentMatch();
-
-            // 更新当前焦点元素
-            currentFocusElement = matchedItems[currentMatchIndex].element;
         }
 
         // 高亮当前匹配项
@@ -1383,6 +1453,8 @@
                 const currentItem = matchedItems[currentMatchIndex];
                 currentItem.element.classList.add('cursor-highlight');
                 currentItem.element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                // 设置焦点到当前匹配项
+                currentItem.element.focus();
             }
         }
 
@@ -1850,33 +1922,40 @@
                     removeFromHistory(keyword);
                 });
                 
-                // 重新渲染后设置焦点
-                setTimeout(() => {
-                    const newHistoryItems = Array.from(document.querySelectorAll('.history-item'));
-                    console.log(`新历史项数量: ${newHistoryItems.length}`);
-                    
-                    let nextFocus = null;
-                    if (newHistoryItems.length > 0) {
-                        // 如果被删除的索引小于新列表长度，则使用原索引
-                        if (deletedIndex < newHistoryItems.length) {
-                            nextFocus = newHistoryItems[deletedIndex];
-                            console.log(`使用原索引 ${deletedIndex}: ${nextFocus.textContent}`);
-                        }
-                        // 否则使用最后一个项
-                        else {
-                            nextFocus = newHistoryItems[newHistoryItems.length - 1];
-                            console.log(`使用最后一项: ${nextFocus.textContent}`);
-                        }
-                    } else {
-                        nextFocus = searchInput;
-                        console.log('无历史项, 聚焦搜索框');
+                // 重新渲染后设置焦点（同步执行）
+                const newHistoryItems = Array.from(document.querySelectorAll('.history-item'));
+                console.log(`新历史项数量: ${newHistoryItems.length}`);
+                
+                let nextFocus = null;
+                if (newHistoryItems.length > 0) {
+                    // 如果被删除的索引小于新列表长度，则使用原索引
+                    if (deletedIndex < newHistoryItems.length) {
+                        nextFocus = newHistoryItems[deletedIndex];
+                        console.log(`使用原索引 ${deletedIndex}: ${nextFocus.textContent}`);
                     }
-                    
-                    if (nextFocus) {
-                        nextFocus.focus();
-                        currentFocusElement = nextFocus;
+                    // 否则使用最后一个项
+                    else {
+                        nextFocus = newHistoryItems[newHistoryItems.length - 1];
+                        console.log(`使用最后一项: ${nextFocus.textContent}`);
                     }
-                }, 0);
+                } else {
+                    // 没有历史项时，聚焦到搜索框
+                    nextFocus = searchInput;
+                    console.log('无历史项, 聚焦搜索框');
+                    // 重置快速搜索状态
+                    quickSearchKeys = '';
+                    mobileQuickSearch.value = '';
+                    clearMatches();
+                }
+                
+                if (nextFocus) {
+                    nextFocus.focus();
+                    currentFocusElement = nextFocus;
+                    // 重置键盘导航状态
+                    quickSearchActive = false;
+                    matchedItems = [];
+                    currentMatchIndex = -1;
+                }
             }
         }
 
