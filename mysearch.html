@@ -263,97 +263,95 @@
             /* caret-color: transparent; 隐藏光标 */
 
         }
+/* 默认样式（非移动设备） */
+/* .desktop-only {
+    display: block;
+}
 
-        #mobile-esc-btn {
-            padding: 4px 8px;
-            height: 28px;
-            /* 与输入框同高 */
+.mobile-only {
+    display: none;
+} */
+.fixed-header {
+    padding: 10px 20px;
+}
+
+#search-input {
+    padding: 6px 6px;
+    font-size: 18px;
+}
+
+button {
+    padding: 4px 2px;
+    font-size: 16px;
+    margin: 2px;
+    width: auto;
+}
+
+button.small {
+    font-size: 12px;
+    padding: 3px 6px;
+}
+
+button.highlight {
+    box-shadow: 0 0 0 2px #4a90e2;
+}
+
+/* 移动设备样式（通过 .mobile 类控制） */
+.mobile-only #mobile-esc-btn {
+    /* display: inline-block; */
+    padding: 2px 2px;
+    border: 1px solid #000;
+    background: #f0f0f0;
+    cursor: pointer;
             line-height: 1;
-        }
+}
 
-        @media (max-width: 1200px) {
-            .mobile-quick-search-container {
-                display: block;
-            }
+.mobile .desktop-only {
+    display: none !important;
+}
 
-            #quick-search-hint {
-                display: none !important;
-            }
-        }
+/* .mobile .mobile-only {
+    display: block !important;
+} */
 
-        @media (min-width: 1201px) {
-            .mobile-quick-search-wrapper {
-                display: none;
-            }
+.mobile .mobile-quick-search-container {
+    display: block;
+}
 
-            #quick-search-hint {
-                display: block !important;
-            }
-        }
+.mobile .mobile-quick-search-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
 
-        @media (max-width: 768px) {
-            #mobile-esc-btn {
-                display: inline-block;
-                padding: 6px 10px;
-                border: 1px solid #000;
-                background: #f0f0f0;
-                cursor: pointer;
-            }
+.mobile #quick-search-hint {
+    display: none !important;
+}
 
-            .desktop-only {
-                display: none !important;
-            }
+.mobile .fixed-header {
+    padding: 5px 10px;
+}
 
-            .mobile-only {
-                display: block !important;
-            }
+.mobile #search-input {
+    padding: 4px 4px;
+    font-size: 16px;
+}
 
-            .mobile-quick-search-container {
-                display: block;
-            }
+.mobile button {
+    padding: 2px 1px;
+    font-size: 14px;
+    margin: 0px;
+    width: auto;
+}
 
-            .mobile-quick-search-wrapper {
-                display: flex;
-                align-items: center;
-                gap: 5px;
-            }
+.mobile button.small {
+    font-size: 10px;
+    padding: 2px 4px;
+}
 
-            #quick-search-hint {
-                display: none !important;
-            }
-
-            .fixed-header {
-                padding: 5px 10px;
-            }
-
-            #search-input {
-                padding: 4px 4px;
-                font-size: 16px;
-            }
-
-            button {
-                padding: 2px 1px;
-                font-size: 14px;
-                margin: 0px;
-                width: auto;
-            }
-
-            button.small {
-                font-size: 10px;
-                padding: 2px 4px;
-            }
-
-            button.highlight {
-                box-shadow: 0 0 0 1px #4a90e2;
-            }
-        }
-
-        @media (min-width: 769px) {
-            .mobile-only {
-                display: none !important;
-            }
-
-        }
+.mobile button.highlight {
+    box-shadow: 0 0 0 1px #4a90e2;
+}
 
         #mobile-search-input {
             position: fixed;
@@ -411,7 +409,7 @@
 
         <div class="header-controls">
             <div class="control-buttons">
-                <button id="mobile-esc-btn" class="desktop-only">ESC</button>
+                <button id="mobile-esc-btn" class="mobile-only">ESC</button>
                 <button id="save-only">仅保存</button>
                 <button id="all-sites">所有</button>
                 <button id="common-sites">常用</button>
@@ -460,11 +458,8 @@
 
         <div class="history-container">
             <div class="history-title">搜索历史</div>
-            <div class="mobile-quick-search-wrapper">
-                <button id="mobile-esc-btn" class="mobile-only">×</button>
-                <input type="text" id="mobile-quick-search" class="mobile-only" placeholder="快速搜索" autocomplete="off"
+                <input type="text" id="mobile-quick-search" class="mobile-only" autocomplete="off"
                     spellcheck="false">
-            </div>
         </div>
     </div>
 
@@ -633,8 +628,6 @@
                     searchInput.value = '';
                 }
             });
-
-            // 编辑历史按钮
             // 编辑历史按钮
             editHistoryBtn.addEventListener('click', (e) => {
                 e.preventDefault(); // 新增
@@ -690,10 +683,7 @@
                     }
                 });
             });
-
             // 单独处理编辑历史和导出历史按钮
-            // 单独处理编辑历史和导出历史按钮
-
             // 保存编辑的历史记录
             saveEditBtn.addEventListener('click', () => {
                 if (currentEditItem && historyEditInput.value.trim()) {
@@ -1111,7 +1101,20 @@
                 }
             });
         }
+        // function applyScreenSizeClasses() {
+        //     const screenWidth = window.screen.width;
+        //     if (screenWidth < 768) {
+        //         document.body.classList.add('mobile');
+        //         document.body.classList.remove('computer');
+        //     } else {
+        //         document.body.classList.add('computer');
+        //         document.body.classList.remove('mobile');
+        //         document.querySelector('.mobile-only').remove();
+        //     }
+        // }
 
+        // 在页面加载时应用样式
+        window.onload = applyScreenSizeClasses;
         // 新版快速搜索触摸处理
 
         // 清除选中状态
