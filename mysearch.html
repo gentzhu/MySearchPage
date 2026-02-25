@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html lang="zh-CN">
 
 <head>
@@ -572,10 +573,10 @@
             const state = sortStates.time;
             state.ascending = !state.ascending; // 切换方向
 
-            // 根据时间戳排序
+            // 根据最新时间戳排序
             searchHistory.sort((a, b) => {
-                const timeA = new Date(a.timestamp).getTime();
-                const timeB = new Date(b.timestamp).getTime();
+                const timeA = new Date(a.latest_timestamp).getTime();
+                const timeB = new Date(b.latest_timestamp).getTime();
                 return state.ascending ? timeA - timeB : timeB - timeA;
             });
 
@@ -601,21 +602,56 @@
             renderHistory();
         }
 
-        // 加载搜索历史
+        // 加载搜索历史（新结构并修复嵌套问题）
         let searchHistory = [];
         const storedHistory = localStorage.getItem('searchHistory');
         if (storedHistory) {
-            // 尝试解析为数组
-            const parsed = JSON.parse(storedHistory);
-            if (Array.isArray(parsed)) {
-                // 检查第一个元素是字符串还是对象
-                if (parsed.length > 0 && typeof parsed[0] === 'string') {
-                    // 旧格式：字符串数组，转换为对象数组，时间戳设为当前时间
-                    searchHistory = parsed.map(keyword => ({ keyword, timestamp: new Date().toISOString() }));
-                } else {
-                    // 新格式：对象数组
-                    searchHistory = parsed;
+            try {
+                const parsed = JSON.parse(storedHistory);
+                if (Array.isArray(parsed)) {
+                    // 递归展平嵌套结构
+                    const flattenHistory = (items) => {
+                        return items.map(item => {
+                            // 处理嵌套结构：提取最内层keyword字段
+                            if (item.keyword && typeof item.keyword === 'object') {
+                                return {
+                                    keyword: item.keyword.keyword || '',
+                                    first_timestamp: item.keyword.timestamp || new Date().toISOString(),
+                                    search_count: item.search_count || 1,
+                                    latest_timestamp: item.timestamp || new Date().toISOString()
+                                };
+                            }
+                            return item;
+                        });
+                    };
+
+                    // 兼容旧格式转换
+                    if (parsed.length > 0) {
+                        if (typeof parsed[0] === 'string') {
+                            // 旧格式字符串数组 -> 转换为新格式
+                            searchHistory = parsed.map(keyword => ({
+                                keyword,
+                                first_timestamp: new Date().toISOString(),
+                                search_count: 1,
+                                latest_timestamp: new Date().toISOString()
+                            }));
+                        } else if (parsed[0].timestamp && !parsed[0].first_timestamp) {
+                            // 旧格式对象数组 -> 转换为新格式
+                            searchHistory = parsed.map(item => ({
+                                keyword: item.keyword,
+                                first_timestamp: item.timestamp,
+                                search_count: 1,
+                                latest_timestamp: item.timestamp
+                            }));
+                        } else {
+                            // 已经是新格式或嵌套格式 - 进行规范化处理
+                            searchHistory = flattenHistory(parsed);
+                        }
+                    }
                 }
+            } catch (e) {
+                console.error('解析历史记录失败:', e);
+                searchHistory = [];
             }
         }
         renderHistory();
@@ -708,16 +744,16 @@
         // 单独处理编辑历史和导出历史按钮
         // 单独处理编辑历史和导出历史按钮
 
-        // 保存编辑的历史记录
+        // 保存编辑的历史记录（更新为使用新结构）
         saveEditBtn.addEventListener('click', () => {
             if (currentEditItem && historyEditInput.value.trim()) {
                 const oldKeyword = currentEditItem.getAttribute('data-keyword');
                 const newKeyword = historyEditInput.value.trim();
                 if (oldKeyword !== newKeyword) {
-                    // 找到原始历史项（包含时间戳）
+                    // 找到原始历史项（新结构）
                     const historyItem = searchHistory.find(item => item.keyword === oldKeyword);
                     if (historyItem) {
-                        // 更新关键词但保留原时间戳
+                        // 更新关键词但保留其他字段（时间戳和次数不变）
                         historyItem.keyword = newKeyword;
                         // 保存到localStorage
                         localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
@@ -1069,7 +1105,7 @@
                 }
 
                 // 3. 处理当前焦点在网站按钮上
-                if (currentFocusElement && currentFocusElement.hasAttribute('data-site') && searchInput.value.trim()) {
+                if (currentFocusElement && currentFocusElement.hasAttribute('data-site')) {
                     clearSelection(); // 清除所有选择
                     const site = currentFocusElement.getAttribute('data-site');
                     search(site, true); // 使用单个搜索函数
@@ -1093,11 +1129,25 @@
                 return;
             }
 
-            // Delete或F4删除选中的历史记录
-            if (e.key === 'Delete' && selectedElements.length > 0) {
-                e.preventDefault();
-                deleteSelectedHistoryItems();
-                return;
+            // Delete删除历史记录：支持删除选中项或当前焦点项
+            if (e.key === 'Delete') {
+                // 如果有选中项，删除选中项
+                if (selectedElements.length > 0) {
+                    e.preventDefault();
+                    deleteSelectedHistoryItems();
+                    return;
+                }
+                // 如果当前焦点是历史记录项，删除该焦点项
+                else if (currentFocusElement && currentFocusElement.classList.contains('history-item')) {
+                    e.preventDefault();
+                    // 临时选中当前焦点项
+                    const prevSelected = selectedElements;
+                    selectedElements = [currentFocusElement];
+                    deleteSelectedHistoryItems();
+                    // 恢复之前的选中状态
+                    selectedElements = prevSelected;
+                    return;
+                }
             }
 
             if ((e.key === 'F8' || (e.ctrlKey && e.key === 'Delete'))) {
@@ -1380,14 +1430,15 @@
             historyList.innerHTML = '';
             historyItems = [];
 
-            searchHistory.forEach(keyword => {
+            searchHistory.forEach(keywordObj => {
+                const keyword = keywordObj.keyword;
                 const item = document.createElement('div');
                 item.className = 'history-item';
                 if (isEditMode) {
                     item.classList.add('editable');
                 }
-                item.textContent = keyword.keyword;
-                item.setAttribute('data-keyword', keyword.keyword);
+                item.textContent = keyword;
+                item.setAttribute('data-keyword', keyword);
                 item.tabIndex = 0;
                 item.addEventListener('click', (e) => {
                     e.stopPropagation();
@@ -1434,21 +1485,29 @@
             renderHistory();
         }
 
-        // 添加到搜索历史
+        // 添加到搜索历史（新结构）
         function addToHistory(keyword) {
-            // 确保keyword是字符串
             const keywordStr = keyword.keyword ? keyword.keyword : keyword;
-            
-            // 避免重复添加（根据关键词判断），如果存在则先移除
+            const now = new Date().toISOString();
             const existingIndex = searchHistory.findIndex(item => item.keyword === keywordStr);
+
             if (existingIndex !== -1) {
+                // 更新现有记录：增加搜索次数，更新最新时间戳
+                const existingItem = searchHistory[existingIndex];
+                existingItem.search_count += 1;
+                existingItem.latest_timestamp = now;
+                // 将该记录移动到最前面（表示最近使用）
                 searchHistory.splice(existingIndex, 1);
+                searchHistory.unshift(existingItem);
+            } else {
+                // 新记录
+                searchHistory.unshift({
+                    keyword: keywordStr,
+                    first_timestamp: now,
+                    search_count: 1,
+                    latest_timestamp: now
+                });
             }
-            // 添加到最前面
-            searchHistory.unshift({
-                keyword: keywordStr,
-                timestamp: new Date().toISOString()
-            });
             localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
             renderHistory();
         }
@@ -1514,7 +1573,7 @@
             }
         }
 
-        // 导出历史记录
+        // 导出历史记录（新结构）
         function exportHistory() {
             if (searchHistory.length === 0) return;
 
@@ -1571,7 +1630,7 @@
             }
         }
 
-        // 导入历史记录
+        // 导入历史记录（兼容新旧格式并修复嵌套问题）
         function importHistory() {
             const input = document.createElement('input');
             input.type = 'file';
@@ -1586,25 +1645,84 @@
 
                         try {
                             // 尝试解析为JSON
-                            newItems = JSON.parse(content);
-                            if (!Array.isArray(newItems)) {
-                                throw new Error("Invalid JSON format");
+                            const parsed = JSON.parse(content);
+                            if (Array.isArray(parsed)) {
+                                // 检查是否为旧格式
+                                if (parsed.length > 0) {
+                                    if (typeof parsed[0] === 'string') {
+                                        // 旧格式字符串数组 -> 转换为新格式
+                                        newItems = parsed.map(keyword => ({
+                                            keyword,
+                                            first_timestamp: new Date().toISOString(),
+                                            search_count: 1,
+                                            latest_timestamp: new Date().toISOString()
+                                        }));
+                                    } else if (parsed[0].timestamp && !parsed[0].first_timestamp) {
+                                        // 旧格式对象数组 -> 转换为新格式
+                                        newItems = parsed.map(item => ({
+                                            keyword: item.keyword,
+                                            first_timestamp: item.timestamp,
+                                            search_count: 1,
+                                            latest_timestamp: item.timestamp
+                                        }));
+                                    } else {
+                                        // 已经是新格式或嵌套格式 - 进行规范化处理
+                                        newItems = parsed.map(item => {
+                                            // 处理嵌套结构：提取最内层keyword字段
+                                            if (item.keyword && typeof item.keyword === 'object') {
+                                                return {
+                                                    keyword: item.keyword.keyword || '',
+                                                    first_timestamp: item.keyword.timestamp || new Date().toISOString(),
+                                                    search_count: 1,
+                                                    latest_timestamp: item.timestamp || new Date().toISOString()
+                                                };
+                                            }
+                                            return item;
+                                        });
+                                    }
+                                }
+                            } else {
+                                throw new Error("Invalid JSON format: not an array");
                             }
                         } catch (jsonError) {
-                            // 如果不是JSON，尝试解析为旧格式
+                            // 如果不是JSON，尝试解析为旧文本格式
                             const lines = content.split('\n').filter(line => line.trim());
                             lines.forEach(line => {
                                 // 尝试按制表符分割
                                 const parts = line.split('\t');
                                 if (parts.length >= 2) {
-                                    // 旧格式：关键词\t时间戳
-                                    newItems.push({ keyword: parts[0], timestamp: parts[1] });
+                                    // 旧格式：关键词\t时间戳 -> 转换为新格式
+                                    newItems.push({
+                                        keyword: parts[0],
+                                        first_timestamp: parts[1],
+                                        search_count: 1,
+                                        latest_timestamp: parts[1]
+                                    });
                                 } else {
                                     // 旧格式：只有关键词
-                                    newItems.push({ keyword: line.trim(), timestamp: new Date().toISOString() });
+                                    const now = new Date().toISOString();
+                                    newItems.push({
+                                        keyword: line.trim(),
+                                        first_timestamp: now,
+                                        search_count: 1,
+                                        latest_timestamp: now
+                                    });
                                 }
                             });
                         }
+
+                        // 额外规范化步骤：确保所有项都是扁平结构
+                        newItems = newItems.map(item => {
+                            if (item.keyword && typeof item.keyword === 'object') {
+                                return {
+                                    keyword: item.keyword.keyword || '',
+                                    first_timestamp: item.keyword.timestamp || new Date().toISOString(),
+                                    search_count: item.search_count || 1,
+                                    latest_timestamp: item.timestamp || new Date().toISOString()
+                                };
+                            }
+                            return item;
+                        });
 
                         // 将新导入的记录添加到现有记录的前面
                         searchHistory = [...newItems, ...searchHistory];
@@ -1689,39 +1807,76 @@
                 currentFocusElement = element;
             }
         }
-        // 删除选中的历史记录
+        // 删除选中的历史记录（更新为使用新结构）
         function deleteSelectedHistoryItems() {
             const itemsToDelete = selectedElements.filter(el => el.classList.contains('history-item'));
             if (itemsToDelete.length === 0) return;
-
+        
+            // 添加确认弹窗
+            if (!confirm(`确定要删除选中的 ${itemsToDelete.length} 条历史记录吗？`)) {
+                return;
+            }
+        
             lastDeletedItems = itemsToDelete.map(item => {
                 const keyword = item.getAttribute('data-keyword');
-                // 从searchHistory中找到对应的完整对象（包含时间戳）
+                // 从searchHistory中找到对应的完整对象（新结构）
                 const historyItem = searchHistory.find(item => item.keyword === keyword);
                 return {
                     keyword,
                     element: item,
-                    historyItem // 存储完整的历史项对象
+                    historyItem // 存储完整的历史项对象（包含四个字段）
                 };
             });
-
+        
             itemsToDelete.forEach(item => {
                 const keyword = item.getAttribute('data-keyword');
                 removeFromHistory(keyword);
             });
-
+        
             selectedElements = selectedElements.filter(el => !el.classList.contains('history-item'));
-
+        
             if (itemsToDelete.length > 0) {
                 const firstDeleted = itemsToDelete[0];
-                const allItems = Array.from(document.querySelectorAll('.history-item, button'));
-                const index = allItems.indexOf(firstDeleted);
-
-                const nextFocus = allItems[index - 1] || allItems[index + 1] || searchInput;
-                if (nextFocus) {
-                    nextFocus.focus();
-                    currentFocusElement = nextFocus;
-                }
+                console.log('开始删除操作, 被删除项:', firstDeleted.textContent);
+                
+                // 获取被删除项在历史项列表中的索引
+                const historyItems = Array.from(document.querySelectorAll('.history-item'));
+                const deletedIndex = historyItems.indexOf(firstDeleted);
+                console.log(`被删除项索引: ${deletedIndex}`);
+                
+                // 删除操作
+                itemsToDelete.forEach(item => {
+                    const keyword = item.getAttribute('data-keyword');
+                    removeFromHistory(keyword);
+                });
+                
+                // 重新渲染后设置焦点
+                setTimeout(() => {
+                    const newHistoryItems = Array.from(document.querySelectorAll('.history-item'));
+                    console.log(`新历史项数量: ${newHistoryItems.length}`);
+                    
+                    let nextFocus = null;
+                    if (newHistoryItems.length > 0) {
+                        // 如果被删除的索引小于新列表长度，则使用原索引
+                        if (deletedIndex < newHistoryItems.length) {
+                            nextFocus = newHistoryItems[deletedIndex];
+                            console.log(`使用原索引 ${deletedIndex}: ${nextFocus.textContent}`);
+                        }
+                        // 否则使用最后一个项
+                        else {
+                            nextFocus = newHistoryItems[newHistoryItems.length - 1];
+                            console.log(`使用最后一项: ${nextFocus.textContent}`);
+                        }
+                    } else {
+                        nextFocus = searchInput;
+                        console.log('无历史项, 聚焦搜索框');
+                    }
+                    
+                    if (nextFocus) {
+                        nextFocus.focus();
+                        currentFocusElement = nextFocus;
+                    }
+                }, 0);
             }
         }
 
