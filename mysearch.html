@@ -764,13 +764,8 @@
         // 移动端快速搜索处理
         if (mobileQuickSearch) {
             mobileQuickSearch.addEventListener('input', focusQuickSearch)
-            // 空格键处理（不中断搜索）
+            // 允许空格输入
             mobileQuickSearch.addEventListener('keydown', function (e) {
-                // if (e.key === ' ') {
-                //     e.preventDefault(); // 阻止默认空格行为
-                //     this.value += ' '; // 手动添加空格
-                //     this.dispatchEvent(new Event('input')); // 触发搜索
-                // } else 
                 if (e.key === 'Enter') {
                     const firstMatch = document.querySelector('.highlight.history-item, .highlight[data-site]');
                     if (firstMatch) {
@@ -781,7 +776,6 @@
             });
             // ESC按钮处理
             mobileEscBtn.addEventListener('click', function (e) {
-                // e.stopPropagation();
                 GlobalQuit(e);
             })
         }
@@ -800,7 +794,7 @@
                 return;
             }
             else if (document.activeElement === mobileQuickSearch) {
-                quickSearchKeys = mobileQuickSearch.value.toLowerCase();
+                quickSearchKeys = mobileQuickSearch.value;
                 performQuickSearch();
                 return;
             }
@@ -837,8 +831,20 @@
                     return;
                 }
             }
+            // 电脑端快速搜索触发（包括空格）
             if (window.screen.width > 768 && !document.activeElement.matches('input, textarea') &&
-                e.key.length === 1 && /[a-z0-9\W]/i.test(e.key) && e.key !== ' ') {
+                e.key.length === 1 && /[a-z0-9\s]/i.test(e.key)) {
+                
+                // 空格键需要特殊处理
+                // if (e.key === ' ') {
+                //     // e.preventDefault();
+                //     mobileQuickSearch.focus();
+                //     mobileQuickSearch.value += ' ';
+                //     mobileQuickSearch.dispatchEvent(new Event('input'));
+                //     return;
+                // }
+                
+                // 其他字符正常处理
                 mobileQuickSearch.focus();
                 focusQuickSearch(e);
                 return;
@@ -987,12 +993,13 @@
                     return;
                 }
                 
-                e.preventDefault();
+                // e.preventDefault();
                 
                 // 快速搜索激活时，操作当前匹配项
-                if (quickSearchActive && currentMatchIndex >= 0) {
-                    const currentItem = matchedItems[currentMatchIndex].element;
-                    toggleSelectElement(currentItem);
+                if (document.activeElement === mobileQuickSearch ) {
+                    // const currentItem = matchedItems[currentMatchIndex].element;
+                    // toggleSelectElement(currentItem);
+                    return;
                 }
                 // 非快速搜索模式，操作当前焦点元素（仅按钮）
                 else if (currentFocusElement && currentFocusElement.tagName === 'BUTTON') {
@@ -1115,9 +1122,10 @@
         // 执行快速搜索
         // 修改 performQuickSearch 函数
         function performQuickSearch() {
-            const searchString = quickSearchKeys.toLowerCase();
+            // 将输入按空格分割为多个查询词（忽略空字符串）
+            const queries = quickSearchKeys.trim().toLowerCase().split(/\s+/).filter(q => q.length > 0);
             clearMatches();
-            if (!searchString) {
+            if (queries.length === 0) {
                 showAllHistoryItems();
                 return;
             }
@@ -1135,16 +1143,40 @@
             allElements.forEach(element => {
                 const text = element.textContent.toLowerCase();
                 const pinyin = getPinyinInitials(text);
-                const isChinese = /[\u4e00-\u9fa5]/.test(searchString);
                 let isMatch = false;
 
-                if (isChinese) {
-                    // 中文模式：匹配文本中任意位置的子串
-                    isMatch = text.includes(searchString);
-                } else {
-                    // 非中文模式：只匹配开头部分
-                    isMatch = text.startsWith(searchString) || pinyin.startsWith(searchString);
+                // 统一处理逻辑：每个查询词必须连续出现（子串匹配）且按顺序
+                let textMatch = true;
+                let pinyinMatch = true;
+                let lastTextIndex = -1;
+                let lastPinyinIndex = -1;
+
+                for (const query of queries) {
+                    // 在文本中查找连续匹配
+                    const textIndex = text.indexOf(query, lastTextIndex + 1);
+                    if (textIndex === -1) {
+                        textMatch = false;
+                        break; // 有一个查询词不匹配就退出
+                    } else {
+                        lastTextIndex = textIndex; // 更新最后匹配位置
+                    }
                 }
+
+                // 如果文本匹配失败，再尝试拼音匹配
+                if (!textMatch) {
+                    for (const query of queries) {
+                        const pinyinIndex = pinyin.indexOf(query, lastPinyinIndex + 1);
+                        if (pinyinIndex === -1) {
+                            pinyinMatch = false;
+                            break;
+                        } else {
+                            lastPinyinIndex = pinyinIndex;
+                        }
+                    }
+                }
+
+                isMatch = textMatch || pinyinMatch;
+
                 if (isMatch) {
                     matchedItems.push({
                         element: element,
@@ -1206,12 +1238,15 @@
         }
 
         // 快速搜索匹配算法
-        function matchQuickSearch(text, pinyinInitials, searchTerms) {
-            return searchTerms.every(term => {
-                if (pinyinInitials.includes(term)) return true;
-                if (text.includes(term)) return true;
-                return false;
-            });
+        function matchesQuery(text, query) {
+            let j = 0;
+            if (!query) return true;
+            for (let i = 0; i < text.length && j < query.length; i++) {
+                if (text[i] === query[j]) {
+                    j++;
+                }
+            }
+            return j === query.length;
         }
 
         // 循环切换匹配项
