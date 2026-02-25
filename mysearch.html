@@ -646,57 +646,21 @@
             }
         });
         // 5. 页面加载时自动聚焦
-        window.addEventListener('DOMContentLoaded', function () { searchInput.focus(); });
+        window.addEventListener('DOMContentLoaded', searchInput.focus());
         window.addEventListener('load', adjustScrollableArea);
         window.addEventListener('resize', adjustScrollableArea);
 
-        // 初始化时立即聚焦
-        focusQuickSearch();
-
         // 移动端快速搜索处理
-        if (mobileQuickSearch) {
-            mobileQuickSearch.addEventListener('input', focusQuickSearch)
+        if (screen.width <= 768) {
+            mobileQuickSearch.addEventListener('input', performQuickSearch())
             // 空格键处理（不中断搜索）
-            mobileQuickSearch.addEventListener('keydown', function (e) {
-                // if (e.key === ' ') {
-                //     e.preventDefault(); // 阻止默认空格行为
-                //     this.value += ' '; // 手动添加空格
-                //     this.dispatchEvent(new Event('input')); // 触发搜索
-                // } else 
-                if (e.key === 'Enter') {
-                    const firstMatch = document.querySelector('.highlight.history-item, .highlight[data-site]');
-                    if (firstMatch) {
-                        searchInput.value = firstMatch.textContent;
-                        searchInput.focus();
-                    }
-                }
-            });
             // ESC按钮处理
-            mobileEscBtn.addEventListener('click', function (e) {
-                // e.stopPropagation();
-                GlobalQuit(e);
-            })
         }
-
+        mobileEscBtn.addEventListener('click', function (e) {
+            // e.stopPropagation();
+            GlobalQuit(e);
+        })
         // 点击空白处退出编辑模式或关闭模态框
-        function focusQuickSearch(e) {
-            if (screen.width <= 768 && document.activeElement !== mobileQuickSearch) {
-                setTimeout(() => {
-                    if (mobileQuickSearch) {
-                        mobileQuickSearch.focus();
-                        setTimeout(() => {
-                            mobileQuickSearch.style.color = '';
-                        }, 100);
-                    }
-                }, 100);
-                return;
-            }
-            else if (document.activeElement === mobileQuickSearch) {
-                quickSearchKeys = mobileQuickSearch.value.toLowerCase();
-                performQuickSearch();
-                return;
-            }
-        }
 
         // 清除所有匹配高亮
         function clearMatches() {
@@ -712,11 +676,18 @@
             if (e.key === 'Escape') {
                 GlobalQuit(e);
             }
-            if (window.screen.width > 768 && !document.activeElement.matches('input, textarea') &&
-                e.key.length === 1 && /[a-z0-9\W]/i.test(e.key) && e.key !== ' ') {
-                mobileQuickSearch.focus();
-                focusQuickSearch(e);
+            if (window.screen.width > 768 && document.activeElement !== searchInput && /[a-z0-9\W]/i.test(e.key)) {
+                if (document.activeElement !== mobileQuickSearch) 
+                { mobileQuickSearch.focus(); }
+                performQuickSearch();
                 return;
+            }
+            if (e.key === 'Enter' && document.activeElement === mobileQuickSearch) {
+                const firstMatch = document.querySelector('.highlight.history-item, .highlight[data-site]');
+                if (firstMatch) {
+                    searchInput.value = firstMatch.textContent;
+                    searchInput.focus();
+                }
             }
             // 电脑端快速搜索激活
             if (quickSearchActive && e.key === 'Backspace') {
@@ -875,16 +846,8 @@
             return;
         }
 
-        // 修改 updateQuickSearchDisplay 函数
-        function updateQuickSearchDisplay() {
-            // 添加防重复更新检查
-            if (mobileQuickSearch.value === quickSearchKeys) return;
-            mobileQuickSearch.value = quickSearchKeys || '';
-        }
-        // 执行快速搜索
-        // 修改 performQuickSearch 函数
         function performQuickSearch() {
-            const searchTerms = quickSearchKeys.split('').filter(Boolean);
+            const searchTerms = mobileQuickSearch.value.toLowerCase().split('').filter(Boolean);
             clearMatches();
             if (searchTerms.length === 0) {
                 showAllHistoryItems();
@@ -921,21 +884,12 @@
                         element: element,
                         type: element.classList.contains('history-item') ? 'history' : 'button'
                     });
-                    element.classList.add('highlight');
-                    element.style.display = 'inline-block'; // 显示匹配项
+                    matchedItems[0].element.focus();
+                    highlightMatchedItems();
                 }
-                else { }
+
             });
 
-            if (matchedItems.length > 0) {
-                currentMatchIndex = 0;
-                highlightCurrentMatch();
-            } else {
-                // 没有匹配项时所有元素不显示
-                historymatches.forEach(el => {
-                    el.style.display = 'none';
-                });
-            }
         }
         // 使用拼音库获取拼音首字母
         function getPinyinInitials(text) {
@@ -989,16 +943,21 @@
 
             currentMatchIndex = (currentMatchIndex + direction + matchedItems.length) % matchedItems.length;
 
-            highlightCurrentMatch();
+            highlightMatchedItems();
         }
 
         // 高亮当前匹配项
-        function highlightCurrentMatch() {
-            if (currentMatchIndex >= 0 && currentMatchIndex < matchedItems.length) {
-                const currentItem = matchedItems[currentMatchIndex];
-                currentItem.element.classList.add('highlight');
-                currentItem.element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }
+        function highlightMatchedItems() {
+            matchedItems.forEach(item => {
+                item.element.classList.add('highlight');
+                item.element.style.display = 'inline-block';
+            });
+
+            // 滚动到当前选中的匹配项
+            matchedItems[currentMatchIndex].element.scrollIntoView({
+                behavior: 'smooth',
+                block: 'nearest'
+            });
         }
 
         // 激活当前匹配项
