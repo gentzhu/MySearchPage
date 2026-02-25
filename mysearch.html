@@ -21,7 +21,7 @@
         body {
             font-family: Arial, sans-serif;
             margin: 0;
-            padding: 20px 40px 8px 20px;
+            padding: 0 0 8px 20px;
             flex-direction: column;
             height: 100vh;
             overflow: hidden;
@@ -31,14 +31,13 @@
         .fixed-header {
             position: fixed;
             top: 0;
+            left: 0;
+            right: 0;
             background: white;
-            gap: 10px;
+            gap: 6px; /* 统一视觉间距 */
             z-index: 100;
-            /* padding: 10px 20px 8px 20px; */
-            /* 调整底部内边距 */
+            padding: 6px 0 6px 20px; /* 统一视觉间距：上下6px */
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            /* margin-bottom: 10px; */
-            /* 增大底部外边距 */
             touch-action: none;
             -webkit-overflow-scrolling: touch;
         }
@@ -73,7 +72,7 @@
 
         .control-buttons {
             /* display: flex; */
-            /* gap: 5px; */
+            gap: 6px; /* 统一视觉间距 */
             align-items: left;
             /* flex-wrap: wrap; */
             flex-grow: 1;
@@ -99,19 +98,19 @@
         }
 
         button.highlight {
-            background: transparent;
-            border: 2px solid #2563eb;
-            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.4);
+            background: transparent !important;
+            border: 2px solid #2563eb !important;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.4) !important;
         }
 
         button.selected {
-            background-color: #e0e0e0;
+            background-color: #e0e0e0 !important;
         }
 
         .btn-group {
             /* display: flex; */
             /* flex-wrap: wrap; */
-            gap: 2px;
+            gap: 6px; /* 统一视觉间距 */
             /* margin-bottom: 5px; */
             width: 100%;
         }
@@ -149,9 +148,9 @@
         .history-header {
             /* margin-top: 5px; */
             width: 100%;
-            padding-bottom: 10px;
+            padding-bottom: 6px; /* 统一视觉间距 */
             /* display: flex; */
-            /* gap: 5px; */
+            gap: 6px; /* 统一视觉间距 */
         }
 
         .history-title {
@@ -167,60 +166,64 @@
         }
 
         .history-item {
-            display: inline-block;
-            /* margin-right: 8px; */
-            /* margin-bottom: 8px; */
-            padding: 2px 6px;
-            border: 1px solid #ddd;
-            cursor: pointer;
-            font-size: 16px;
-            box-shadow: 0 0 0 0px transparent; /* 预留阴影空间 */
+            display: inline-block !important;
+            margin-right: 6px !important; /* 统一视觉间距 */
+            margin-bottom: 6px !important; /* 统一视觉间距 */
+            padding: 2px 6px !important;
+            /* 保持正常边框 */
+            border: 1px solid #ddd !important;
+            cursor: pointer !important;
+            font-size: 16px !important;
+            background-color: #f9f9f9 !important;
+            box-sizing: border-box !important;
+            line-height: 1.2 !important;
+            transition: all 0.2s !important;
         }
 
         .history-item.highlight {
-            border: 2px solid #2563eb;
-            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.4);
+            border: 2px solid #2563eb !important;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.4) !important;
         }
 
         .history-item.editable {
-            border: 2px dashed #000;
-            background-color: #fff9f9;
+            border: 2px dashed #000 !important;
+            background-color: #fff9f9 !important;
         }
 
         .history-item.selected {
-            background-color: #e0e0e0;
+            background-color: #e0e0e0 !important;
         }
 
-        /* Quick search 虚拟光标样式 - 覆盖所有其他样式 */
+        /* Quick search 光标所在处样式 - 绿色背景 */
         .cursor-highlight {
-            background: transparent !important; /* 完全透明背景 */
-            border: 2px solid #10B981 !important; /* 更明亮的绿色边框 */
-            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.8) !important; /* 更明显的阴影 */
+            background-color: rgba(16, 185, 129, 0.3) !important; /* 绿色背景 */
+            border: 2px solid #10B981 !important;
+            box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.5) !important;
         }
 
         /* 更具体的选择器确保覆盖 */
         button.cursor-highlight,
         .history-item.cursor-highlight {
-            background: transparent !important; /* 完全透明背景 */
+            background-color: rgba(16, 185, 129, 0.3) !important; /* 绿色背景 */
             border: 2px solid #10B981 !important;
-            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.8) !important;
+            box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.5) !important;
         }
 
-        /* 覆盖所有可能的背景色样式 */
-        button.cursor-highlight.highlight,
-        .history-item.cursor-highlight.highlight {
-            background: transparent !important;
-            border: 2px solid #10B981 !important;
-            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.8) !important;
-        }
-
-        /* Quick search 状态下的选中样式 - 组合显示 */
+        /* 光标所在且选中的组合样式 - 黄色背景 */
         .cursor-highlight.selected,
         button.cursor-highlight.selected,
         .history-item.cursor-highlight.selected {
-            background-color: #e0e0e0 !important; /* 选中时才有背景 */
+            background-color: #FFE066 !important; /* 黄色背景 */
             border: 2px solid #10B981 !important;
-            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.8) !important;
+            box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.5) !important;
+        }
+
+        /* 光标焦点绿色背景 */
+        button:focus,
+        .history-item:focus,
+        input:focus {
+            background-color: rgba(76, 175, 80, 0.2) !important;
+            outline: none;
         }
 
         .modal {
@@ -290,13 +293,11 @@
 
         #quick-search-input {
             width: 100px;
-            /* 缩小宽度 */
-            padding: 2px 2px;
-            /* 减小内边距 */
-            height: 16px;
-            /* 固定高度 */
+            border: 1px solid #000;
+            padding: 2px 4px;
             font-size: 14px;
-            border: 1px solid #000000;
+            box-shadow: 0 0 0 0px transparent; /* 预留阴影空间 */
+            height: 16px;
             /* caret-color: transparent; */
             /* 隐藏光标 */
         }
@@ -330,11 +331,11 @@
             }
 
             .btn-group {
-                gap: 1px;
+                gap: 6px; /* 统一视觉间距 */
             }
 
             .control-buttons {
-                gap: 1px;
+                gap: 6px; /* 统一视觉间距 */
             }
 
             button.small {
@@ -343,9 +344,9 @@
             }
 
             button.highlight {
-                background: transparent;
-                border: 2px solid #2563eb;
-                box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.4);
+                background: transparent !important;
+                border: 2px solid #2563eb !important;
+                box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.4) !important;
             }
         }
 
@@ -373,7 +374,18 @@
 
         button {
             padding: 1px 2px;
-            margin: 1px;
+            margin: 0px; /* 移除默认margin，由gap统一控制间距 */
+            /* 保持正常边框，不要透明 */
+            border: 1px solid #000;
+            background: transparent;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s;
+            text-align: center;
+            white-space: normal;
+            word-wrap: break-word;
+            box-sizing: border-box;
+            line-height: 1.2;
         }
     </style>
     <script src="pinyin_dict_firstletter.js"></script>
@@ -414,7 +426,7 @@
         </div>
     </div>
 
-    <div class="scrollable-content" style="margin-top: 393px; height: calc(-393px + 100vh);">
+    <div class="scrollable-content" style="margin-top: 223px; height: calc(100vh - 223px);">
         <div id="history-list" class="flex2"></div>
     </div>
 
@@ -464,10 +476,6 @@
                 <input type="file" id="config-file-input" accept=".json" style="display: none;">
             </div>
             
-            <!-- 关闭按钮 -->
-            <div style="margin-top: 15px; text-align: right;">
-                <button id="close-settings">关闭</button>
-            </div>
         </div>
     </div>
 
@@ -604,8 +612,246 @@
             }
         }
 
+        // 历史记录IndexedDB管理类
+        class SearchHistoryDB {
+            constructor() {
+                this.dbName = 'SearchHistoryDB';
+                this.dbVersion = 1;
+                this.storeName = 'searchHistory';
+                this.db = null;
+            }
+
+            async init() {
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open(this.dbName, this.dbVersion);
+                    
+                    request.onerror = () => reject(new Error('无法打开历史记录数据库'));
+                    
+                    request.onsuccess = (event) => {
+                        this.db = event.target.result;
+                        resolve();
+                    };
+                    
+                    request.onupgradeneeded = (event) => {
+                        const db = event.target.result;
+                        
+                        // 创建历史记录存储
+                        if (!db.objectStoreNames.contains(this.storeName)) {
+                            const store = db.createObjectStore(this.storeName, { keyPath: 'keyword' });
+                            store.createIndex('latest_timestamp', 'latest_timestamp', { unique: false });
+                            store.createIndex('first_timestamp', 'first_timestamp', { unique: false });
+                            store.createIndex('search_count', 'search_count', { unique: false });
+                        }
+                    };
+                });
+            }
+
+            async addHistory(keyword) {
+                if (!this.db) await this.init();
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.storeName], 'readwrite');
+                    const store = transaction.objectStore(this.storeName);
+                    
+                    // 先尝试获取现有记录
+                    const getRequest = store.get(keyword);
+                    
+                    getRequest.onsuccess = () => {
+                        const existingItem = getRequest.result;
+                        let historyItem;
+                        
+                        if (existingItem) {
+                            // 更新现有记录
+                            historyItem = {
+                                ...existingItem,
+                                search_count: existingItem.search_count + 1,
+                                latest_timestamp: new Date().toISOString()
+                            };
+                        } else {
+                            // 创建新记录
+                            historyItem = {
+                                keyword: keyword,
+                                first_timestamp: new Date().toISOString(),
+                                search_count: 1,
+                                latest_timestamp: new Date().toISOString()
+                            };
+                        }
+                        
+                        const putRequest = store.put(historyItem);
+                        putRequest.onsuccess = () => resolve(historyItem);
+                        putRequest.onerror = () => reject(new Error('添加历史记录失败'));
+                    };
+                    
+                    getRequest.onerror = () => reject(new Error('查询历史记录失败'));
+                });
+            }
+
+            async getAllHistory() {
+                if (!this.db) await this.init();
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.storeName], 'readonly');
+                    const store = transaction.objectStore(this.storeName);
+                    const request = store.getAll();
+                    
+                    request.onsuccess = () => {
+                        // 按最新时间戳排序
+                        const history = request.result.sort((a, b) => 
+                            new Date(b.latest_timestamp) - new Date(a.latest_timestamp)
+                        );
+                        resolve(history);
+                    };
+                    
+                    request.onerror = () => reject(new Error('获取历史记录失败'));
+                });
+            }
+
+            async removeHistory(keyword) {
+                if (!this.db) await this.init();
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.storeName], 'readwrite');
+                    const store = transaction.objectStore(this.storeName);
+                    const request = store.delete(keyword);
+                    
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject(new Error('删除历史记录失败'));
+                });
+            }
+
+            async updateHistory(oldKeyword, newKeyword) {
+                if (!this.db) await this.init();
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.storeName], 'readwrite');
+                    const store = transaction.objectStore(this.storeName);
+                    
+                    // 先获取旧记录
+                    const getRequest = store.get(oldKeyword);
+                    
+                    getRequest.onsuccess = () => {
+                        const oldItem = getRequest.result;
+                        if (oldItem) {
+                            // 删除旧记录
+                            store.delete(oldKeyword);
+                            
+                            // 添加新记录（保留原有数据）
+                            const newItem = {
+                                ...oldItem,
+                                keyword: newKeyword
+                            };
+                            
+                            const putRequest = store.put(newItem);
+                            putRequest.onsuccess = () => resolve();
+                            putRequest.onerror = () => reject(new Error('更新历史记录失败'));
+                        } else {
+                            reject(new Error('未找到要更新的历史记录'));
+                        }
+                    };
+                    
+                    getRequest.onerror = () => reject(new Error('查询历史记录失败'));
+                });
+            }
+
+            async clearAllHistory() {
+                if (!this.db) await this.init();
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.storeName], 'readwrite');
+                    const store = transaction.objectStore(this.storeName);
+                    const request = store.clear();
+                    
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject(new Error('清空历史记录失败'));
+                });
+            }
+
+            async importHistory(historyArray) {
+                if (!this.db) await this.init();
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.storeName], 'readwrite');
+                    const store = transaction.objectStore(this.storeName);
+                    
+                    let completed = 0;
+                    let errors = 0;
+                    
+                    if (historyArray.length === 0) {
+                        resolve();
+                        return;
+                    }
+                    
+                    historyArray.forEach(item => {
+                        const request = store.put(item);
+                        
+                        request.onsuccess = () => {
+                            completed++;
+                            if (completed + errors === historyArray.length) {
+                                if (errors === 0) {
+                                    resolve();
+                                } else {
+                                    reject(new Error(`导入完成，但有 ${errors} 条记录失败`));
+                                }
+                            }
+                        };
+                        
+                        request.onerror = () => {
+                            errors++;
+                            if (completed + errors === historyArray.length) {
+                                reject(new Error(`导入失败，有 ${errors} 条记录失败`));
+                            }
+                        };
+                    });
+                });
+            }
+
+            async migrateFromLocalStorage() {
+                try {
+                    const localStorageData = localStorage.getItem('searchHistory');
+                    if (localStorageData) {
+                        const parsed = JSON.parse(localStorageData);
+                        if (Array.isArray(parsed) && parsed.length > 0) {
+                            // 确保数据格式正确
+                            const normalizedData = parsed.map(item => {
+                                if (typeof item === 'string') {
+                                    // 旧格式：字符串数组
+                                    return {
+                                        keyword: item,
+                                        first_timestamp: new Date().toISOString(),
+                                        search_count: 1,
+                                        latest_timestamp: new Date().toISOString()
+                                    };
+                                } else if (item && typeof item === 'object' && item.keyword) {
+                                    // 新格式或部分格式化的数据
+                                    return {
+                                        keyword: item.keyword,
+                                        first_timestamp: item.first_timestamp || new Date().toISOString(),
+                                        search_count: item.search_count || 1,
+                                        latest_timestamp: item.latest_timestamp || new Date().toISOString()
+                                    };
+                                }
+                                return null;
+                            }).filter(item => item !== null);
+                            
+                            if (normalizedData.length > 0) {
+                                await this.importHistory(normalizedData);
+                                // 迁移成功后删除localStorage数据
+                                localStorage.removeItem('searchHistory');
+                                return true;
+                            }
+                        }
+                    }
+                    return false;
+                } catch (error) {
+                    console.error('从localStorage迁移失败:', error);
+                    return false;
+                }
+            }
+        }
+
         // 全局数据库实例
         const siteConfigDB = new SiteConfigDB();
+        const searchHistoryDB = new SearchHistoryDB();
 
         // 从IndexedDB加载网站配置
         async function loadSiteConfig() {
@@ -797,6 +1043,7 @@
         const quicksearchinput = document.getElementById('quick-search-input');
         const mobileEscBtn = document.getElementById('mobile-esc-btn');
         let historyItems = []; // 恢复显示
+        let searchHistory = []; // 历史记录数组
         const historymatches = []; // 匹配项列表
         // 导航相关变量
         let currentFocusElement = null;
@@ -917,59 +1164,124 @@
             renderHistory();
         }
 
-        // 加载搜索历史（新结构并修复嵌套问题）
-        let searchHistory = [];
-        const storedHistory = localStorage.getItem('searchHistory');
-        if (storedHistory) {
+        // 加载搜索历史（使用IndexedDB）        
+        async function loadSearchHistory() {
             try {
-                const parsed = JSON.parse(storedHistory);
-                if (Array.isArray(parsed)) {
-                    // 递归展平嵌套结构
-                    const flattenHistory = (items) => {
-                        return items.map(item => {
-                            // 处理嵌套结构：提取最内层keyword字段
-                            if (item.keyword && typeof item.keyword === 'object') {
+                // 首先检查IndexedDB是否可用
+                if (!window.indexedDB) {
+                    console.error('IndexedDB不可用，回退到localStorage');
+                    loadHistoryFromLocalStorage();
+                    return;
+                }
+                
+                await searchHistoryDB.init();
+                
+                // 首先尝试从localStorage迁移数据
+                const migrated = await searchHistoryDB.migrateFromLocalStorage();
+                if (migrated) {
+                    console.log('已从localStorage迁移历史记录到IndexedDB');
+                }
+                
+                // 从IndexedDB加载历史记录
+                searchHistory = await searchHistoryDB.getAllHistory();
+                renderHistory();
+            } catch (error) {
+                console.error('IndexedDB加载失败，回退到localStorage:', error);
+                loadHistoryFromLocalStorage();
+            }
+        }
+        
+        // 回退到localStorage的加载方法
+        function loadHistoryFromLocalStorage() {
+            console.log('使用localStorage加载历史记录...');
+            const storedHistory = localStorage.getItem('searchHistory');
+            if (storedHistory) {
+                try {
+                    const parsed = JSON.parse(storedHistory);
+                    if (Array.isArray(parsed)) {
+                        searchHistory = parsed.map(item => {
+                            if (typeof item === 'string') {
                                 return {
-                                    keyword: item.keyword.keyword || '',
-                                    first_timestamp: item.keyword.timestamp || new Date().toISOString(),
-                                    search_count: item.search_count || 1,
-                                    latest_timestamp: item.timestamp || new Date().toISOString()
+                                    keyword: item,
+                                    first_timestamp: new Date().toISOString(),
+                                    search_count: 1,
+                                    latest_timestamp: new Date().toISOString()
                                 };
                             }
                             return item;
                         });
-                    };
-
-                    // 兼容旧格式转换
-                    if (parsed.length > 0) {
-                        if (typeof parsed[0] === 'string') {
-                            // 旧格式字符串数组 -> 转换为新格式
-                            searchHistory = parsed.map(keyword => ({
-                                keyword,
-                                first_timestamp: new Date().toISOString(),
-                                search_count: 1,
-                                latest_timestamp: new Date().toISOString()
-                            }));
-                        } else if (parsed[0].timestamp && !parsed[0].first_timestamp) {
-                            // 旧格式对象数组 -> 转换为新格式
-                            searchHistory = parsed.map(item => ({
-                                keyword: item.keyword,
-                                first_timestamp: item.timestamp,
-                                search_count: 1,
-                                latest_timestamp: item.timestamp
-                            }));
-                        } else {
-                            // 已经是新格式或嵌套格式 - 进行规范化处理
-                            searchHistory = flattenHistory(parsed);
-                        }
+                        console.log('从localStorage加载的历史记录:', searchHistory);
+                        renderHistory();
+                        return;
                     }
+                } catch (e) {
+                    console.error('解析localStorage历史记录失败:', e);
                 }
-            } catch (e) {
-                console.error('解析历史记录失败:', e);
-                searchHistory = [];
+            }
+            console.log('localStorage中没有历史记录');
+            searchHistory = [];
+            renderHistory();
+        }
+        
+
+        // 添加历史记录函数（使用IndexedDB）
+        async function addToHistory(keyword) {
+            if (!keyword || keyword.trim() === '') return;
+            
+            try {
+                const historyItem = await searchHistoryDB.addHistory(keyword.trim());
+                
+                // 更新本地searchHistory数组
+                const existingIndex = searchHistory.findIndex(item => item.keyword === keyword.trim());
+                if (existingIndex !== -1) {
+                    // 更新现有记录
+                    searchHistory[existingIndex] = historyItem;
+                    // 移动到数组开头
+                    searchHistory.unshift(searchHistory.splice(existingIndex, 1)[0]);
+                } else {
+                    // 添加新记录到开头
+                    searchHistory.unshift(historyItem);
+                }
+                
+                renderHistory();
+            } catch (error) {
+                console.error('添加历史记录失败:', error);
+                // 如果IndexedDB失败，仍然更新本地数组以保持功能
+                const existingIndex = searchHistory.findIndex(item => item.keyword === keyword.trim());
+                if (existingIndex !== -1) {
+                    // 更新现有记录
+                    searchHistory[existingIndex].search_count++;
+                    searchHistory[existingIndex].latest_timestamp = new Date().toISOString();
+                    // 移动到数组开头
+                    searchHistory.unshift(searchHistory.splice(existingIndex, 1)[0]);
+                } else {
+                    // 添加新记录
+                    searchHistory.unshift({
+                        keyword: keyword.trim(),
+                        first_timestamp: new Date().toISOString(),
+                        search_count: 1,
+                        latest_timestamp: new Date().toISOString()
+                    });
+                }
+                renderHistory();
             }
         }
-        renderHistory();
+
+        // 删除历史记录函数（使用IndexedDB）
+        async function removeFromHistory(keyword) {
+            try {
+                await searchHistoryDB.removeHistory(keyword);
+                
+                // 更新本地searchHistory数组
+                searchHistory = searchHistory.filter(item => item.keyword !== keyword);
+                renderHistory();
+            } catch (error) {
+                console.error('删除历史记录失败:', error);
+                // 如果IndexedDB失败，仍然更新本地数组以保持功能
+                searchHistory = searchHistory.filter(item => item.keyword !== keyword);
+                renderHistory();
+            }
+        }
 
         // 排序按钮事件
         document.getElementById('sort-by-name').addEventListener('click', sortByName);
@@ -1063,21 +1375,27 @@
         // 单独处理编辑历史和导出历史按钮
         // 单独处理编辑历史和导出历史按钮
 
-        // 保存编辑的历史记录（更新为使用新结构）
-        saveEditBtn.addEventListener('click', () => {
+        // 保存编辑的历史记录（使用IndexedDB）
+        saveEditBtn.addEventListener('click', async () => {
             if (currentEditItem && historyEditInput.value.trim()) {
                 const oldKeyword = currentEditItem.getAttribute('data-keyword');
                 const newKeyword = historyEditInput.value.trim();
                 if (oldKeyword !== newKeyword) {
-                    // 找到原始历史项（新结构）
-                    const historyItem = searchHistory.find(item => item.keyword === oldKeyword);
-                    if (historyItem) {
-                        // 更新关键词但保留其他字段（时间戳和次数不变）
-                        historyItem.keyword = newKeyword;
-                        // 保存到localStorage
-                        localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
+                    try {
+                        // 更新IndexedDB中的记录
+                        await searchHistoryDB.updateHistory(oldKeyword, newKeyword);
+                        
+                        // 更新本地searchHistory数组
+                        const historyItem = searchHistory.find(item => item.keyword === oldKeyword);
+                        if (historyItem) {
+                            historyItem.keyword = newKeyword;
+                        }
+                        
                         // 重新渲染历史记录
                         renderHistory();
+                    } catch (error) {
+                        console.error('更新历史记录失败:', error);
+                        alert('更新历史记录失败: ' + error.message);
                     }
                 }
                 editHistoryModal.style.display = 'none';
@@ -1152,10 +1470,13 @@
             // 允许空格输入
             quicksearchinput.addEventListener('keydown', function (e) {
                 if (e.key === 'Enter') {
-                    const firstMatch = document.querySelector('.highlight.history-item, .highlight[data-site]');
-                    if (firstMatch) {
-                        searchInput.value = firstMatch.textContent;
-                        searchInput.focus();
+                    // 只有聚焦到quicksearchinput时才执行历史项到搜索框的逻辑
+                    if (document.activeElement === quicksearchinput) {
+                        const firstMatch = document.querySelector('.highlight.history-item, .highlight[data-site]');
+                        if (firstMatch && firstMatch.classList.contains('history-item')) {
+                            searchInput.value = firstMatch.textContent;
+                            searchInput.focus();
+                        }
                     }
                 }
             });
@@ -1865,10 +2186,15 @@
 
         // 渲染搜索历史
         function renderHistory() {
+            if (!historyList) {
+                console.error('historyList element not found!');
+                return;
+            }
+            
             historyList.innerHTML = '';
             historyItems = [];
 
-            searchHistory.forEach(keywordObj => {
+            searchHistory.forEach((keywordObj, index) => {
                 const keyword = keywordObj.keyword;
                 const item = document.createElement('div');
                 item.className = 'history-item';
@@ -1917,39 +2243,22 @@
             });
         }
 
-        // 从历史记录中移除
-        function removeFromHistory(keyword) {
-            searchHistory = searchHistory.filter(item => item.keyword !== keyword);
-            localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
-            renderHistory();
-        }
-
-        // 添加到搜索历史（新结构）
-        function addToHistory(keyword) {
-            const keywordStr = keyword.keyword ? keyword.keyword : keyword;
-            const now = new Date().toISOString();
-            const existingIndex = searchHistory.findIndex(item => item.keyword === keywordStr);
-
-            if (existingIndex !== -1) {
-                // 更新现有记录：增加搜索次数，更新最新时间戳
-                const existingItem = searchHistory[existingIndex];
-                existingItem.search_count += 1;
-                existingItem.latest_timestamp = now;
-                // 将该记录移动到最前面（表示最近使用）
-                searchHistory.splice(existingIndex, 1);
-                searchHistory.unshift(existingItem);
-            } else {
-                // 新记录
-                searchHistory.unshift({
-                    keyword: keywordStr,
-                    first_timestamp: now,
-                    search_count: 1,
-                    latest_timestamp: now
-                });
+        // 从历史记录中移除（使用IndexedDB）
+        async function removeFromHistory(keyword) {
+            try {
+                await searchHistoryDB.removeHistory(keyword);
+                
+                // 更新本地searchHistory数组
+                searchHistory = searchHistory.filter(item => item.keyword !== keyword);
+                renderHistory();
+            } catch (error) {
+                console.error('删除历史记录失败:', error);
+                // 如果IndexedDB失败，仍然更新本地数组以保持功能
+                searchHistory = searchHistory.filter(item => item.keyword !== keyword);
+                renderHistory();
             }
-            localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
-            renderHistory();
         }
+
 
         // 搜索功能
         function search(site, immediate = false) {
@@ -1974,6 +2283,7 @@
             }
 
             if (keyword) {
+                // 确保搜索时保存历史记录
                 addToHistory(keyword);
                 const url = siteUrls[site] + encodeURIComponent(keyword);
                 window.open(url, '_blank');
@@ -2069,7 +2379,7 @@
             }
         }
 
-        // 导入历史记录（兼容新旧格式并修复嵌套问题）
+        // 导入历史记录（兼容新旧格式并修复嵌套问题，使用IndexedDB）
         function importHistory() {
             const input = document.createElement('input');
             input.type = 'file';
@@ -2078,7 +2388,7 @@
                 const file = e.target.files[0];
                 if (file) {
                     const reader = new FileReader();
-                    reader.onload = (e) => {
+                    reader.onload = async (e) => {
                         const content = e.target.result;
                         let newItems = [];
 
@@ -2163,10 +2473,19 @@
                             return item;
                         });
 
-                        // 将新导入的记录添加到现有记录的前面
-                        searchHistory = [...newItems, ...searchHistory];
-                        localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
-                        renderHistory();
+                        // 将新导入的记录添加到IndexedDB和本地数组
+                        try {
+                            await searchHistoryDB.importHistory(newItems);
+                            searchHistory = [...newItems, ...searchHistory];
+                            renderHistory();
+                            alert('历史记录导入成功！');
+                        } catch (error) {
+                            console.error('导入到IndexedDB失败:', error);
+                            // 如果IndexedDB失败，仍然更新本地数组
+                            searchHistory = [...newItems, ...searchHistory];
+                            renderHistory();
+                            alert('历史记录导入完成，但部分数据可能未正确保存到数据库');
+                        }
                     };
                     reader.readAsText(file);
                 }
@@ -2819,8 +3138,12 @@
 
         // 确保设置按钮事件在DOM加载后绑定
         document.addEventListener('DOMContentLoaded', async function () {
+            
             // 首先加载网站配置
             await loadSiteConfig();
+            
+            // 加载历史记录
+            await loadSearchHistory();
             
             // 绑定设置按钮
             document.getElementById('settings').addEventListener('click', function () {
@@ -2843,15 +3166,10 @@
             
             // 绑定Gitee按钮
             document.getElementById('gitee-config').addEventListener('click', function() {
-                document.getElementById('settings-modal').style.display = 'flex';
-                populateSettingsTable();
+                openGiteeConfigModal();
             });
             document.getElementById('sync-from-gitee').addEventListener('click', syncFromGitee);
             
-            // 关闭设置模态框
-            document.getElementById('close-settings').addEventListener('click', function() {
-                document.getElementById('settings-modal').style.display = 'none';
-            });
 
             // 导出配置按钮
             document.getElementById('export-config').addEventListener('click', async function() {
@@ -3371,24 +3689,93 @@
             });
         }
 
-        // 撤销删除
-        function undoDelete() {
+        // 撤销删除（使用IndexedDB）
+        async function undoDelete() {
             if (lastDeletedItems.length === 0) return;
 
-            lastDeletedItems.forEach(item => {
-                // 检查是否已经存在相同关键词的历史项
-                const exists = searchHistory.some(historyItem => historyItem.keyword === item.keyword);
-                if (!exists && item.historyItem) {
-                    // 使用原始的历史项对象（包含时间戳）恢复
-                    searchHistory.unshift(item.historyItem);
+            try {
+                for (const item of lastDeletedItems) {
+                    // 检查是否已经存在相同关键词的历史项
+                    const exists = searchHistory.some(historyItem => historyItem.keyword === item.keyword);
+                    if (!exists && item.historyItem) {
+                        // 恢复到IndexedDB
+                        await searchHistoryDB.addHistory(item.historyItem.keyword);
+                        
+                        // 更新本地数组
+                        searchHistory.unshift(item.historyItem);
+                    }
                 }
-            });
-
-            localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
-            renderHistory();
-            lastDeletedItems = [];
+                
+                renderHistory();
+                lastDeletedItems = [];
+            } catch (error) {
+                console.error('撤销删除失败:', error);
+                // 如果IndexedDB失败，仍然更新本地数组
+                lastDeletedItems.forEach(item => {
+                    const exists = searchHistory.some(historyItem => historyItem.keyword === item.keyword);
+                    if (!exists && item.historyItem) {
+                        searchHistory.unshift(item.historyItem);
+                    }
+                });
+                
+                renderHistory();
+                lastDeletedItems = [];
+            }
         }
         <!-- 保留文件原有内容 -->
+        
+        // 修复的adjustScrollableArea函数 - 确保historyitem在所有窗口尺寸下都正确显示
+        function adjustScrollableArea() {
+            const fixedHeader = document.querySelector('.fixed-header');
+            const scrollableContent = document.querySelector('.scrollable-content');
+            const historyList = document.querySelector('#history-list');
+            
+            if (!fixedHeader || !scrollableContent) {
+                console.log('找不到必要的元素');
+                return;
+            }
+            
+            // 强制重新测量header高度
+            const headerHeight = fixedHeader.getBoundingClientRect().height;
+            const safeMarginTop = Math.ceil(headerHeight) + 15; // 增加更多安全边距
+            
+            // 清除所有可能干扰的样式
+            scrollableContent.style.cssText = '';
+            
+            // 设置强制样式，使用!important确保优先级
+            scrollableContent.style.setProperty('margin-top', safeMarginTop + 'px', 'important');
+            scrollableContent.style.setProperty('height', `calc(100vh - ${safeMarginTop}px)`, 'important');
+            scrollableContent.style.setProperty('overflow', 'auto', 'important');
+            scrollableContent.style.setProperty('display', 'block', 'important');
+            
+            // 确保history-list也正确显示
+            if (historyList) {
+                historyList.style.setProperty('display', 'block', 'important');
+            }
+            
+            // 确保所有history items都可见
+            const historyItems = document.querySelectorAll('.history-item');
+            historyItems.forEach(item => {
+                item.style.setProperty('display', 'inline-block', 'important');
+                item.style.setProperty('visibility', 'visible', 'important');
+                item.style.setProperty('opacity', '1', 'important');
+            });
+        }
+        
+        // 在窗口尺寸变化时重新应用修复
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(adjustScrollableArea, 100);
+        });
+        
+        // 页面加载完成后和定期检查并应用修复（处理异步加载问题）
+        document.addEventListener('DOMContentLoaded', adjustScrollableArea);
+        window.addEventListener('load', adjustScrollableArea);
+        
+        // 定期检查（前5秒）
+        const intervalId = setInterval(adjustScrollableArea, 1000);
+        setTimeout(() => clearInterval(intervalId), 5000);
 
     </script>
 
