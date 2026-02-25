@@ -820,6 +820,23 @@
             if (e.key === 'Escape') {
                 GlobalQuit(e);
             }
+            
+            // 处理Ctrl+F3, Ctrl+F5, Ctrl+F6快捷键
+            if (e.ctrlKey) {
+                if (e.key === 'F3') {
+                    e.preventDefault();
+                    sortByName();
+                    return;
+                } else if (e.key === 'F5') {
+                    e.preventDefault();
+                    sortByTime();
+                    return;
+                } else if (e.key === 'F6') {
+                    e.preventDefault();
+                    sortByLength();
+                    return;
+                }
+            }
             if (window.screen.width > 768 && !document.activeElement.matches('input, textarea') &&
                 e.key.length === 1 && /[a-z0-9\W]/i.test(e.key) && e.key !== ' ') {
                 mobileQuickSearch.focus();
