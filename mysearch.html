@@ -21,7 +21,7 @@
         body {
             font-family: Arial, sans-serif;
             margin: 0;
-            padding: 0 0 8px 20px;
+            padding: 0;
             flex-direction: column;
             height: 100vh;
             overflow: hidden;
@@ -36,54 +36,65 @@
             background: white;
             gap: 6px; /* 统一视觉间距 */
             z-index: 100;
-            padding: 6px 0 6px 20px; /* 统一视觉间距：上下6px */
+            padding: 6px 8px; /* 关键：为整个头部设置左右内边距 */
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
             touch-action: none;
             -webkit-overflow-scrolling: touch;
+            box-sizing: border-box; /* 确保padding包含在内 */
         }
 
         .search-container {
-            /* display: flex; */
-            /* margin-bottom: 12px; */
-            align-items: center;
-            /* gap: 5px; */
-            width: 100%;
+            width: 100%; /* 宽度占满父容器 */
             position: relative;
+            /* 取消外边距，统一由父容器gap控制垂直间距 */
         }
 
         #search-input {
-            padding: 10px 35px 10px 10px;
+            width: 100%; /* 与容器左右边线对齐 */
+            padding: 10px 40px 10px 6px; /* 右侧为清空图标留出空间 */
             font-size: 16px;
-            /* flex-grow: 1; */
             border: 1px solid #000;
-            width: 100%;
+            box-sizing: border-box;
         }
 
         .clear-input {
             position: absolute;
-            right: 3px;
+            right: 4px;
+            top: 0;
+            bottom: 0;
+            height: 100%;
+            width: 36px; /* 与#search-input右侧padding配合(40px=4+36) */
+            display: flex;
+            align-items: center;
+            justify-content: center;
             cursor: pointer;
-            font-size: 42px;
+            font-size: 18px;
             color: #999;
-            padding: 8px;
-            margin: -8px;
-            line-height: 0.7;
+            padding: 0 6px;
+            margin: 0;
+            line-height: 1;
+            transform: none;
         }
 
-        .control-buttons {
-            /* display: flex; */
+        .button-wrapper {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            width: 100%;
+        }
+
+        .control-buttons, .btn-group {
+            display: flex;
+            flex-wrap: wrap;
             gap: 6px; /* 统一视觉间距 */
-            align-items: left;
-            /* flex-wrap: wrap; */
-            flex-grow: 1;
         }
 
         button {
-            padding: 2px 4px;
+            padding: 2px 6px; /* 统一左右padding为6px */
             border: 1px solid #000;
             background: transparent;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 18px;
             transition: all 0.2s;
             text-align: center;
             white-space: normal;
@@ -108,26 +119,17 @@
         }
 
         .btn-group {
-            /* display: flex; */
-            /* flex-wrap: wrap; */
-            gap: 6px; /* 统一视觉间距 */
-            /* margin-bottom: 5px; */
-            width: 100%;
+            flex-grow: 1; /* 让网站按钮组填充剩余空间 */
         }
 
         /* 可滚动内容区域 */
         .scrollable-content {
             flex: 1;
             overflow-y: auto;
-            /* padding: 10px 2px 0; */
-            margin-top: 60px;
-            height: calc(100vh - 160px);
-            /* 计算剩余高度 */
-            -webkit-overflow-scrolling: touch;
-            /* 启用弹性滚动 */
+            padding: 0 8px; /* 关键：与头部设置相同的左右内边距以对齐 */
+            margin-top: 60px; /* 需要动态计算 */
+            height: calc(100vh - 160px); /* 需要动态计算 */
             box-sizing: border-box;
-            /* 确保padding包含在高度内 */
-            
             /* 隐藏滚动条但保持滚动功能 */
             scrollbar-width: none; /* Firefox */
             -ms-overflow-style: none; /* IE and Edge */
@@ -138,6 +140,16 @@
             display: none;
         }
 
+        /* 确保历史列表与头部对齐 */
+        #history-list {
+            margin: 0;
+            padding: 0; /* history-list本身不需要padding */
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* 调试颜色已移除 - 对齐问题已解决 */
+
         /* .history-header {
             display: flex;
             justify-content: space-between;
@@ -146,11 +158,13 @@
         } */
 
         .history-header {
-            /* margin-top: 5px; */
             width: 100%;
             padding-bottom: 6px; /* 统一视觉间距 */
-            /* display: flex; */
             gap: 6px; /* 统一视觉间距 */
+            margin: 0; /* 确保没有额外margin */
+            padding-left: 0; /* 确保没有额外左padding */
+            padding-right: 0; /* 确保没有额外右padding */
+            margin-top: 6px; /* 与上方按钮组的间距 */
         }
 
         .history-title {
@@ -314,39 +328,111 @@
             }
 
             .fixed-header {
-                padding: 1px 2px;
-                margin-bottom: 3px;
+                gap: 1px; /* 更紧凑的统一间距 */
+                padding: 1px 2px; /* 更小的左右边距，保持对齐 */
+            }
+
+            .search-container {
+                margin-bottom: 2px;
             }
 
             #search-input {
-                padding: 3px 1px;
-                font-size: 16px;
+                width: 100%;
+                font-size: 12px; /* 更小字号 */
+                padding: 2px 26px 2px 2px; /* 极简padding，并为×预留右侧空间 */
             }
 
-            button {
-                padding: 1px 2px;
-                font-size: 18px;
-                margin: 0px;
-                width: auto;
+            .button-wrapper {
+                gap: 1px;
             }
 
-            .btn-group {
-                gap: 6px; /* 统一视觉间距 */
+            .control-buttons, .btn-group {
+                gap: 1px;
             }
 
-            .control-buttons {
-                gap: 6px; /* 统一视觉间距 */
+            .history-header {
+                margin-top: 1px;
             }
+
+            .scrollable-content {
+                padding: 0 2px; /* 更紧凑且与头部对齐 */
+            }
+
+            .history-item {
+                margin-right: 1px !important; /* 更紧凑统一间距 */
+                margin-bottom: 1px !important; /* 更紧凑统一间距 */
+            }
+
+            .fixed-header {
+                gap: 1px; /* 更紧凑的统一间距 */
+                padding: 1px 2px; /* 更小的左右边距，保持对齐 */
+            }
+
+            .history-header {
+                padding-bottom: 1px; /* 更紧凑统一间距 */
+                gap: 1px; /* 更紧凑统一间距 */
+            }
+
+            .search-container {
+                width: 100%; /* 宽度占满父容器 */
+                 /* 移除复杂的margin和width计算 */
+            }
+
+            /* 移除history-list在小屏的额外padding，确保与头部左右边线对齐 */
 
             button.small {
-                font-size: 16px;
-                padding: 1px 1px;
+                font-size: 12px;
+                padding: 0 2px;
             }
 
             button.highlight {
                 background: transparent !important;
                 border: 2px solid #2563eb !important;
                 box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.4) !important;
+            }
+
+            /* 小屏减小按钮整体字号与横向padding */
+            button {
+                font-size: 12px;
+                padding: 0 2px;
+                line-height: 1.2;
+            }
+
+            /* 小屏清空图标垂直居中并与input等高 */
+            .clear-input {
+                right: 2px;
+                top: 0;
+                bottom: 0;
+                height: 100%;
+                transform: none;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 16px;
+                padding: 0 4px;
+                margin: 0;
+                line-height: 1;
+                width: 24px;
+            }
+
+            /* 小屏历史项更紧凑 */
+            .history-item {
+                font-size: 12px !important;
+                padding: 1px 2px !important;
+            }
+
+            /* 小屏快速搜索输入更紧凑 */
+            #quick-search-input {
+                font-size: 12px;
+                padding: 1px 2px;
+                height: 16px;
+            }
+
+            /* 小屏ESC按钮更紧凑 */
+            #mobile-esc-btn {
+                font-size: 12px;
+                padding: 0 2px;
+                line-height: 1.2;
             }
         }
 
@@ -373,13 +459,13 @@
         }
 
         button {
-            padding: 1px 2px;
+            padding: 1px 6px; /* 统一左右padding为6px */
             margin: 0px; /* 移除默认margin，由gap统一控制间距 */
             /* 保持正常边框，不要透明 */
             border: 1px solid #000;
             background: transparent;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 18px;
             transition: all 0.2s;
             text-align: center;
             white-space: normal;
@@ -398,20 +484,22 @@
             <span class="clear-input" title="清空输入">×</span>
         </div>
 
-        <div class="control-buttons flex2">
-            <button id="save-only">仅保存</button>
-            <button id="all-sites">所有</button>
-            <button id="common-sites">常用</button>
-            <button id="foreign-sites">外网</button>
-            <button id="edit-history">编辑历史</button>
-            <button id="export-history">导出历史</button>
-            <button id="import-history">导入历史</button>
-            <button id="sync-gitee">上传</button>
-            <button id="sync-from-gitee">下载</button>
-            <button id="gitee-config">备份设置</button>
-        </div>
-                <div class="btn-group flex2">
-            <!-- 按钮将通过 JavaScript 从 IndexedDB 动态生成 -->
+        <div class="button-wrapper">
+            <div class="control-buttons">
+                <button id="save-only">仅保存</button>
+                <button id="all-sites">所有</button>
+                <button id="common-sites">常用</button>
+                <button id="foreign-sites">外网</button>
+                <button id="edit-history">编辑历史</button>
+                <button id="export-history">导出历史</button>
+                <button id="import-history">导入历史</button>
+                <button id="sync-gitee">上传</button>
+                <button id="sync-from-gitee">下载</button>
+                <button id="gitee-config">备份设置</button>
+            </div>
+            <div class="btn-group">
+                <!-- 按钮将通过 JavaScript 从 IndexedDB 动态生成 -->
+            </div>
         </div>
 
         <div class="history-header flex1">
@@ -426,7 +514,7 @@
         </div>
     </div>
 
-    <div class="scrollable-content" style="margin-top: 223px; height: calc(100vh - 223px);">
+    <div class="scrollable-content">
         <div id="history-list" class="flex2"></div>
     </div>
 
@@ -3728,38 +3816,18 @@
         function adjustScrollableArea() {
             const fixedHeader = document.querySelector('.fixed-header');
             const scrollableContent = document.querySelector('.scrollable-content');
-            const historyList = document.querySelector('#history-list');
             
             if (!fixedHeader || !scrollableContent) {
-                console.log('找不到必要的元素');
                 return;
             }
             
             // 强制重新测量header高度
             const headerHeight = fixedHeader.getBoundingClientRect().height;
-            const safeMarginTop = Math.ceil(headerHeight) + 15; // 增加更多安全边距
+            const safeMarginTop = Math.ceil(headerHeight) + 2; // 使用2px作为安全边距
             
-            // 清除所有可能干扰的样式
-            scrollableContent.style.cssText = '';
-            
-            // 设置强制样式，使用!important确保优先级
-            scrollableContent.style.setProperty('margin-top', safeMarginTop + 'px', 'important');
-            scrollableContent.style.setProperty('height', `calc(100vh - ${safeMarginTop}px)`, 'important');
-            scrollableContent.style.setProperty('overflow', 'auto', 'important');
-            scrollableContent.style.setProperty('display', 'block', 'important');
-            
-            // 确保history-list也正确显示
-            if (historyList) {
-                historyList.style.setProperty('display', 'block', 'important');
-            }
-            
-            // 确保所有history items都可见
-            const historyItems = document.querySelectorAll('.history-item');
-            historyItems.forEach(item => {
-                item.style.setProperty('display', 'inline-block', 'important');
-                item.style.setProperty('visibility', 'visible', 'important');
-                item.style.setProperty('opacity', '1', 'important');
-            });
+            // 仅设置必要的margin-top和height，保留CSS文件中的padding用于对齐
+            scrollableContent.style.marginTop = safeMarginTop + 'px';
+            scrollableContent.style.height = `calc(100vh - ${safeMarginTop}px)`;
         }
         
         // 在窗口尺寸变化时重新应用修复
@@ -3770,12 +3838,41 @@
         });
         
         // 页面加载完成后和定期检查并应用修复（处理异步加载问题）
-        document.addEventListener('DOMContentLoaded', adjustScrollableArea);
-        window.addEventListener('load', adjustScrollableArea);
+        // document.addEventListener('DOMContentLoaded', adjustScrollableArea); // 移动到初始化函数中
+        // window.addEventListener('load', adjustScrollableArea); // 移动到初始化函数中
         
-        // 定期检查（前5秒）
-        const intervalId = setInterval(adjustScrollableArea, 1000);
-        setTimeout(() => clearInterval(intervalId), 5000);
+        // 定期检查（前5秒） - 这个方式不太好，移除
+        // const intervalId = setInterval(adjustScrollableArea, 1000);
+        // setTimeout(() => clearInterval(intervalId), 5000);
+
+        // 页面初始化：立即加载配置和历史记录
+        async function initializePage() {
+            console.log('开始初始化页面...');
+            try {
+                // 立即加载网站配置
+                await loadSiteConfig();
+                console.log('网站配置加载完成');
+                
+                // 立即加载历史记录
+                await loadSearchHistory();
+                console.log('历史记录加载完成');
+                
+                // 确保UI更新
+                // adjustScrollableArea();
+                // 渲染历史后，再次调用以确保布局正确
+                setTimeout(adjustScrollableArea, 50); // 给予一个小的延迟确保DOM更新
+            } catch (error) {
+                console.error('页面初始化失败:', error);
+            }
+        }
+
+        // 立即执行初始化，不等待DOMContentLoaded
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializePage);
+        } else {
+            // 文档已经加载完成，立即执行
+            initializePage();
+        }
 
     </script>
 
