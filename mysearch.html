@@ -476,7 +476,7 @@
                     <tr>
                         <th>按钮名称</th>
                         <th>Data-site</th>
-                        <th>Site Rules</th>
+                        <th>Site Urls</th>
                         <th>操作</th>
                     </tr>
                 </thead>
@@ -1024,9 +1024,10 @@
                     return;
                 }
             }
-            // 电脑端快速搜索触发（字母和数字，不包括空格）
+            // 电脑端快速搜索触发（字母、数字和标点符号，不包括空格和修饰键组合）
             if (window.screen.width > 768 && !document.activeElement.matches('input, textarea') &&
-                e.key.length === 1 && /[a-z0-9]/i.test(e.key)) {
+                !e.ctrlKey && !e.altKey && !e.metaKey && // 排除修饰键组合，确保浏览器快捷键正常工作
+                e.key.length === 1 && /[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(e.key)) {
 
                 // 将输入的字符添加到快速搜索中
                 e.preventDefault();
