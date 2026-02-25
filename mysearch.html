@@ -479,6 +479,7 @@
         const errorModal = document.getElementById('error-modal');
         const mobileQuickSearch = document.getElementById('mobile-quick-search');
         const mobileEscBtn = document.getElementById('mobile-esc-btn');
+        const quicksearchhint = document.getElementById('quick-search-hint');
         let historyItems = []; // 恢复显示
         const historymatches = []; // 匹配项列表
         // 导航相关变量
@@ -637,18 +638,18 @@
             }
 
             // 点击空白处处理
-            if (!e.target.closest('button, input, .history-item, #quick-search-hint')) {
-                if (document.activeElement === searchInput) {
-                    searchInput.blur();
-                }
-                if (quickSearchActive) {
-                    quickSearchKeys = '';
-                    updateQuickSearchDisplay();
-                    clearMatches();
-                    quickSearchActive = false;
-                    showAllHistoryItems();
-                }
-            }
+            // if (!e.target.closest('button, input, .history-item, #quick-search-hint')) {
+            //     if (document.activeElement === searchInput) {
+            //         searchInput.blur();
+            //     }
+            //     if (quickSearchActive) {
+            //         quickSearchKeys = '';
+            //         updateQuickSearchDisplay();
+            //         clearMatches();
+            //         quickSearchActive = false;
+            //         showAllHistoryItems();
+            //     }
+            // }
             // 移动端ESC按钮处理
             document.getElementById('mobile-esc-btn').addEventListener('click', function (e) {
                 e.stopPropagation();
@@ -680,7 +681,7 @@
             if (mobileQuickSearch) {
                 mobileQuickSearch.addEventListener('input', function () {
                     // 在窄屏下也执行快速搜索
-                    if (window.innerWidth <= 1200) {
+                    if (screen.width <= 1200) {
                         quickSearchKeys = this.value.toLowerCase();
                         updateQuickSearchDisplay();
                         performQuickSearch();
@@ -696,7 +697,7 @@
         // 点击空白处退出编辑模式或关闭模态框
         function focusQuickSearch() {
         setTimeout(() => {
-            if (window.innerWidth <= 768 && mobileQuickSearch) {
+            if (screen.width <= 768 && mobileQuickSearch) {
                 mobileQuickSearch.focus();
 
                 setTimeout(() => {
@@ -714,7 +715,7 @@
             // 点击空白处处理输入法
             if (!e.target.closest('button, input, .history-item, #quick-search-hint')) {
                 // 移动端处理
-                if (window.innerWidth <= 768) {
+                if (screen.width <= 768) {
                     // 第一次点击：聚焦并弹出输入法
                     if (!isInputMethodActive) {
                         mobileQuickSearch.focus();
@@ -727,23 +728,29 @@
                     }
                 }
                 // 电脑端处理
-                else {
-                    if (document.activeElement === searchInput) {
-                        searchInput.blur();
-                    }
+                else{
+                        if (document.activeElement === searchInput) 
+                            {searchInput.blur();}
+                        if (document.activeElement === quicksearchhint)
+                            {
+                            quickSearchKeys = '';
+                            updateQuickSearchDisplay();
+                            clearMatches();
+                            quickSearchActive = false;
+                            showAllHistoryItems();}
                 }
             }
         });
 
-        // 添加输入框失焦事件
-        mobileQuickSearch.addEventListener('blur', function () {
-            isInputMethodActive = false;
-        });
+        // 添加输入框失焦事件，影响点击关闭输入法
+        // mobileQuickSearch.addEventListener('blur', function () {
+        //     isInputMethodActive = false;
+        // });
         // 移动端快速搜索处理
         if (mobileQuickSearch) {
             mobileQuickSearch.addEventListener('input', function () {
                 const keywords = this.value.toLowerCase().split(/\s+/).filter(Boolean);
-                if (window.innerWidth <= 1200) { // 匹配CSS媒体查询条件
+                if (screen.width <= 1200) { // 匹配CSS媒体查询条件
                     quickSearchKeys = this.value.toLowerCase();
                     performQuickSearch();
                 }
