@@ -271,7 +271,7 @@
             margin-right: 5px;
         }
 
-        /* .mobile-quick-search-wrapper {
+        /* .quick-search-input-wrapper {
             display: flex;
             /* 使按钮水平排列 */
         /* right: 120px; */
@@ -288,7 +288,7 @@
         /* 左浮动 */
         /*}*/
 
-        #mobile-quick-search {
+        #quick-search-input {
             width: 100px;
             /* 缩小宽度 */
             padding: 2px 2px;
@@ -394,9 +394,9 @@
             <button id="edit-history">编辑历史</button>
             <button id="export-history">导出历史</button>
             <button id="import-history">导入历史</button>
-            <button id="sync-gitee">同步到Gitee</button>
-            <button id="sync-from-gitee">从Gitee同步</button>
-            <button id="gitee-config">Gitee配置</button>
+            <button id="sync-gitee">上传</button>
+            <button id="sync-from-gitee">下载</button>
+            <button id="gitee-config">备份设置</button>
         </div>
         <div class="btn-group flex2">
             <button data-site="xiaohongshu" class="" style="display: inline-block;">小红书</button>
@@ -437,10 +437,12 @@
         <div class="history-header flex1">
             <div class="history-title">搜索历史</div>
             <button id="mobile-esc-btn" class="mobile-only button"> Esc </button>
-            <input type="text" id="mobile-quick-search" autocomplete="off" spellcheck="false">
+            <input type="text" id="quick-search-input" autocomplete="off" spellcheck="false">
             <button id="sort-by-name" class="small">名称 ↑</button>
             <button id="sort-by-time" class="small">时间 ↓</button>
             <button id="sort-by-length" class="small">长度 ↑</button>
+            <button id="sort-by-first-time" class="small">首次 ↓</button>
+            <button id="sort-by-count" class="small">次数 ↓</button>
         </div>
     </div>
 
@@ -562,7 +564,7 @@
         const historyEditInput = document.getElementById('history-edit-input');
         const saveEditBtn = document.getElementById('save-edit');
         const errorModal = document.getElementById('error-modal');
-        const mobileQuickSearch = document.getElementById('mobile-quick-search');
+        const quicksearchinput = document.getElementById('quick-search-input');
         const mobileEscBtn = document.getElementById('mobile-esc-btn');
         let historyItems = []; // 恢复显示
         const historymatches = []; // 匹配项列表
@@ -597,7 +599,9 @@
         const sortStates = {
             name: { ascending: true },
             time: { ascending: false }, // 时间默认倒序（新->旧）
-            length: { ascending: true } // 长度默认升序
+            length: { ascending: true }, // 长度默认升序
+            firstTime: { ascending: false }, // 首次搜索时间默认倒序（新->旧）
+            count: { ascending: false } // 搜索次数默认倒序（多->少）
         };
 
         // 排序功能（支持双向）
@@ -645,6 +649,40 @@
             // 更新按钮文本
             document.getElementById('sort-by-length').textContent =
                 `长度 ${state.ascending ? '↑' : '↓'}`;
+
+            renderHistory();
+        }
+
+        function sortByFirstTime() {
+            const state = sortStates.firstTime;
+            state.ascending = !state.ascending; // 切换方向
+
+            // 根据首次搜索时间排序
+            searchHistory.sort((a, b) => {
+                const timeA = new Date(a.first_timestamp).getTime();
+                const timeB = new Date(b.first_timestamp).getTime();
+                return state.ascending ? timeA - timeB : timeB - timeA;
+            });
+
+            // 更新按钮文本
+            document.getElementById('sort-by-first-time').textContent =
+                `首次 ${state.ascending ? '↑' : '↓'}`;
+
+            renderHistory();
+        }
+
+        function sortByCount() {
+            const state = sortStates.count;
+            state.ascending = !state.ascending; // 切换方向
+
+            // 根据搜索次数排序
+            searchHistory.sort((a, b) =>
+                state.ascending ? a.search_count - b.search_count : b.search_count - a.search_count
+            );
+
+            // 更新按钮文本
+            document.getElementById('sort-by-count').textContent =
+                `次数 ${state.ascending ? '↑' : '↓'}`;
 
             renderHistory();
         }
@@ -707,6 +745,8 @@
         document.getElementById('sort-by-name').addEventListener('click', sortByName);
         document.getElementById('sort-by-time').addEventListener('click', sortByTime);
         document.getElementById('sort-by-length').addEventListener('click', sortByLength);
+        document.getElementById('sort-by-first-time').addEventListener('click', sortByFirstTime);
+        document.getElementById('sort-by-count').addEventListener('click', sortByCount);
 
         // 全局键盘事件（用于快速搜索）
         document.addEventListener('keydown', handleGlobalKeyDown);
@@ -847,22 +887,22 @@
                 if (screen.width <= 768) {
                     // 第一次点击：聚焦并弹出输入法
                     if (!isInputMethodActive) {
-                        mobileQuickSearch.focus();
+                        quicksearchinput.focus();
                         isInputMethodActive = true;
                     }
                     // 第二次点击：关闭输入法
                     else {
-                        mobileQuickSearch.blur();
+                        quicksearchinput.blur();
                         isInputMethodActive = false;
                     }
                 }
                 // 电脑端处理
                 else {
                     if (document.activeElement === searchInput) { searchInput.blur(); }
-                    if (document.activeElement === mobileQuickSearch) {
+                    if (document.activeElement === quicksearchinput) {
                         quickSearchKeys = '';
                         quickSearchActive = false;
-                        mobileQuickSearch.blur();
+                        quicksearchinput.blur();
                     }
                 }
             }
@@ -876,10 +916,10 @@
         focusQuickSearch();
 
         // 移动端快速搜索处理
-        if (mobileQuickSearch) {
-            mobileQuickSearch.addEventListener('input', focusQuickSearch)
+        if (quicksearchinput) {
+            quicksearchinput.addEventListener('input', focusQuickSearch)
             // 允许空格输入
-            mobileQuickSearch.addEventListener('keydown', function (e) {
+            quicksearchinput.addEventListener('keydown', function (e) {
                 if (e.key === 'Enter') {
                     const firstMatch = document.querySelector('.highlight.history-item, .highlight[data-site]');
                     if (firstMatch) {
@@ -896,19 +936,19 @@
 
         // 点击空白处退出编辑模式或关闭模态框
         function focusQuickSearch(e) {
-            if (screen.width <= 768 && document.activeElement !== mobileQuickSearch) {
+            if (screen.width <= 768 && document.activeElement !== quicksearchinput) {
                 setTimeout(() => {
-                    if (mobileQuickSearch) {
-                        mobileQuickSearch.focus();
+                    if (quicksearchinput) {
+                        quicksearchinput.focus();
                         setTimeout(() => {
-                            mobileQuickSearch.style.color = '';
+                            quicksearchinput.style.color = '';
                         }, 100);
                     }
                 }, 100);
                 return;
             }
-            else if (document.activeElement === mobileQuickSearch) {
-                quickSearchKeys = mobileQuickSearch.value;
+            else if (document.activeElement === quicksearchinput) {
+                quickSearchKeys = quicksearchinput.value;
                 performQuickSearch();
                 return;
             }
@@ -960,7 +1000,7 @@
                 GlobalQuit(e);
             }
 
-            // 处理Ctrl+F3, Ctrl+F5, Ctrl+F6快捷键
+            // 处理Ctrl+F3, Ctrl+F5, Ctrl+F6, Ctrl+F9, Ctrl+F10快捷键
             if (e.ctrlKey) {
                 if (e.key === 'F3') {
                     e.preventDefault();
@@ -974,6 +1014,14 @@
                     e.preventDefault();
                     sortByLength();
                     return;
+                } else if (e.key === 'F9') {
+                    e.preventDefault();
+                    sortByFirstTime();
+                    return;
+                } else if (e.key === 'F10') {
+                    e.preventDefault();
+                    sortByCount();
+                    return;
                 }
             }
             // 电脑端快速搜索触发（字母和数字，不包括空格）
@@ -982,11 +1030,11 @@
 
                 // 将输入的字符添加到快速搜索中
                 e.preventDefault();
-                mobileQuickSearch.focus();
-                mobileQuickSearch.value += e.key;
+                quicksearchinput.focus();
+                quicksearchinput.value += e.key;
                 
                 // 触发input事件来执行搜索
-                quickSearchKeys = mobileQuickSearch.value;
+                quickSearchKeys = quicksearchinput.value;
                 performQuickSearch();
                 return;
             }
@@ -1121,7 +1169,7 @@
                 }
 
                 // 如果焦点在快速搜索框，让它正常处理空格作为搜索字符
-                if (document.activeElement === mobileQuickSearch) {
+                if (document.activeElement === quicksearchinput) {
                     return;
                 }
 
@@ -1239,18 +1287,18 @@
                 searchInput.blur();
                 return;
             }
-            // 第一次ESC：失焦mobile-quick-search，但保持匹配项
-            else if (mobileQuickSearch.value) {
+            // 第一次ESC：失焦quick-search-input，但保持匹配项
+            else if (quicksearchinput.value) {
                 // e.preventDefault();
-                mobileQuickSearch.value = '';
+                quicksearchinput.value = '';
                 quickSearchKeys = '';
                 updateQuickSearchDisplay();
-                mobileQuickSearch.blur();
+                quicksearchinput.blur();
                 // 注意：这里不清理匹配项，保持quickSearchActive状态
                 return;
             }
             // 第二次ESC：消除所有匹配项
-            else if (!mobileQuickSearch.value && (quickSearchActive || matchedItems.length > 0)) {
+            else if (!quicksearchinput.value && (quickSearchActive || matchedItems.length > 0)) {
                 clearQuickSearchState();
                 return;
             }
@@ -1260,8 +1308,8 @@
         // 修改 updateQuickSearchDisplay 函数
         function updateQuickSearchDisplay() {
             // 添加防重复更新检查
-            if (mobileQuickSearch.value === quickSearchKeys) return;
-            mobileQuickSearch.value = quickSearchKeys || '';
+            if (quicksearchinput.value === quickSearchKeys) return;
+            quicksearchinput.value = quickSearchKeys || '';
         }
         // 执行快速搜索
         // 修改 performQuickSearch 函数
