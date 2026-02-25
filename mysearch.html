@@ -856,21 +856,13 @@
                 searchInput.blur();
                 return;
             }
-
-            // 电脑端快速搜索激活
-            if (window.innerWidth > 768 && !document.activeElement.matches('input, textarea') &&
+            if (window.screen.width > 768 && !document.activeElement.matches('input, textarea') &&
                 e.key.length === 1 && /[a-z0-9\W]/i.test(e.key) && e.key !== ' ') {
-                e.preventDefault();
-                quickSearchActive = true;
-                // quickSearchKeys += e.key.toLowerCase();
-                updateQuickSearchDisplay();
-                performQuickSearch();
-
-                if (matchedItems.length > 0) {
-                    matchedItems[0].element.focus();
-                    currentFocusElement = matchedItems[0].element;
-                }
+                activateQuickSearch(e);
+                return;
             }
+            // 电脑端快速搜索激活
+
             if (quickSearchActive && e.key === 'Backspace') {
                 e.preventDefault();
                 if (quickSearchKeys.length > 0) {
@@ -907,22 +899,7 @@
                 return;
             }
 
-            // 快速搜索字符输入
-            // 快速搜索字符输入
-            if (e.key.length === 1 && /[a-z0-9\W]/i.test(e.key) && e.key !== ' ') {
-                e.preventDefault();
-                quickSearchActive = true;
-                // quickSearchKeys += e.key.toLowerCase();
-                updateQuickSearchDisplay();
-                performQuickSearch();
-
-                if (matchedItems.length > 0) {
-                    matchedItems[0].element.focus();
-                    currentFocusElement = matchedItems[0].element;
-                }
-                return;
-            }
-                if (e.key === 'Escape') {
+            if (e.key === 'Escape') {
                 e.preventDefault();
 
                 // 第一次按ESC：清空快速搜索状态
@@ -948,8 +925,8 @@
                 }
 
                 return;
-                }
-                if (isEditingHistory) {
+            }
+            if (isEditingHistory) {
                 if (e.key === 'Enter') {
                     e.preventDefault();
                     saveEditBtn.click();
@@ -1024,15 +1001,8 @@
                 e.preventDefault();
                 toggleSelectElement(currentFocusElement);
                 return;
-            } else if (e.key.length === 1 && (!quickSearchActive || e.key !== ' ') && /[a-z0-9\W]/i.test(e.key)) {
-                e.preventDefault();
-                quickSearchActive = true;
-                quickSearchKeys += e.key.toLowerCase();
-                updateQuickSearchDisplay();
-                performQuickSearch();
             }
 
-            // Enter键执行操作
             // Enter键执行操作
             if (e.key === 'Enter' && currentFocusElement) {
                 e.preventDefault();
@@ -1073,6 +1043,19 @@
                 e.preventDefault();
                 undoDelete();
                 return;
+            }
+        }
+
+        function activateQuickSearch(e) {
+            e.preventDefault();
+            quickSearchActive = true;
+            quickSearchKeys += e.key.toLowerCase();
+            updateQuickSearchDisplay();
+            performQuickSearch();
+
+            if (matchedItems.length > 0) {
+                matchedItems[0].element.focus();
+                currentFocusElement = matchedItems[0].element;
             }
         }
         // 修改 updateQuickSearchDisplay 函数
@@ -1129,7 +1112,7 @@
             } else {
                 // 没有匹配项时显示所有元素
                 allElements.forEach(el => {
-                    el.style.display = 'inline-block';
+                    el.style.display = 'none';
                 });
             }
         }
@@ -1525,7 +1508,7 @@
             }
         }
 
-                // 显示错误弹窗
+        // 显示错误弹窗
         function showErrorModal() {
             errorModal.style.display = 'flex';
             setTimeout(() => {
@@ -1591,7 +1574,7 @@
         }
 
         // 撤销删除
-function undoDelete() {
+        function undoDelete() {
             if (lastDeletedItems.length === 0) return;
 
             lastDeletedItems.forEach(item => {
