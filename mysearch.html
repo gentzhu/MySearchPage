@@ -1145,32 +1145,24 @@
                 const pinyin = getPinyinInitials(text);
                 let isMatch = false;
 
-                // 统一处理逻辑：每个查询词必须连续出现（子串匹配）且按顺序
+                // 统一处理逻辑：每个查询词必须连续出现（子串匹配），顺序不限
                 let textMatch = true;
                 let pinyinMatch = true;
-                let lastTextIndex = -1;
-                let lastPinyinIndex = -1;
-
+                
+                // 检查每个查询词是否在文本中出现（不要求顺序）
                 for (const query of queries) {
-                    // 在文本中查找连续匹配
-                    const textIndex = text.indexOf(query, lastTextIndex + 1);
-                    if (textIndex === -1) {
+                    if (text.indexOf(query) === -1) {
                         textMatch = false;
-                        break; // 有一个查询词不匹配就退出
-                    } else {
-                        lastTextIndex = textIndex; // 更新最后匹配位置
+                        break;
                     }
                 }
-
+                
                 // 如果文本匹配失败，再尝试拼音匹配
                 if (!textMatch) {
                     for (const query of queries) {
-                        const pinyinIndex = pinyin.indexOf(query, lastPinyinIndex + 1);
-                        if (pinyinIndex === -1) {
+                        if (pinyin.indexOf(query) === -1) {
                             pinyinMatch = false;
                             break;
-                        } else {
-                            lastPinyinIndex = pinyinIndex;
                         }
                     }
                 }
