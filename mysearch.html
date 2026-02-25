@@ -1,4 +1,6 @@
-<html lang="zh-CN"><head>
+<html lang="zh-CN">
+
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MySearchPage</title>
@@ -345,6 +347,9 @@
             <button id="edit-history">编辑历史</button>
             <button id="export-history">导出历史</button>
             <button id="import-history">导入历史</button>
+            <button id="sync-gitee">同步到Gitee</button>
+            <button id="sync-from-gitee">从Gitee同步</button>
+            <button id="gitee-config">Gitee配置</button>
         </div>
         <div class="btn-group flex2">
             <button data-site="xiaohongshu" class="" style="display: inline-block;">小红书</button>
@@ -411,12 +416,12 @@
     <div class="modal" id="settings-modal" style="display:none">
         <div class="modal-content" style="width: 800px; max-height: 80vh; overflow: auto;">
             <h3>网站设置</h3>
-            
+
             <!-- 快速搜索框 -->
             <div style="margin-bottom: 15px;">
                 <input type="text" id="settings-search" placeholder="搜索网站..." style="width: 100%; padding: 8px;">
             </div>
-            
+
             <!-- 网站表格 -->
             <table id="sites-table" style="width: 100%; border-collapse: collapse;">
                 <thead>
@@ -431,7 +436,7 @@
                     <!-- 动态生成行 -->
                 </tbody>
             </table>
-            
+
             <!-- 操作按钮 -->
             <div style="margin-top: 15px;">
                 <button id="add-site-row">新增行</button>
@@ -551,18 +556,18 @@
         function sortByName() {
             const state = sortStates.name;
             state.ascending = !state.ascending; // 切换方向
-            
+
             searchHistory.sort((a, b) =>
                 state.ascending ? a.keyword.localeCompare(b.keyword) : b.keyword.localeCompare(a.keyword)
             );
-            
+
             // 更新按钮文本
             document.getElementById('sort-by-name').textContent =
                 `名称 ${state.ascending ? '↑' : '↓'}`;
-                
+
             renderHistory();
         }
-        
+
         function sortByTime() {
             const state = sortStates.time;
             state.ascending = !state.ascending; // 切换方向
@@ -577,25 +582,25 @@
             // 更新按钮文本
             document.getElementById('sort-by-time').textContent =
                 `时间 ${state.ascending ? '↑' : '↓'}`;
-                
+
             renderHistory();
         }
-        
+
         function sortByLength() {
             const state = sortStates.length;
             state.ascending = !state.ascending; // 切换方向
-            
+
             searchHistory.sort((a, b) =>
                 state.ascending ? a.keyword.length - b.keyword.length : b.keyword.length - a.keyword.length
             );
-            
+
             // 更新按钮文本
             document.getElementById('sort-by-length').textContent =
                 `长度 ${state.ascending ? '↑' : '↓'}`;
-                
+
             renderHistory();
         }
-        
+
         // 加载搜索历史
         let searchHistory = [];
         const storedHistory = localStorage.getItem('searchHistory');
@@ -614,7 +619,7 @@
             }
         }
         renderHistory();
-        
+
         // 排序按钮事件
         document.getElementById('sort-by-name').addEventListener('click', sortByName);
         document.getElementById('sort-by-time').addEventListener('click', sortByTime);
@@ -678,7 +683,7 @@
                         toggleSelectElement(button);
                     } else {
                         // 没有多选时，直接执行搜索
-                        clearSelection(); 
+                        clearSelection();
                         search(site, true);
                     }
                 }
@@ -725,7 +730,7 @@
                 currentEditItem = null;
             }
         });
-        
+
         // ESC键取消编辑
         historyEditInput.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
@@ -842,7 +847,7 @@
             if (e.key === 'Escape') {
                 GlobalQuit(e);
             }
-            
+
             // 处理Ctrl+F3, Ctrl+F5, Ctrl+F6快捷键
             if (e.ctrlKey) {
                 if (e.key === 'F3') {
@@ -862,7 +867,7 @@
             // 电脑端快速搜索触发（包括空格）
             if (window.screen.width > 768 && !document.activeElement.matches('input, textarea') &&
                 e.key.length === 1 && /[a-z0-9\s]/i.test(e.key)) {
-                
+
                 // 空格键需要特殊处理
                 // if (e.key === ' ') {
                 //     // e.preventDefault();
@@ -871,7 +876,7 @@
                 //     mobileQuickSearch.dispatchEvent(new Event('input'));
                 //     return;
                 // }
-                
+
                 // 其他字符正常处理
                 mobileQuickSearch.focus();
                 focusQuickSearch(e);
@@ -1020,11 +1025,11 @@
                 if (document.activeElement === searchInput) {
                     return;
                 }
-                
+
                 // e.preventDefault();
-                
+
                 // 快速搜索激活时，操作当前匹配项
-                if (document.activeElement === mobileQuickSearch ) {
+                if (document.activeElement === mobileQuickSearch) {
                     // const currentItem = matchedItems[currentMatchIndex].element;
                     // toggleSelectElement(currentItem);
                     return;
@@ -1039,7 +1044,7 @@
             // Enter键执行操作
             if (e.key === 'Enter') {
                 e.preventDefault();
-                
+
                 // 1. 处理快速搜索虚拟光标（最高优先级）
                 if (quickSearchActive && matchedItems.length > 0) {
                     const currentItem = matchedItems[currentMatchIndex];
@@ -1055,14 +1060,14 @@
                     }
                     return;
                 }
-                
+
                 // 2. 处理多选网站的情况
                 const selectedSites = selectedElements.filter(el => el.hasAttribute('data-site'));
                 if (selectedSites.length > 0) {
                     batchSearch(selectedSites);
                     return;
                 }
-                
+
                 // 3. 处理当前焦点在网站按钮上
                 if (currentFocusElement && currentFocusElement.hasAttribute('data-site') && searchInput.value.trim()) {
                     clearSelection(); // 清除所有选择
@@ -1070,7 +1075,7 @@
                     search(site, true); // 使用单个搜索函数
                     return;
                 }
-                
+
                 // 4. 处理历史项
                 if (currentFocusElement && currentFocusElement.classList.contains('history-item')) {
                     const keyword = currentFocusElement.getAttribute('data-keyword');
@@ -1159,10 +1164,10 @@
             }
             // 获取所有可搜索元素
             const allElements = document.querySelectorAll('.history-item, button[data-site], .control-buttons button');
-            
+
             // 先显示所有历史项
             showAllHistoryItems();
-            
+
             // 所有元素去高亮
             allElements.forEach(el => {
                 el.classList.remove('highlight');
@@ -1193,7 +1198,7 @@
                 // 对每个查询词独立检查：在文本或拼音组合中连续出现
                 for (const query of queries) {
                     let queryMatched = false;
-                    
+
                     // 检查在文本中是否连续出现
                     if (text.indexOf(query) !== -1) {
                         queryMatched = true;
@@ -1206,7 +1211,7 @@
                             }
                         }
                     }
-                    
+
                     if (!queryMatched) {
                         allQueriesMatched = false;
                         break;
@@ -1234,7 +1239,7 @@
                 currentFocusElement = matchedItems[0].element;
             }
         }
-        
+
         function showAllHistoryItems() {
             document.querySelectorAll('.history-item').forEach(item => {
                 item.style.display = 'inline-block';
@@ -1253,7 +1258,7 @@
                 // 处理中文字符（Unicode范围：19968-40869）
                 if (unicode >= 19968 && unicode <= 40869) {
                     console.log(`[DEBUG] Chinese char detected: ${char} (${unicode})`);
-                    
+
                     // 先检查多音字
                     if (pinyin_dict_firstletter.polyphone[unicode]) {
                         const poly = pinyin_dict_firstletter.polyphone[unicode];
@@ -1312,7 +1317,7 @@
 
             // 设置新位置并高亮
             highlightCurrentMatch();
-            
+
             // 更新当前焦点元素
             currentFocusElement = matchedItems[currentMatchIndex].element;
         }
@@ -1323,7 +1328,7 @@
             document.querySelectorAll('.cursor-highlight').forEach(el => {
                 el.classList.remove('cursor-highlight');
             });
-            
+
             if (currentMatchIndex >= 0 && currentMatchIndex < matchedItems.length) {
                 const currentItem = matchedItems[currentMatchIndex];
                 currentItem.element.classList.add('cursor-highlight');
@@ -1431,13 +1436,19 @@
 
         // 添加到搜索历史
         function addToHistory(keyword) {
+            // 确保keyword是字符串
+            const keywordStr = keyword.keyword ? keyword.keyword : keyword;
+            
             // 避免重复添加（根据关键词判断），如果存在则先移除
-            const existingIndex = searchHistory.findIndex(item => item.keyword === keyword);
+            const existingIndex = searchHistory.findIndex(item => item.keyword === keywordStr);
             if (existingIndex !== -1) {
                 searchHistory.splice(existingIndex, 1);
             }
             // 添加到最前面
-            searchHistory.unshift({ keyword, timestamp: new Date().toISOString() });
+            searchHistory.unshift({
+                keyword: keywordStr,
+                timestamp: new Date().toISOString()
+            });
             localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
             renderHistory();
         }
@@ -1445,13 +1456,13 @@
         // 搜索功能
         function search(site, immediate = false) {
             const keyword = searchInput.value.trim();
-            
+
             // 确保使用正确的site规则
             if (!siteUrls[site]) {
                 console.error(`未知的网站: ${site}`);
                 return;
             }
-            
+
             if (linkButtons.includes(site)) {
                 if (keyword) {
                     navigator.clipboard.writeText(keyword).catch(err => {
@@ -1479,12 +1490,12 @@
         function batchSearch(buttons) {
             const keyword = searchInput.value.trim();
             const processedSites = new Set(); // 用集合去重
-            
+
             // 遍历所有按钮元素
             for (const button of buttons) {
                 const site = button.getAttribute('data-site');
                 if (!site || processedSites.has(site)) continue;
-                
+
                 processedSites.add(site);
 
                 // 创建搜索URL
@@ -1494,7 +1505,7 @@
                 } else {
                     url = siteUrls[site] + encodeURIComponent(keyword || '');
                 }
-                
+
                 window.open(url, '_blank');
             }
 
@@ -1572,7 +1583,7 @@
                     reader.onload = (e) => {
                         const content = e.target.result;
                         let newItems = [];
-                        
+
                         try {
                             // 尝试解析为JSON
                             newItems = JSON.parse(content);
@@ -1594,7 +1605,7 @@
                                 }
                             });
                         }
-                        
+
                         // 将新导入的记录添加到现有记录的前面
                         searchHistory = [...newItems, ...searchHistory];
                         localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
@@ -1784,87 +1795,87 @@
             // 填充表格数据
             const tbody = document.getElementById('sites-table-body');
             tbody.innerHTML = '';
-            
+
             for (const [site, url] of Object.entries(siteUrls)) {
                 const row = document.createElement('tr');
-                
+
                 const nameCell = document.createElement('td');
                 const nameInput = document.createElement('input');
                 nameInput.type = 'text';
                 nameInput.value = document.querySelector(`button[data-site="${site}"]`)?.textContent || site;
                 nameInput.style.width = '100%';
                 nameCell.appendChild(nameInput);
-                
+
                 const siteCell = document.createElement('td');
                 const siteInput = document.createElement('input');
                 siteInput.type = 'text';
                 siteInput.value = site;
                 siteInput.style.width = '100%';
                 siteCell.appendChild(siteInput);
-                
+
                 const urlCell = document.createElement('td');
                 const urlInput = document.createElement('input');
                 urlInput.type = 'text';
                 urlInput.value = url;
                 urlInput.style.width = '100%';
                 urlCell.appendChild(urlInput);
-                
+
                 const actionCell = document.createElement('td');
                 const deleteBtn = document.createElement('button');
                 deleteBtn.textContent = '删除';
                 deleteBtn.addEventListener('click', () => row.remove());
                 actionCell.appendChild(deleteBtn);
-                
+
                 row.appendChild(nameCell);
                 row.appendChild(siteCell);
                 row.appendChild(urlCell);
                 row.appendChild(actionCell);
                 tbody.appendChild(row);
             }
-            
+
             // 显示设置模态框
             document.getElementById('settings-modal').style.display = 'flex';
         });
-        
+
         // 新增行按钮事件
         document.getElementById('add-site-row').addEventListener('click', () => {
             const tbody = document.getElementById('sites-table-body');
             const row = document.createElement('tr');
-            
+
             const nameCell = document.createElement('td');
             const nameInput = document.createElement('input');
             nameInput.type = 'text';
             nameInput.placeholder = '按钮名称';
             nameInput.style.width = '100%';
             nameCell.appendChild(nameInput);
-            
+
             const siteCell = document.createElement('td');
             const siteInput = document.createElement('input');
             siteInput.type = 'text';
             siteInput.placeholder = 'data-site';
             siteInput.style.width = '100%';
             siteCell.appendChild(siteInput);
-            
+
             const urlCell = document.createElement('td');
             const urlInput = document.createElement('input');
             urlInput.type = 'text';
             urlInput.placeholder = 'URL模板';
             urlInput.style.width = '100%';
             urlCell.appendChild(urlInput);
-            
+
             const actionCell = document.createElement('td');
             const deleteBtn = document.createElement('button');
             deleteBtn.textContent = '删除';
             deleteBtn.addEventListener('click', () => row.remove());
             actionCell.appendChild(deleteBtn);
-            
+
             row.appendChild(nameCell);
             row.appendChild(siteCell);
             row.appendChild(urlCell);
             row.appendChild(actionCell);
             tbody.appendChild(row);
         });
-        
+
         // ESC键退出设置界面
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && document.getElementById('settings-modal').style.display === 'flex') {
@@ -1878,7 +1889,7 @@
                 // 收集表格数据并更新siteUrls
                 const newSiteUrls = {};
                 const rows = document.querySelectorAll('#sites-table-body tr');
-                
+
                 rows.forEach(row => {
                     const siteInput = row.querySelector('td:nth-child(2) input');
                     const urlInput = row.querySelector('td:nth-child(3) input');
@@ -1886,18 +1897,18 @@
                         newSiteUrls[siteInput.value] = urlInput.value;
                     }
                 });
-                
+
                 // 更新全局siteUrls
                 siteUrls = newSiteUrls;
-                
+
                 // 更新按钮组
                 const btnGroup = document.querySelector('.btn-group');
                 btnGroup.innerHTML = '';
-                
+
                 rows.forEach(row => {
                     const nameInput = row.querySelector('td:nth-child(1) input');
                     const siteInput = row.querySelector('td:nth-child(2) input');
-                    
+
                     if (nameInput.value && siteInput.value) {
                         const button = document.createElement('button');
                         button.textContent = nameInput.value;
@@ -1908,26 +1919,26 @@
                         btnGroup.appendChild(button);
                     }
                 });
-                
+
                 // 重新绑定按钮事件
                 bindButtonEvents();
-                
+
                 // 隐藏设置模态框
                 document.getElementById('settings-modal').style.display = 'none';
             } catch (error) {
                 alert('保存设置出错: ' + error.message);
             }
         });
-        
+
         // 取消设置
         document.getElementById('cancel-settings').addEventListener('click', () => {
             document.getElementById('settings-modal').style.display = 'none';
         });
-        
+
         // 确保设置按钮事件在DOM加载后绑定
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             // 绑定设置按钮
-            document.getElementById('settings').addEventListener('click', function() {
+            document.getElementById('settings').addEventListener('click', function () {
                 // 填充表格数据
                 const tbody = document.getElementById('sites-table-body');
                 tbody.innerHTML = '';
@@ -1973,53 +1984,104 @@
                 document.getElementById('settings-modal').style.display = 'flex';
             });
             
+            // 绑定Gitee按钮
+            document.getElementById('gitee-config').addEventListener('click', openGiteeConfigModal);
+            document.getElementById('sync-from-gitee').addEventListener('click', syncFromGitee);
+            
+            // 从Gitee同步功能
+            async function syncFromGitee() {
+                // 获取配置
+                const giteeConfig = JSON.parse(localStorage.getItem('giteeConfig') || '{}');
+                
+                // 检查配置
+                if (!giteeConfig.owner || !giteeConfig.repo || !giteeConfig.path || !giteeConfig.token) {
+                    alert('请先配置Gitee仓库信息');
+                    openGiteeConfigModal();
+                    return;
+                }
+                
+                const { owner, repo, path, token } = giteeConfig;
+                const url = `https://gitee.com/api/v5/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}?access_token=${token}&ref=master`;
+                
+                try {
+                    const response = await fetch(url);
+                    if (!response.ok) {
+                        throw new Error(`获取文件失败: ${response.status} ${response.statusText}`);
+                    }
+                    
+                    const fileData = await response.json();
+                    if (!fileData.content) {
+                        throw new Error('Gitee返回的数据不包含文件内容');
+                    }
+                    
+                    // 解码内容
+                    const decodedContent = atob(fileData.content);
+                    const newHistory = JSON.parse(decodedContent);
+                    
+                    // 验证历史记录格式
+                    if (!Array.isArray(newHistory)) {
+                        throw new Error('同步的数据不是有效的历史记录数组');
+                    }
+                    
+                    // 替换当前历史记录
+                    searchHistory = newHistory;
+                    localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
+                    renderHistory();
+                    alert('同步成功！已加载最新历史记录');
+                    
+                } catch (error) {
+                    const safeUrl = url.replace(/access_token=[^&]+/, 'access_token=***');
+                    alert(`从Gitee同步失败: ${error.message}\nURL: ${safeUrl}\n请检查配置和网络连接`);
+                }
+            }
+
             // 绑定设置模态框内按钮
             // 确保事件只绑定一次
             // 直接绑定设置界面按钮事件
-            document.getElementById('add-site-row').addEventListener('click', function() {
+            document.getElementById('add-site-row').addEventListener('click', function () {
                 const tbody = document.getElementById('sites-table-body');
                 const row = document.createElement('tr');
-                
+
                 const nameCell = document.createElement('td');
                 const nameInput = document.createElement('input');
                 nameInput.type = 'text';
                 nameInput.placeholder = '按钮名称';
                 nameInput.style.width = '100%';
                 nameCell.appendChild(nameInput);
-                
+
                 const siteCell = document.createElement('td');
                 const siteInput = document.createElement('input');
                 siteInput.type = 'text';
                 siteInput.placeholder = 'data-site';
                 siteInput.style.width = '100%';
                 siteCell.appendChild(siteInput);
-                
+
                 const urlCell = document.createElement('td');
                 const urlInput = document.createElement('input');
                 urlInput.type = 'text';
                 urlInput.placeholder = 'URL模板';
                 urlInput.style.width = '100%';
                 urlCell.appendChild(urlInput);
-                
+
                 const actionCell = document.createElement('td');
                 const deleteBtn = document.createElement('button');
                 deleteBtn.textContent = '删除';
                 deleteBtn.addEventListener('click', () => row.remove());
                 actionCell.appendChild(deleteBtn);
-                
+
                 row.appendChild(nameCell);
                 row.appendChild(siteCell);
                 row.appendChild(urlCell);
                 row.appendChild(actionCell);
                 tbody.appendChild(row);
             });
-            
-            document.getElementById('save-settings').addEventListener('click', function() {
+
+            document.getElementById('save-settings').addEventListener('click', function () {
                 try {
                     // 收集表格数据并更新siteUrls
                     const newSiteUrls = {};
                     const rows = document.querySelectorAll('#sites-table-body tr');
-                    
+
                     rows.forEach(row => {
                         const siteInput = row.querySelector('td:nth-child(2) input');
                         const urlInput = row.querySelector('td:nth-child(3) input');
@@ -2027,18 +2089,18 @@
                             newSiteUrls[siteInput.value] = urlInput.value;
                         }
                     });
-                    
+
                     // 更新全局siteUrls
                     siteUrls = newSiteUrls;
-                    
+
                     // 更新按钮组
                     const btnGroup = document.querySelector('.btn-group');
                     btnGroup.innerHTML = '';
-                    
+
                     rows.forEach(row => {
                         const nameInput = row.querySelector('td:nth-child(1) input');
                         const siteInput = row.querySelector('td:nth-child(2) input');
-                        
+
                         if (nameInput.value && siteInput.value) {
                             const button = document.createElement('button');
                             button.textContent = nameInput.value;
@@ -2049,20 +2111,171 @@
                             btnGroup.appendChild(button);
                         }
                     });
-                    
+
                     // 重新绑定按钮事件
                     bindButtonEvents();
-                    
+
                     // 隐藏设置模态框
                     document.getElementById('settings-modal').style.display = 'none';
                 } catch (error) {
                     alert('保存设置出错: ' + error.message);
                 }
             });
-            
-            document.getElementById('cancel-settings').addEventListener('click', function() {
+
+            document.getElementById('cancel-settings').addEventListener('click', function () {
                 document.getElementById('settings-modal').style.display = 'none';
             });
+
+            // 同步到Gitee功能 - 复用导出逻辑
+            // 同步到Gitee功能 - 完整实现（异步）
+            document.getElementById('sync-gitee').addEventListener('click', async function() {
+                // 直接使用导出功能的数据
+                if (searchHistory.length === 0) {
+                    alert('没有历史记录可同步');
+                    return;
+                }
+                
+                // 从localStorage获取Gitee配置
+                const giteeConfig = JSON.parse(localStorage.getItem('giteeConfig') || '{}');
+                
+                // 如果配置不存在，提示用户设置
+                if (!giteeConfig.owner || !giteeConfig.repo || !giteeConfig.path || !giteeConfig.token) {
+                    alert('请先配置Gitee仓库信息');
+                    openGiteeConfigModal();
+                    return;
+                }
+                
+                const { owner, repo, path, token } = giteeConfig;
+                const content = JSON.stringify(searchHistory, null, 2);
+                
+                // 正确编码内容 - 使用TextEncoder处理UTF-8
+                const encoder = new TextEncoder();
+                const encodedContent = btoa(String.fromCharCode(...encoder.encode(content)));
+                
+                // 获取文件当前SHA值（如果存在）
+                const getUrl = `https://gitee.com/api/v5/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}?access_token=${token}&ref=master`;
+                
+                try {
+                    // 先尝试获取文件信息
+                    const getResponse = await fetch(getUrl);
+                    let sha = null;
+                    
+                    if (getResponse.ok) {
+                        const fileInfo = await getResponse.json();
+                        sha = fileInfo.sha;
+                    } else if (getResponse.status !== 404) {
+                        // 如果不是404错误，抛出异常
+                        const errorText = await getResponse.text();
+                        throw new Error(`获取文件信息失败: ${getResponse.status} - ${errorText}`);
+                    }
+                    
+                    // 准备更新数据
+                    const giteeData = {
+                        message: '同步搜索历史记录: ' + new Date().toLocaleString(),
+                        content: encodedContent,
+                        access_token: token,
+                        branch: 'master',
+                        sha: sha // 添加SHA值
+                    };
+                    
+                    const putUrl = `https://gitee.com/api/v5/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`;
+                    
+                    const putResponse = await fetch(putUrl, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(giteeData)
+                    });
+                    
+                    if (!putResponse.ok) {
+                        const errorText = await putResponse.text();
+                        throw new Error(`更新文件失败: ${putResponse.status} - ${errorText}`);
+                    }
+                    
+                    const data = await putResponse.json();
+                    if (data.content) {
+                        alert('同步成功!');
+                    } else {
+                        alert('同步失败: ' + (data.message || JSON.stringify(data)));
+                    }
+                } catch (error) {
+                    // 显示详细的错误信息
+                    const safeUrl = getUrl.replace(/access_token=[^&]+/, 'access_token=***');
+                    alert(`同步出错: ${error.message}\nURL: ${safeUrl}\n请检查仓库配置是否正确`);
+                }
+            });
+            
+            // 打开Gitee配置模态框
+            function openGiteeConfigModal() {
+                const modal = document.createElement('div');
+                modal.style.position = 'fixed';
+                modal.style.top = '0';
+                modal.style.left = '0';
+                modal.style.width = '100%';
+                modal.style.height = '100%';
+                modal.style.backgroundColor = 'rgba(0,0,0,0.7)';
+                modal.style.display = 'flex';
+                modal.style.justifyContent = 'center';
+                modal.style.alignItems = 'center';
+                modal.style.zIndex = '2000';
+                
+                const box = document.createElement('div');
+                box.style.backgroundColor = 'white';
+                box.style.padding = '20px';
+                box.style.borderRadius = '5px';
+                box.style.width = '300px';
+                
+                // 获取现有配置
+                const config = JSON.parse(localStorage.getItem('giteeConfig') || '{}');
+                
+                box.innerHTML = `
+                    <h3 style="margin-top:0">Gitee仓库配置</h3>
+                    <div style="margin-bottom:10px">
+                        <label>账号(owner):</label>
+                        <input type="text" id="gitee-owner" value="${config.owner || ''}" style="width:100%">
+                    </div>
+                    <div style="margin-bottom:10px">
+                        <label>仓库名(repo):</label>
+                        <input type="text" id="gitee-repo" value="${config.repo || ''}" style="width:100%">
+                    </div>
+                    <div style="margin-bottom:10px">
+                        <label>文件路径(path):</label>
+                        <input type="text" id="gitee-path" value="${config.path || 'history.json'}" style="width:100%">
+                    </div>
+                    <div style="margin-bottom:15px">
+                        <label>访问令牌(token):</label>
+                        <input type="password" id="gitee-token" value="${config.token || ''}" style="width:100%">
+                    </div>
+                    <div style="display:flex;justify-content:space-between">
+                        <button id="save-gitee-config">保存配置</button>
+                        <button id="cancel-gitee-config">取消</button>
+                    </div>
+                `;
+                
+                box.querySelector('#save-gitee-config').addEventListener('click', function() {
+                    const owner = document.getElementById('gitee-owner').value.trim();
+                    const repo = document.getElementById('gitee-repo').value.trim();
+                    const path = document.getElementById('gitee-path').value.trim();
+                    const token = document.getElementById('gitee-token').value.trim();
+                    
+                    if (!owner || !repo || !path || !token) {
+                        alert('所有字段都必须填写');
+                        return;
+                    }
+                    
+                    localStorage.setItem('giteeConfig', JSON.stringify({ owner, repo, path, token }));
+                    document.body.removeChild(modal);
+                    alert('配置已保存!');
+                });
+                
+                box.querySelector('#cancel-gitee-config').addEventListener('click', function() {
+                    document.body.removeChild(modal);
+                });
+                
+                modal.appendChild(box);
+                document.body.appendChild(modal);
+            }
         });
 
         // 重新绑定按钮事件
@@ -2116,6 +2329,8 @@
         <!-- 保留文件原有内容 -->
 
     </script>
-    
 
-</body></html>
+
+</body>
+
+</html>
