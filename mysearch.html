@@ -695,7 +695,7 @@
             
             /* 768px以下表格优化 - 减少间距腾出空间 */
             #sites-table th, #sites-table td {
-                padding: 0px 1px !important;
+                padding: 1px !important;
                 font-size: 10px !important;
                 line-height: 1.0 !important;
                 height: 18px !important;
@@ -708,7 +708,7 @@
             
             #sites-table input {
                 font-size: 10px !important;
-                padding: 0px 1px !important;
+                padding: 1px !important;
                 height: 16px !important;
                 margin: 0px !important;
                 border: 1px solid #ccc !important;
@@ -716,7 +716,7 @@
             
             #sites-table .delete-btn {
                 font-size: 8px !important;
-                padding: 0px 2px !important;
+                padding: 1px !important;
                 height: 14px !important;
                 margin: 0 !important;
                 display: inline-block !important;
@@ -728,9 +728,8 @@
             #sites-table td:last-child {
                 white-space: nowrap !important;
                 text-align: center !important;
-                padding: 0px 1px !important;
-                min-width: 40px !important;
-                width: 40px !important;
+                padding: 1px !important;
+                min-width: 30px !important;
             }
             
             #sites-table td:last-child * {
@@ -742,8 +741,8 @@
             
             .drag-handle {
                 font-size: 8px !important;
-                padding: 0px !important;
-                margin: 0 1px 0 0 !important;
+                padding: 1px !important;
+                margin: 0 !important;
                 width: auto !important;
                 height: auto !important;
             }
@@ -754,18 +753,16 @@
                 border-spacing: 0px !important;
             }
             
-            /* 768px以下操作按钮区域优化 - 防止换行，强制覆盖内联样式 */
+            /* 768px以下操作按钮区域优化 - 允许换行 */
             #settings-actions {
-                flex-wrap: nowrap !important;
-                overflow-x: auto !important;
+                flex-wrap: wrap !important;
                 gap: 1px !important;
                 margin-bottom: 1px !important;
-                -webkit-overflow-scrolling: touch !important;
             }
             
             #settings-actions button {
                 font-size: 8px !important;
-                padding: 1px 2px !important;
+                padding: 1px !important;
                 white-space: nowrap !important;
                 flex-shrink: 0 !important;
                 min-width: auto !important;
@@ -779,7 +776,7 @@
             #settings-search {
                 font-size: 12px !important;
                 height: 18px !important;
-                padding: 0px 2px !important;
+                padding: 1px !important;
             }
             
             /* 768px以下设置标题强制优化 */
@@ -841,7 +838,7 @@
 
         /* 设置模态框表格紧凑样式与删除按钮一行显示 */
         #sites-table th, #sites-table td {
-            padding: 1px 3px;
+            padding: 1px;
             line-height: 1.1;
             vertical-align: middle;
             height: 24px;
@@ -858,13 +855,13 @@
             border-bottom: 1px solid #eee;
         }
         #sites-table th:first-child, #sites-table td:first-child { /* 左边留白略减小 */
-            padding-left: 4px;
+            padding-left: 1px;
         }
         #sites-table th:last-child, #sites-table td:last-child { /* 右侧腾出空间，避免贴边 */
-            padding-right: 10px;
+            padding-right: 1px;
         }
         #sites-table input {
-            padding: 1px 2px;
+            padding: 1px;
             font-size: 12px;
             box-sizing: border-box;
             width: 100%;
@@ -874,9 +871,9 @@
         }
         #sites-table .delete-btn {
             white-space: nowrap;
-            padding: 1px 3px;
+            padding: 1px;
             line-height: 1.1;
-            margin: 0 1px;
+            margin: 0;
             font-size: 10px;
             height: 18px;
             display: inline-block;
@@ -887,42 +884,41 @@
         #sites-table td:last-child {
             white-space: nowrap !important;
             text-align: center;
-            padding: 1px 2px !important;
-            min-width: 60px;
-            width: 60px;
+            padding: 1px !important;
+            min-width: 40px;
         }
         
         /* 操作列内所有元素强制内联显示 */
         #sites-table td:last-child * {
             display: inline-block !important;
             vertical-align: middle !important;
-            margin: 0 1px !important;
+            margin: 0 !important;
             line-height: 1 !important;
         }
         
         /* 拖动手柄样式优化 */
         .drag-handle {
             cursor: move;
-            padding: 0px 1px !important;
+            padding: 1px !important;
             display: inline-block !important;
             vertical-align: middle !important;
-            margin: 0 1px 0 0 !important;
+            margin: 0 !important;
             font-size: 10px !important;
             width: auto !important;
             height: auto !important;
             line-height: 1 !important;
         }
 
-        /* 三状态复选框 - 与按钮同高度 */
+        /* 三状态复选框 - 紧凑尺寸 */
         .three-state-checkbox {
             display: inline-block;
-            width: 22px;
-            height: 22px;
+            width: 18px;
+            height: 18px;
             border: none; /* Unicode符号自带框 */
             cursor: pointer;
             text-align: center;
-            line-height: 22px;
-            font-size: 18px;
+            line-height: 18px;
+            font-size: 14px;
             user-select: none;
             vertical-align: middle; /* 与checkbox对齐 */
             background: transparent;
@@ -934,16 +930,16 @@
             opacity: 0.7;
         }
         
-        /* 二状态复选框 - 与三状态复选框相同样式 */
+        /* 二状态复选框 - 紧凑尺寸 */
         .two-state-checkbox {
             display: inline-block;
-            width: 22px;
-            height: 22px;
+            width: 18px;
+            height: 18px;
             border: none; /* Unicode符号自带框 */
             cursor: pointer;
             text-align: center;
-            line-height: 22px;
-            font-size: 18px;
+            line-height: 18px;
+            font-size: 14px;
             user-select: none;
             vertical-align: middle;
             background: transparent;
@@ -973,7 +969,7 @@
             
             /* 超小屏幕表格进一步紧凑 - 极致压缩间隙 */
             #sites-table th, #sites-table td {
-                padding: 0px !important;
+                padding: 1px !important;
                 font-size: 8px !important;
                 line-height: 1.0 !important;
                 height: 14px !important;
@@ -987,7 +983,7 @@
             
             #sites-table input {
                 font-size: 8px !important;
-                padding: 0px !important;
+                padding: 1px !important;
                 height: 12px !important;
                 margin: 0px !important;
                 border: 1px solid #ccc !important;
@@ -995,7 +991,7 @@
             
             #sites-table .delete-btn {
                 font-size: 6px !important;
-                padding: 0px 1px !important;
+                padding: 1px !important;
                 height: 10px !important;
                 margin: 0 !important;
                 min-width: 16px !important;
@@ -1008,9 +1004,8 @@
             #sites-table td:last-child {
                 white-space: nowrap !important;
                 text-align: center !important;
-                padding: 0px !important;
-                min-width: 30px !important;
-                width: 30px !important;
+                padding: 1px !important;
+                min-width: 24px !important;
                 font-size: 6px !important;
             }
             
@@ -1024,7 +1019,7 @@
             
             .drag-handle {
                 font-size: 6px !important;
-                padding: 0px !important;
+                padding: 1px !important;
                 margin: 0 !important;
                 width: 8px !important;
                 height: 8px !important;
@@ -1034,7 +1029,7 @@
             /* 超小屏幕操作按钮进一步压缩 */
             #settings-actions button {
                 font-size: 7px !important;
-                padding: 0px 1px !important;
+                padding: 1px !important;
                 height: 16px !important;
                 line-height: 1.2 !important;
             }
@@ -1043,7 +1038,7 @@
             #settings-search {
                 height: 18px !important;
                 font-size: 12px !important;
-                padding: 0px 1px !important;
+                padding: 1px !important;
             }
             
             /* 超小屏幕标题优化 */
@@ -1080,6 +1075,43 @@
                 content: "单";
                 font-size: 9px;
             }
+        }
+
+        /* 表格列宽调整功能样式 */
+        .resizable-header {
+            position: relative;
+            user-select: none;
+        }
+        
+        .column-resizer {
+            position: absolute;
+            top: 0;
+            right: -2px;
+            bottom: 0;
+            width: 4px;
+            cursor: col-resize;
+            background: transparent;
+            z-index: 10;
+        }
+        
+        .column-resizer:hover {
+            background: rgba(0, 123, 255, 0.3);
+        }
+        
+        .column-resizer.resizing {
+            background: rgba(0, 123, 255, 0.6);
+        }
+        
+        #sites-table th:last-child .column-resizer {
+            display: none; /* 最后一列不显示调整器 */
+        }
+        
+        .table-resizing {
+            user-select: none;
+        }
+        
+        .table-resizing * {
+            cursor: col-resize !important;
         }
     </style>
     <script src="pinyin_dict_firstletter.js"></script>
@@ -1161,7 +1193,7 @@
             </div>
 
             <!-- 操作按钮（移动到上面） -->
-            <div id="settings-actions" style="margin-bottom: 2px; display: flex; gap: 1px; flex-wrap: nowrap; overflow-x: auto;">
+            <div id="settings-actions" style="margin-bottom: 2px; display: flex; gap: 2px; flex-wrap: wrap;">
                 <button id="add-site-row">新增行</button>
                 <button id="delete-selected-rows">删除选中</button>
                 <button id="save-settings">保存并关闭</button>
@@ -1175,23 +1207,23 @@
             </div>
 
             <!-- 网站表格 -->
-            <table id="sites-table" style="width: 100%; border-collapse: collapse; table-layout: fixed;">
-                <colgroup>
-                    <col style="width: 24%">
-                    <col style="width: 20%">
-                    <col style="width: 40%">
+            <table id="sites-table" style="width: 100%; border-collapse: collapse; table-layout: fixed; position: relative;">
+                <colgroup id="sites-table-colgroup">
+                    <col style="width: 18%">
+                    <col style="width: 8%">
+                    <col style="width: 63%">
+                    <col style="width: 3%">
+                    <col style="width: 3%">
                     <col style="width: 5%">
-                    <col style="width: 5%">
-                    <col style="width: 6%">
                 </colgroup>
                 <thead>
-                    <tr>
-                        <th>按钮名称</th>
-                        <th>Data-site</th>
-                        <th>Site Urls</th>
-                        <th>右键</th>
-                        <th>单开</th>
-                        <th>操作</th>
+                    <tr id="sites-table-header">
+                        <th class="resizable-header">按钮名称<div class="column-resizer"></div></th>
+                        <th class="resizable-header">Data-site<div class="column-resizer"></div></th>
+                        <th class="resizable-header">Site Urls<div class="column-resizer"></div></th>
+                        <th class="resizable-header">右键<div class="column-resizer"></div></th>
+                        <th class="resizable-header">单开<div class="column-resizer"></div></th>
+                        <th class="resizable-header">操作</th>
                     </tr>
                 </thead>
                 <tbody id="sites-table-body">
@@ -2065,8 +2097,40 @@
         // 判断URL是否需要拼接关键词（替代linkButtons逻辑）
         function shouldAppendKeyword(url) {
             if (!url) return false;
-            // 如果URL包含搜索占位符或以查询参数结尾，需要拼接关键词
-            return url.includes('%s') || url.endsWith('?') || url.includes('q=') || url.includes('search=') || url.includes('keyword=') || url.endsWith('wd=') || url.endsWith('query=');
+            const u = url.trim();
+            // 包含通用占位符或常见查询参数，需要拼接关键词
+            if (u.includes('%s') || u.endsWith('?') || u.includes('q=') || u.includes('search=') || u.includes('keyword=') || u.endsWith('wd=') || u.endsWith('query=')) {
+                return true;
+            }
+            // 支持基于路径的搜索URL（如 /search/ 或 /so/ 结尾）
+            if (/(^https?:\/\/)?[^?#]+\/(search|so)\/$/.test(u)) {
+                return true;
+            }
+            return false;
+        }
+
+        // 规范化关键词：去除结尾空白与零宽字符
+        function sanitizeKeyword(key) {
+            return (key || '').replace(/[\s\u200B\u200C\u200D\uFEFF]+$/g, '');
+        }
+
+        // 统一构建搜索URL（支持站点定制）
+        function buildSearchUrl(site, siteUrl, keyword, needsKeyword) {
+            // 抖音：优先使用路径风格 /search/{keyword} ，附带稳定参数触发结果渲染
+            if (site === 'douyin') {
+                const base = 'https://www.douyin.com/search/';
+                if (keyword) {
+                    const safe = sanitizeKeyword(keyword);
+                    const encoded = encodeURIComponent(safe).replace(/%+$/, '');
+                    return base + encoded + '?type=general&source=normal_search';
+                }
+                return base;
+            }
+
+            if (keyword) {
+                return needsKeyword ? (siteUrl + encodeURIComponent(keyword)) : siteUrl;
+            }
+            return needsKeyword ? siteUrl.replace(/\?.*$/, '') : siteUrl;
         }
 
         // 三状态枚举定义
@@ -2200,6 +2264,79 @@
         let selectedElements = [];
         let lastDeletedItems = [];
         let quickSearchActive = false;
+
+        // 增强的光标定位功能
+        let lastInputValue = ''; // 记录最后输入的内容
+        let lastCursorPosition = 0; // 记录最后的光标位置
+        
+        // 设置光标位置到指定位置
+        function setCursorPosition(element, position) {
+            if (element && element.setSelectionRange) {
+                element.focus();
+                // 延迟设置光标位置，确保元素已获得焦点
+                setTimeout(() => {
+                    element.setSelectionRange(position, position);
+                }, 0);
+            }
+        }
+        
+        // 获取当前光标位置
+        function getCursorPosition(element) {
+            if (element && element.selectionStart !== undefined) {
+                return element.selectionStart;
+            }
+            return 0;
+        }
+        
+        // 增强的搜索框焦点处理函数
+        function enhancedFocusSearchInput(preserveCursor = true) {
+            if (searchInput) {
+                searchInput.focus();
+                
+                if (preserveCursor && lastInputValue === searchInput.value) {
+                    // 如果内容没有变化，恢复到之前的光标位置
+                    setCursorPosition(searchInput, lastCursorPosition);
+                } else {
+                    // 如果内容发生变化，将光标设置到最后
+                    const length = searchInput.value.length;
+                    setCursorPosition(searchInput, length);
+                    lastCursorPosition = length;
+                }
+                
+                lastInputValue = searchInput.value;
+            }
+        }
+        
+        // 智能搜索框定位函数 - 不仅定位到搜索框，还保持光标位置
+        function smartFocusSearchInput() {
+            // 记录当前输入框的状态
+            if (searchInput) {
+                lastCursorPosition = getCursorPosition(searchInput);
+                lastInputValue = searchInput.value;
+                
+                // 执行增强的焦点设置
+                enhancedFocusSearchInput(true);
+                
+                // 滚动到搜索框位置
+                searchInput.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center' 
+                });
+            }
+        }
+        
+        // 增强的历史记录点击处理
+        function enhancedHistoryItemClick(keyword) {
+            // 将关键词填入搜索框
+            if (searchInput) {
+                searchInput.value = keyword;
+                // 设置光标到最后一个字符
+                const position = keyword.length;
+                setCursorPosition(searchInput, position);
+                lastCursorPosition = position;
+                lastInputValue = keyword;
+            }
+        }
         
         // 位置记忆变量 - 用于 Tab/Ctrl+Tab 跳转
         let lastButtonPosition = null;  // 上次在按钮区域的位置
@@ -2256,6 +2393,269 @@
         let matchedItems = [];
         let currentMatchIndex = -1;
 
+        // 更新快速搜索显示状态
+        function updateQuickSearchDisplay() {
+            if (quicksearchinput) {
+                quicksearchinput.value = quickSearchKeys;
+                // 直接设置光标位置到用户输入的最后字符
+                const position = quickSearchKeys.length;
+                quicksearchinput.setSelectionRange(position, position);
+                console.log(`更新快速搜索显示，光标定位：${position}/${quickSearchKeys.length}`);
+            }
+        }
+
+        // 执行快速搜索匹配
+        function performQuickSearch() {
+            if (!quickSearchKeys) {
+                clearMatches();
+                showAllHistoryItems();
+                return;
+            }
+
+            quickSearchActive = true;
+            matchedItems = [];
+            
+            // 搜索按钮
+            document.querySelectorAll('button[data-site]').forEach(button => {
+                const buttonText = button.textContent.toLowerCase();
+                const query = quickSearchKeys.toLowerCase();
+                
+                // 检查直接包含
+                const directMatch = buttonText.includes(query);
+                
+                // 检查拼音首字母匹配
+                const pinyinMatch = checkPinyinMatch(button.textContent, quickSearchKeys);
+                
+                if (directMatch || pinyinMatch) {
+                    button.classList.add('highlight');
+                    matchedItems.push({
+                        element: button,
+                        type: 'button',
+                        text: button.textContent
+                    });
+                } else {
+                    button.classList.remove('highlight');
+                }
+            });
+
+            // 搜索历史记录
+            document.querySelectorAll('.history-item').forEach(item => {
+                const itemText = item.textContent.toLowerCase();
+                const query = quickSearchKeys.toLowerCase();
+                
+                // 检查直接包含
+                const directMatch = itemText.includes(query);
+                
+                // 检查拼音首字母匹配
+                const pinyinMatch = checkPinyinMatch(item.textContent, quickSearchKeys);
+                
+                if (directMatch || pinyinMatch) {
+                    item.classList.add('highlight');
+                    item.style.display = '';
+                    matchedItems.push({
+                        element: item,
+                        type: 'history',
+                        text: item.textContent
+                    });
+                } else {
+                    item.classList.remove('highlight');
+                    item.style.display = 'none';
+                }
+            });
+
+            // 设置第一个匹配项为当前项
+            if (matchedItems.length > 0) {
+                currentMatchIndex = 0;
+                highlightCurrentMatch();
+                currentFocusElement = matchedItems[0].element;
+            } else {
+                currentMatchIndex = -1;
+            }
+        }
+
+        // 显示所有历史记录项
+        function showAllHistoryItems() {
+            document.querySelectorAll('.history-item').forEach(item => {
+                item.style.display = '';
+                item.classList.remove('highlight');
+            });
+            document.querySelectorAll('button[data-site]').forEach(button => {
+                button.classList.remove('highlight');
+            });
+        }
+
+        // 检查拼音匹配
+        function checkPinyinMatch(text, query) {
+            try {
+                const pinyinArray = getPinyinInitials(text);
+                const combinations = generatePinyinCombinations(pinyinArray);
+                const queryLower = query.toLowerCase();
+                
+                return combinations.some(combo => 
+                    combo.toLowerCase().includes(queryLower)
+                );
+            } catch (error) {
+                return false;
+            }
+        }
+
+        // 生成拼音首字母组合
+        function generatePinyinCombinations(arrays) {
+            if (!arrays || arrays.length === 0) return [''];
+            const [first, ...rest] = arrays;
+            const restCombinations = generatePinyinCombinations(rest);
+            const results = [];
+            for (let i = 0; i < first.length; i++) {
+                for (let j = 0; j < restCombinations.length; j++) {
+                    results.push(first[i] + restCombinations[j]);
+                }
+            }
+            return results;
+        }
+
+        // 表格列宽调整功能
+        let isResizing = false;
+        let currentResizer = null;
+        let currentColumnIndex = -1;
+        let startX = 0;
+        let startWidth = 0;
+        let startNextWidth = 0;
+
+        function initializeColumnResizing() {
+            const table = document.getElementById('sites-table');
+            const colgroup = document.getElementById('sites-table-colgroup');
+            
+            if (!table || !colgroup) return;
+
+            // 为每个调整器添加事件监听
+            const resizers = table.querySelectorAll('.column-resizer');
+            
+            resizers.forEach((resizer, index) => {
+                resizer.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    isResizing = true;
+                    currentResizer = resizer;
+                    currentColumnIndex = index;
+                    startX = e.clientX;
+                    
+                    // 获取当前列和下一列的宽度
+                    const cols = colgroup.querySelectorAll('col');
+                    const currentCol = cols[index];
+                    const nextCol = cols[index + 1];
+                    
+                    if (currentCol && nextCol) {
+                        startWidth = currentCol.getBoundingClientRect().width;
+                        startNextWidth = nextCol.getBoundingClientRect().width;
+                    }
+                    
+                    // 添加样式
+                    resizer.classList.add('resizing');
+                    document.body.classList.add('table-resizing');
+                    
+                    // 阻止文本选择
+                    document.body.style.userSelect = 'none';
+                    
+                    console.log(`开始调整列 ${index}，初始宽度：${startWidth}px`);
+                });
+            });
+
+            // 全局鼠标移动事件
+            document.addEventListener('mousemove', (e) => {
+                if (!isResizing || !currentResizer) return;
+                
+                e.preventDefault();
+                
+                const deltaX = e.clientX - startX;
+                const cols = colgroup.querySelectorAll('col');
+                const currentCol = cols[currentColumnIndex];
+                const nextCol = cols[currentColumnIndex + 1];
+                
+                if (currentCol && nextCol) {
+                    const tableWidth = table.getBoundingClientRect().width;
+                    
+                    // 计算新的宽度（百分比）
+                    const newCurrentWidth = Math.max(50, startWidth + deltaX); // 最小50px
+                    const newNextWidth = Math.max(50, startNextWidth - deltaX); // 最小50px
+                    
+                    // 转换为百分比
+                    const currentPercent = (newCurrentWidth / tableWidth) * 100;
+                    const nextPercent = (newNextWidth / tableWidth) * 100;
+                    
+                    // 应用新宽度
+                    currentCol.style.width = `${currentPercent}%`;
+                    nextCol.style.width = `${nextPercent}%`;
+                    
+                    console.log(`调整中：列${currentColumnIndex} = ${currentPercent.toFixed(1)}%, 列${currentColumnIndex + 1} = ${nextPercent.toFixed(1)}%`);
+                }
+            });
+
+            // 全局鼠标释放事件
+            document.addEventListener('mouseup', () => {
+                if (!isResizing) return;
+                
+                isResizing = false;
+                
+                if (currentResizer) {
+                    currentResizer.classList.remove('resizing');
+                    currentResizer = null;
+                }
+                
+                document.body.classList.remove('table-resizing');
+                document.body.style.userSelect = '';
+                
+                currentColumnIndex = -1;
+                startX = 0;
+                startWidth = 0;
+                startNextWidth = 0;
+                
+                console.log('列宽调整完成');
+                
+                // 保存列宽设置到localStorage
+                saveColumnWidths();
+            });
+        }
+
+        // 保存列宽设置
+        function saveColumnWidths() {
+            const colgroup = document.getElementById('sites-table-colgroup');
+            if (!colgroup) return;
+            
+            const cols = colgroup.querySelectorAll('col');
+            const widths = Array.from(cols).map(col => col.style.width);
+            
+            try {
+                localStorage.setItem('tableColumnWidths', JSON.stringify(widths));
+                console.log('列宽设置已保存:', widths);
+            } catch (e) {
+                console.warn('保存列宽设置失败:', e);
+            }
+        }
+
+        // 加载列宽设置
+        function loadColumnWidths() {
+            try {
+                const savedWidths = localStorage.getItem('tableColumnWidths');
+                if (savedWidths) {
+                    const widths = JSON.parse(savedWidths);
+                    const colgroup = document.getElementById('sites-table-colgroup');
+                    
+                    if (colgroup && widths.length > 0) {
+                        const cols = colgroup.querySelectorAll('col');
+                        widths.forEach((width, index) => {
+                            if (cols[index] && width) {
+                                cols[index].style.width = width;
+                            }
+                        });
+                        console.log('列宽设置已加载:', widths);
+                    }
+                }
+            } catch (e) {
+                console.warn('加载列宽设置失败:', e);
+            }
+        }
+
         // 判断设置模态框是否打开
         function isSettingsModalOpen() {
             return !!(settingsModal && settingsModal.style.display && settingsModal.style.display !== 'none');
@@ -2279,6 +2679,11 @@
             if (settingsSearchInput) {
                 filterSettingsTable(settingsSearchInput.value || '');
             }
+            // 初始化列宽调整功能
+            setTimeout(() => {
+                loadColumnWidths();
+                initializeColumnResizing();
+            }, 100);
             if (settingsSearchInput) {
                 settingsSearchInput.focus();
             }
@@ -2804,6 +3209,18 @@
         document.getElementById('sort-by-first-time').addEventListener('click', sortByFirstTime);
         document.getElementById('sort-by-count').addEventListener('click', sortByCount);
 
+        // 主搜索框输入处理函数
+        function handleInput(e) {
+            // 更新光标位置记录
+            lastInputValue = searchInput.value;
+            lastCursorPosition = getCursorPosition(searchInput);
+            
+            // 如果输入框为空，清除所有快速搜索状态
+            if (!searchInput.value.trim()) {
+                clearQuickSearchState();
+            }
+        }
+
         // 全局键盘事件（用于快速搜索）
         document.addEventListener('keydown', handleGlobalKeyDown);
 
@@ -2988,8 +3405,8 @@
                     if (document.activeElement === quicksearchinput) {
                         const firstMatch = document.querySelector('.highlight.history-item, .highlight[data-site]');
                         if (firstMatch && firstMatch.classList.contains('history-item')) {
-                            searchInput.value = firstMatch.textContent;
-                            searchInput.focus();
+                            // 使用增强的历史记录点击处理，将光标定位到最后字符
+                            enhancedHistoryItemClick(firstMatch.textContent);
                         }
                     }
                 }
@@ -3007,8 +3424,12 @@
                 setTimeout(() => {
                     if (quicksearchinput) {
                         quicksearchinput.focus();
+                        // 确保光标定位在最后输入字符位置
                         setTimeout(() => {
                             quicksearchinput.style.color = '';
+                            const position = quicksearchinput.value.length;
+                            quicksearchinput.setSelectionRange(position, position);
+                            console.log(`移动端焦点设置，光标定位到：${position}`);
                         }, 100);
                     }
                 }, 100);
@@ -3018,6 +3439,13 @@
             // 执行快速搜索（适用于所有设备）
             quickSearchKeys = quicksearchinput.value;
             performQuickSearch();
+            
+            // 直接设置光标位置在用户输入的最后字符位置
+            if (quicksearchinput && document.activeElement === quicksearchinput) {
+                const position = quickSearchKeys.length;
+                quicksearchinput.setSelectionRange(position, position);
+                console.log(`快速搜索焦点，光标定位到：${position}`);
+            }
         }
 
         // 清除所有匹配高亮
@@ -3166,6 +3594,12 @@
                 // 触发input事件来执行搜索
                 quickSearchKeys = quicksearchinput.value;
                 performQuickSearch();
+                
+                // 直接设置光标位置在用户输入的最后字符位置
+                const position = quickSearchKeys.length;
+                quicksearchinput.setSelectionRange(position, position);
+                console.log(`全局键盘输入，光标定位到：${position}`);
+                
                 return;
             }
             // 电脑端快速搜索激活
@@ -3181,6 +3615,11 @@
                         showAllHistoryItems();
                         // 保持quickSearchActive和matchedItems状态不变
                     }
+                    
+                    // 直接设置光标位置在剩余字符的最后位置
+                    const position = quickSearchKeys.length;
+                    quicksearchinput.setSelectionRange(position, position);
+                    console.log(`Backspace处理，光标定位到：${position}`);
                 }
                 return;
             }
@@ -3229,10 +3668,10 @@
                 return;
             }
 
-            // F7聚焦输入框
+            // F7聚焦输入框 - 使用增强的智能定位
             if (e.key === 'F7' && !isSettingsModalOpen()) {
                 e.preventDefault();
-                searchInput.focus();
+                smartFocusSearchInput();
                 return;
             }
 
@@ -3748,17 +4187,17 @@
                                     console.error('无法复制到剪贴板:', err);
                                 });
                             }
-                            url = needsKeyword ? siteUrl + encodeURIComponent(keyword) : siteUrl;
+                            url = buildSearchUrl(site, siteUrl, keyword, needsKeyword);
                         } else {
-                            url = needsKeyword ? siteUrl.replace(/\?.*$/, '') : siteUrl;
+                            url = buildSearchUrl(site, siteUrl, '', needsKeyword);
                         }
                         window.open(url, '_blank');
                     } else {
                         currentItem.element.click();
                     }
                 } else if (currentItem.type === 'history') {
-                    searchInput.value = currentItem.element.textContent;
-                    searchInput.focus();
+                    // 使用增强的历史记录点击处理，将光标定位到最后字符
+                    enhancedHistoryItemClick(currentItem.element.textContent);
                 }
 
                 quickSearchKeys = '';
@@ -3808,8 +4247,8 @@
                         removeFromHistory(keyword);
                     } else {
                         if (e.button === 0) {
-                            searchInput.value = keyword;
-                            searchInput.focus();
+                            // 使用增强的历史记录点击处理，将光标定位到最后字符
+                            enhancedHistoryItemClick(keyword);
                         } else if (e.button === 2) {
                             toggleSelectElement(item);
                         }
@@ -3908,7 +4347,7 @@
                 }
                 
                 addToHistory(keyword);
-                const url = needsKeyword ? siteUrl + encodeURIComponent(keyword) : siteUrl;
+                const url = buildSearchUrl(site, siteUrl, keyword, needsKeyword);
                 window.open(url, '_blank');
             } else {
                 // 无关键词：检查是否允许空白打开
@@ -3931,7 +4370,7 @@
                 console.log(`允许空白打开: ${site}`);
                 
                 // 允许空白打开主页
-                const url = needsKeyword ? siteUrl.replace(/\?.*$/, '') : siteUrl;
+                const url = buildSearchUrl(site, siteUrl, '', needsKeyword);
                 window.open(url, '_blank');
             }
         }
@@ -3966,9 +4405,9 @@
                             console.error('无法复制到剪贴板:', err);
                         });
                     }
-                    url = needsKeyword ? siteUrl + encodeURIComponent(keyword) : siteUrl;
+                    url = buildSearchUrl(site, siteUrl, keyword, needsKeyword);
                 } else {
-                    url = needsKeyword ? siteUrl.replace(/\?.*$/, '') : siteUrl;
+                    url = buildSearchUrl(site, siteUrl, '', needsKeyword);
                 }
 
                 window.open(url, '_blank');
@@ -5634,12 +6073,112 @@
                 await loadSearchHistory();
                 console.log('历史记录加载完成');
                 
+                // 初始化增强的搜索框功能
+                initializeSearchInputEnhancements();
+                
                 // 确保UI更新
                 // adjustScrollableArea();
                 // 渲染历史后，再次调用以确保布局正确
                 setTimeout(adjustScrollableArea, 50); // 给予一个小的延迟确保DOM更新
             } catch (error) {
                 console.error('页面初始化失败:', error);
+            }
+        }
+        
+        // 初始化搜索框增强功能
+        function initializeSearchInputEnhancements() {
+            if (searchInput) {
+                // 监听输入事件，实时更新光标位置记录
+                searchInput.addEventListener('input', function(e) {
+                    lastInputValue = this.value;
+                    lastCursorPosition = getCursorPosition(this);
+                });
+                
+                // 监听光标位置变化（键盘导航、鼠标点击）
+                searchInput.addEventListener('selectionchange', function(e) {
+                    lastCursorPosition = getCursorPosition(this);
+                });
+                
+                // 监听键盘事件，跟踪光标移动
+                searchInput.addEventListener('keyup', function(e) {
+                    // 方向键、Home、End键会改变光标位置
+                    if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) {
+                        lastCursorPosition = getCursorPosition(this);
+                    }
+                });
+                
+                // 监听鼠标点击，跟踪光标位置
+                searchInput.addEventListener('click', function(e) {
+                    setTimeout(() => {
+                        lastCursorPosition = getCursorPosition(this);
+                    }, 0);
+                });
+                
+                // 监听焦点获得事件
+                searchInput.addEventListener('focus', function(e) {
+                    // 如果有记录的光标位置，恢复它
+                    if (lastInputValue === this.value && lastCursorPosition > 0) {
+                        setCursorPosition(this, lastCursorPosition);
+                    }
+                });
+                
+                console.log('搜索框增强功能已初始化');
+            }
+            
+            // 为快速搜索输入框添加类似的功能
+            if (quicksearchinput) {
+                // 监听输入事件，确保光标位置正确
+                quicksearchinput.addEventListener('input', function(e) {
+                    quickSearchKeys = this.value;
+                    performQuickSearch();
+                    
+                    // 立即确保光标在输入的最后字符位置
+                    const position = quickSearchKeys.length;
+                    this.setSelectionRange(position, position);
+                    console.log(`快速搜索输入光标定位到：${position}`);
+                });
+                
+                // 监听键盘事件，保持光标位置
+                quicksearchinput.addEventListener('keydown', function(e) {
+                    // 在特定按键后重新定位光标
+                    if (['Backspace', 'Delete'].includes(e.key)) {
+                        setTimeout(() => {
+                            quickSearchKeys = this.value;
+                            const position = quickSearchKeys.length;
+                            this.setSelectionRange(position, position);
+                            console.log(`删除后光标定位到：${position}`);
+                        }, 0);
+                    }
+                });
+                
+                // 监听键盘释放事件
+                quicksearchinput.addEventListener('keyup', function(e) {
+                    // 避免方向键改变我们的光标定位逻辑
+                    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) {
+                        const position = quickSearchKeys.length;
+                        this.setSelectionRange(position, position);
+                    }
+                });
+                
+                // 监听焦点获得事件
+                quicksearchinput.addEventListener('focus', function(e) {
+                    // 确保光标在正确位置
+                    const position = quickSearchKeys.length;
+                    this.setSelectionRange(position, position);
+                    console.log(`焦点获得，光标定位到：${position}`);
+                });
+                
+                // 监听鼠标点击事件
+                quicksearchinput.addEventListener('click', function(e) {
+                    // 点击后重新定位光标到末尾
+                    setTimeout(() => {
+                        const position = quickSearchKeys.length;
+                        this.setSelectionRange(position, position);
+                        console.log(`点击后光标定位到：${position}`);
+                    }, 0);
+                });
+                
+                console.log('快速搜索输入框增强功能已初始化');
             }
         }
 
