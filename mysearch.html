@@ -34,18 +34,12 @@
             background: white;
             gap: 10px;
             z-index: 100;
-            /* padding: 10px 20px 8px 20px; */
-            /* 调整底部内边距 */
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            /* margin-bottom: 10px; */
-            /* 增大底部外边距 */
             touch-action: none;
             -webkit-overflow-scrolling: touch;
         }
 
         .search-container {
-            /* display: flex; */
-            /* margin-bottom: 12px; */
             align-items: center;
             /* gap: 5px; */
             width: 100%;
@@ -72,8 +66,6 @@
         }
 
         .control-buttons {
-            /* display: flex; */
-            /* gap: 5px; */
             align-items: left;
             /* flex-wrap: wrap; */
             flex-grow: 1;
@@ -127,13 +119,6 @@
             box-sizing: border-box;
             /* 确保padding包含在高度内 */
         }
-
-        /* .history-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 5px;
-        } */
 
         .history-header {
             /* margin-top: 5px; */
@@ -904,15 +889,6 @@
             if (window.screen.width > 768 && !document.activeElement.matches('input, textarea') &&
                 e.key.length === 1 && /[a-z0-9\s]/i.test(e.key)) {
 
-                // 空格键需要特殊处理
-                // if (e.key === ' ') {
-                //     // e.preventDefault();
-                //     mobileQuickSearch.focus();
-                //     mobileQuickSearch.value += ' ';
-                //     mobileQuickSearch.dispatchEvent(new Event('input'));
-                //     return;
-                // }
-
                 // 其他字符正常处理
                 mobileQuickSearch.focus();
                 focusQuickSearch(e);
@@ -1297,47 +1273,39 @@
         }
         // 使用拼音库获取拼音首字母
         function getPinyinInitials(text) {
-            console.log('[DEBUG] getPinyinInitials called with text:', text);
+            
             if (!text) return [];
             let result = [];
             for (let i = 0; i < text.length; i++) {
                 const char = text[i];
                 const unicode = char.charCodeAt(0);
-                console.log(`[DEBUG] Processing char: ${char}, unicode: ${unicode}`);
                 let charSet = [];
                 // 处理中文字符（Unicode范围：19968-40869）
                 if (unicode >= 19968 && unicode <= 40869) {
-                    console.log(`[DEBUG] Chinese char detected: ${char} (${unicode})`);
 
                     // 先检查多音字
                     if (pinyin_dict_firstletter.polyphone[unicode]) {
                         const poly = pinyin_dict_firstletter.polyphone[unicode];
-                        console.log(`[DEBUG] Found polyphone mapping: ${poly}`);
                         // 将多音字字符串拆分成单个字母，例如 'hg' -> ['h','g']
                         charSet = poly.split('');
                     }
                     // 再检查常规字典
                     else {
                         const idx = unicode - 19968;
-                        console.log(`[DEBUG] Checking all dict at index: ${idx}`);
                         if (idx < pinyin_dict_firstletter.all.length) {
                             const dictChar = pinyin_dict_firstletter.all.charAt(idx);
-                            console.log(`[DEBUG] Found dict char: ${dictChar}`);
                             charSet = [dictChar];
                         } else {
-                            console.log(`[DEBUG] Index ${idx} out of range (max: ${pinyin_dict_firstletter.all.length})`);
                             charSet = [''];
                         }
                     }
                 }
                 // 处理非中文字符：数字和字母都直接返回字符本身
                 else {
-                    console.log(`[DEBUG] Non-Chinese char: ${char}`);
                     charSet = [char.toLowerCase()];
                 }
                 result.push(charSet);
             }
-            console.log('[DEBUG] Final result array:', result);
             return result;
         }
 
@@ -1837,12 +1805,11 @@
         
             if (itemsToDelete.length > 0) {
                 const firstDeleted = itemsToDelete[0];
-                console.log('开始删除操作, 被删除项:', firstDeleted.textContent);
+                
                 
                 // 获取被删除项在历史项列表中的索引
                 const historyItems = Array.from(document.querySelectorAll('.history-item'));
                 const deletedIndex = historyItems.indexOf(firstDeleted);
-                console.log(`被删除项索引: ${deletedIndex}`);
                 
                 // 删除操作
                 itemsToDelete.forEach(item => {
@@ -1853,23 +1820,19 @@
                 // 重新渲染后设置焦点
                 setTimeout(() => {
                     const newHistoryItems = Array.from(document.querySelectorAll('.history-item'));
-                    console.log(`新历史项数量: ${newHistoryItems.length}`);
                     
                     let nextFocus = null;
                     if (newHistoryItems.length > 0) {
                         // 如果被删除的索引小于新列表长度，则使用原索引
                         if (deletedIndex < newHistoryItems.length) {
                             nextFocus = newHistoryItems[deletedIndex];
-                            console.log(`使用原索引 ${deletedIndex}: ${nextFocus.textContent}`);
                         }
                         // 否则使用最后一个项
                         else {
                             nextFocus = newHistoryItems[newHistoryItems.length - 1];
-                            console.log(`使用最后一项: ${nextFocus.textContent}`);
                         }
                     } else {
                         nextFocus = searchInput;
-                        console.log('无历史项, 聚焦搜索框');
                     }
                     
                     if (nextFocus) {
@@ -1887,7 +1850,16 @@
                 errorModal.style.display = 'none';
             }, 2000);
         }
-        // 改进的方向键导航（左右键行内移动，上下键使用优化算法）
+        // 状态变量记录方向键历史
+        let lastVerticalKey = null;
+        let beforeVerticalMove = null; // 记录垂直移动前的元素
+
+        // 添加全局变量存储最后一次按下键前的焦点
+        let lastVerticalKeyDownFocus = null;
+        // 添加状态标记：是否已返回初始位置
+        let hasReturnedToInitial = false;
+
+        // 改进的方向键导航（支持行内移动、边缘换行和焦点记忆）
         function navigateWithArrowKeys(key) {
             const allElements = Array.from(document.querySelectorAll('button, .history-item, input'));
             const currentIndex = allElements.indexOf(currentFocusElement);
@@ -1911,11 +1883,95 @@
                        Math.abs(rect1.bottom - rect2.bottom) < tolerance;
             }
 
-            // 左右方向键处理（行内移动）
+            // 处理上键：分两种情况
+            if (key === 'ArrowUp') {
+                // 情况1：返回最后一次按下键前的焦点（仅首次按上键时）
+                if (lastVerticalKeyDownFocus && !hasReturnedToInitial) {
+                    lastVerticalKeyDownFocus.focus();
+                    currentFocusElement = lastVerticalKeyDownFocus;
+                    lastVerticalKeyDownFocus.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    hasReturnedToInitial = true;
+                    return;
+                }
+                // 情况2：执行正常的上移算法
+                else {
+                    let minDistance = Infinity;
+                    const currentCenter = {
+                        x: currentRect.left + currentRect.width / 2,
+                        y: currentRect.top + currentRect.height / 2
+                    };
+
+                    // 查找候选元素
+                    for (const el of allElements) {
+                        if (el === currentFocusElement) continue;
+                        
+                        const rect = el.getBoundingClientRect();
+                        const elCenter = {
+                            x: rect.left + rect.width / 2,
+                            y: rect.top + rect.height / 2
+                        };
+                        
+                        // 方向筛选：只考虑上方的元素
+                        if (elCenter.y >= currentCenter.y) continue;
+                        
+                        // 使用曼哈顿距离计算，增加垂直方向权重
+                        const dx = Math.abs(currentCenter.x - elCenter.x);
+                        const dy = Math.abs(currentCenter.y - elCenter.y);
+                        // 垂直距离权重因子（优先考虑垂直方向）
+                        const verticalWeight = 0.8;
+                        const totalDist = dx + dy * verticalWeight;
+                        
+                        if (totalDist < minDistance) {
+                            minDistance = totalDist;
+                            bestCandidate = el;
+                        }
+                    }
+                }
+            }
+
+            // 下键处理：保存当前焦点并重置状态
+            if (key === 'ArrowDown') {
+                lastVerticalKeyDownFocus = currentFocusElement;
+                hasReturnedToInitial = false;
+                
+                let minDistance = Infinity;
+                const currentCenter = {
+                    x: currentRect.left + currentRect.width / 2,
+                    y: currentRect.top + currentRect.height / 2
+                };
+
+                // 查找候选元素
+                for (const el of allElements) {
+                    if (el === currentFocusElement) continue;
+                    
+                    const rect = el.getBoundingClientRect();
+                    const elCenter = {
+                        x: rect.left + rect.width / 2,
+                        y: rect.top + rect.height / 2
+                    };
+                    
+                    // 方向筛选：只考虑下方的元素
+                    if (elCenter.y <= currentCenter.y) continue;
+                    
+                    // 计算距离
+                    const dist = Math.sqrt(
+                        Math.pow(currentCenter.x - elCenter.x, 2) +
+                        Math.pow(currentCenter.y - elCenter.y, 2)
+                    );
+                    
+                    if (dist < minDistance) {
+                        minDistance = dist;
+                        bestCandidate = el;
+                    }
+                }
+            }
+
+            // 左右方向键处理（行内移动+边缘换行）
             if (key === 'ArrowLeft' || key === 'ArrowRight') {
                 let candidateIndex = -1;
                 let minDistance = Infinity;
 
+                // 查找行内元素
                 for (let i = 0; i < allElements.length; i++) {
                     const el = allElements[i];
                     if (el === currentFocusElement) continue;
@@ -1937,62 +1993,16 @@
                     }
                 }
 
-                // 如果找到候选元素
+                // 如果找到行内候选元素
                 if (candidateIndex !== -1) {
                     bestCandidate = allElements[candidateIndex];
                 }
-            }
-            // 上下方向键处理（使用优化算法）
-            else if (key === 'ArrowUp' || key === 'ArrowDown') {
-                let minDistance = Infinity;
-                const anglePenalty = 0.5; // 角度惩罚因子
-
-                // 计算元素中心点
-                function center(rect) {
-                    return {
-                        x: rect.left + rect.width / 2,
-                        y: rect.top + rect.height / 2
-                    };
-                }
-
-                // 计算两点间角度（度）
-                function angle(p1, p2) {
-                    return Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI;
-                }
-
-                // 计算两点间欧氏距离
-                function distance(p1, p2) {
-                    return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
-                }
-
-                // 方向角度基准
-                const baseAngle = (key === 'ArrowDown') ? 90 : -90;
-                const currentCenter = center(currentRect);
-
-                // 查找候选元素
-                for (const el of allElements) {
-                    if (el === currentFocusElement) continue;
-                    
-                    const rect = el.getBoundingClientRect();
-                    const elCenter = center(rect);
-                    
-                    // 方向筛选
-                    const isDirectionMatch =
-                        (key === 'ArrowDown' && elCenter.y > currentCenter.y) ||
-                        (key === 'ArrowUp' && elCenter.y < currentCenter.y);
-
-                    if (!isDirectionMatch) continue;
-                    
-                    // 计算角度偏差和距离
-                    let angleDiff = Math.abs(baseAngle - angle(currentCenter, elCenter));
-                    angleDiff = Math.min(angleDiff, 360 - angleDiff);
-                    const dist = distance(currentCenter, elCenter);
-                    const totalDist = dist * (1 + (angleDiff / 90) * anglePenalty);
-
-                    if (totalDist < minDistance) {
-                        minDistance = totalDist;
-                        bestCandidate = el;
-                    }
+                // 行内无元素时换行（使用War-C算法）
+                else {
+                    // 左键到行首换到上一行，右键到行尾换到下一行
+                    const newDirection = key === 'ArrowLeft' ? 'ArrowUp' : 'ArrowDown';
+                    navigateWithArrowKeys(newDirection);
+                    return;
                 }
             }
 
