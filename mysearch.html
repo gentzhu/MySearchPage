@@ -326,6 +326,13 @@
             .desktop-only {
                 display: none !important;
             }
+            /* 小屏限制设置模态框宽度，避免占满屏幕 */
+            #settings-modal .modal-content {
+                width: 90vw !important;
+                max-width: 600px !important;
+                max-height: 82vh !important;
+                box-sizing: border-box;
+            }
 
             .fixed-header {
                 gap: 1px; /* 更紧凑的统一间距 */
@@ -346,8 +353,19 @@
                 gap: 1px;
             }
 
-            .control-buttons, .btn-group {
-                gap: 1px;
+            .control-buttons, .btn-group { gap: 1px; }
+            /* 小屏尽量保持控制按钮两行内：改为左对齐 */
+            .control-buttons { 
+                justify-content: flex-start; 
+                gap: 2px;
+            }
+            .control-buttons button {
+                flex: 0 1 auto; /* 取消强制等宽，允许按钮根据内容自适应 */
+                font-size: 14px; /* 恢复字体大小 */
+                padding: 1px 2px; /* 减少 padding 以容纳更多按钮 */
+                white-space: normal;
+                overflow: visible;
+                text-overflow: clip;
             }
 
             .history-header {
@@ -473,6 +491,24 @@
             box-sizing: border-box;
             line-height: 1.2;
         }
+
+        /* 设置模态框表格紧凑样式与删除按钮一行显示 */
+        #sites-table th, #sites-table td {
+            padding: 2px 4px;
+            line-height: 1.2;
+            vertical-align: middle;
+        }
+        #sites-table input {
+            padding: 2px 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+            width: 100%;
+        }
+        #sites-table .delete-btn {
+            white-space: nowrap;
+            padding: 0 6px;
+            line-height: 1.2;
+        }
     </style>
     <script src="pinyin_dict_firstletter.js"></script>
 </head>
@@ -529,17 +565,34 @@
         <button id="save-edit">保存</button>
     </div>
     <!-- 新版设置模态框 -->
-    <div class="modal" id="settings-modal" style="display:none">
-        <div class="modal-content" style="width: 800px; max-height: 80vh; overflow: auto;">
+    <div class="modal" id="settings-modal" style="display:none" tabindex="-1">
+        <div class="modal-content" style="width: 1000px; max-height: 85vh; overflow: auto;">
             <h3>网站设置</h3>
 
             <!-- 快速搜索框 -->
-            <div style="margin-bottom: 15px;">
+            <div style="margin-bottom: 10px;">
                 <input type="text" id="settings-search" placeholder="搜索网站..." style="width: 100%; padding: 8px;">
             </div>
 
+            <!-- 操作按钮（移动到上面） -->
+            <div id="settings-actions" style="margin-bottom: 10px; display: flex; gap: 6px; flex-wrap: wrap;">
+                <button id="add-site-row">新增行</button>
+                <button id="save-settings">保存设置</button>
+                <button id="upload-sites-config">上传网站配置</button>
+                <button id="download-sites-config">下载网站配置</button>
+                <button id="export-config">导出配置文件</button>
+                <button id="import-config">导入配置文件</button>
+                <input type="file" id="config-file-input" accept=".json" style="display: none;">
+            </div>
+
             <!-- 网站表格 -->
-            <table id="sites-table" style="width: 100%; border-collapse: collapse;">
+            <table id="sites-table" style="width: 100%; border-collapse: collapse; table-layout: fixed;">
+                <colgroup>
+                    <col style="width: 18%">
+                    <col style="width: 18%">
+                    <col style="width: 58%">
+                    <col style="width: 6%">
+                </colgroup>
                 <thead>
                     <tr>
                         <th>按钮名称</th>
@@ -553,16 +606,7 @@
                 </tbody>
             </table>
 
-            <!-- 操作按钮 -->
-            <div style="margin-top: 15px;">
-                <button id="add-site-row">新增行</button>
-                <button id="save-settings" style="margin-left: 10px;">保存设置</button>
-                <button id="upload-sites-config" style="margin-left: 10px;">上传网站配置</button>
-                <button id="download-sites-config" style="margin-left: 10px;">下载网站配置</button>
-                <button id="export-config" style="margin-left: 10px;">导出配置文件</button>
-                <button id="import-config" style="margin-left: 10px;">导入配置文件</button>
-                <input type="file" id="config-file-input" accept=".json" style="display: none;">
-            </div>
+            <!-- 操作按钮已上移至表格上方 -->
             
         </div>
     </div>
@@ -1032,6 +1076,9 @@
                     if (btnConfig.isSmall) {
                         button.classList.add('small');
                     }
+                    // 允许主页面高亮逻辑风格，复用 highlight 类
+                    button.addEventListener('focus', () => button.classList.add('highlight'));
+                    button.addEventListener('blur', () => button.classList.remove('highlight'));
                     btnGroup.appendChild(button);
                 });
 
@@ -1088,6 +1135,7 @@
                 
                 const actionCell = document.createElement('td');
                 const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'delete-btn';
                 deleteBtn.textContent = '删除';
                 deleteBtn.addEventListener('click', () => row.remove());
                 actionCell.appendChild(deleteBtn);
@@ -1130,6 +1178,8 @@
         const errorModal = document.getElementById('error-modal');
         const quicksearchinput = document.getElementById('quick-search-input');
         const mobileEscBtn = document.getElementById('mobile-esc-btn');
+        const settingsModal = document.getElementById('settings-modal');
+        const settingsSearchInput = document.getElementById('settings-search');
         let historyItems = []; // 恢复显示
         let searchHistory = []; // 历史记录数组
         const historymatches = []; // 匹配项列表
@@ -1159,6 +1209,176 @@
         let quickSearchKeys = '';
         let matchedItems = [];
         let currentMatchIndex = -1;
+
+        // 判断设置模态框是否打开
+        function isSettingsModalOpen() {
+            return !!(settingsModal && settingsModal.style.display && settingsModal.style.display !== 'none');
+        }
+
+        // 设置模态框 ESC 三段式逻辑状态
+        // 0: 初始/已关闭 -> 第一次ESC：失焦
+        // 1: 已失焦 -> 第二次ESC：若有隐藏的行则清除过滤并显示全部，否则直接进入阶段2
+        // 2: 清空过滤/无隐藏 -> 第三次ESC：关闭模态
+        let settingsEscStage = 0;
+
+        function openSettingsModal() {
+            if (!settingsModal) return;
+            settingsModal.style.display = 'flex';
+            settingsEscStage = 0; // 重置为第一阶段
+            // 打开时刷新表格并应用当前过滤
+            if (typeof populateSettingsTable === 'function') {
+                populateSettingsTable();
+            }
+            if (settingsSearchInput) {
+                filterSettingsTable(settingsSearchInput.value || '');
+            }
+            if (settingsSearchInput) {
+                settingsSearchInput.focus();
+            }
+        }
+
+        function closeSettingsModal() {
+            if (!settingsModal) return;
+            settingsModal.style.display = 'none';
+            settingsEscStage = 0; // 复位阶段
+        }
+
+        function handleSettingsModalEscape(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const active = document.activeElement;
+
+            // 1. 如果有元素聚焦，则失焦到模态框本身，而不是body
+            if (active && settingsModal.contains(active) && active !== settingsModal) {
+                settingsModal.focus(); // 聚焦到模态框容器
+                return;
+            }
+
+            // 2. 如果没有元素聚焦，但有隐藏的行，则清空筛选
+            const rows = Array.from(document.querySelectorAll('#sites-table-body tr'));
+            const hasHidden = rows.some(r => r.style.display === 'none');
+            if (hasHidden) {
+                if (settingsSearchInput) {
+                    settingsSearchInput.value = '';
+                    filterSettingsTable('');
+                }
+                return;
+            }
+
+            // 3. 如果既没有聚焦的元素，也没有隐藏的行，则关闭模态框
+            closeSettingsModal();
+        }
+
+        // 为设置按钮绑定打开事件（如果存在）
+        const settingsOpenBtn = document.getElementById('open-settings');
+        if (settingsOpenBtn) {
+            settingsOpenBtn.addEventListener('click', () => openSettingsModal());
+        }
+        const settingsToolbarBtn = document.getElementById('settings');
+        if (settingsToolbarBtn) {
+            settingsToolbarBtn.addEventListener('click', () => openSettingsModal());
+        }
+
+        // 点击遮罩关闭模态框，并重置ESC阶段
+        if (settingsModal) {
+            settingsModal.addEventListener('click', function(e) {
+                if (e.target === settingsModal) {
+                    closeSettingsModal();
+                }
+            });
+
+            // 捕获按键，确保ESC在模态框内两段式生效
+            settingsModal.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    handleSettingsModalEscape(e);
+                    return;
+                }
+
+                // F8 清空并聚焦设置搜索框
+                if (e.key === 'F8') {
+                    e.preventDefault();
+                    if (settingsSearchInput) {
+                        settingsSearchInput.value = '';
+                        settingsSearchInput.focus();
+                        filterSettingsTable('');
+                    }
+                    return;
+                }
+
+                // 方向键在动作按钮和表格输入之间导航（简化实现）
+                const focusableSelectors = '#settings-actions button, #sites-table input';
+                const focusables = Array.from(settingsModal.querySelectorAll(focusableSelectors));
+                const currentIndex = focusables.indexOf(document.activeElement);
+
+                if (["ArrowLeft","ArrowRight","ArrowUp","ArrowDown"].includes(e.key)) {
+                    if (currentIndex !== -1) {
+                        e.preventDefault();
+                        let nextIndex = currentIndex;
+                        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                            nextIndex = Math.min(focusables.length - 1, currentIndex + 1);
+                        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                            nextIndex = Math.max(0, currentIndex - 1);
+                        }
+                        focusables[nextIndex].focus();
+                    } else if (focusables.length > 0) {
+                        focusables[0].focus();
+                    }
+                    return;
+                }
+            }, true);
+
+            // 注意：不在 focusin 时重置阶段，避免首个 ESC 失焦后立即被重置导致无法进入第二阶段
+        }
+
+        // 设置模态框内拼音首字母筛选（适配所有字段）
+        function textMatchesWithPinyin(text, query) {
+            if (!query) return true;
+            const lower = (text || '').toLowerCase();
+            if (lower.indexOf(query) !== -1) return true;
+
+            // 生成拼音首字母组合并匹配
+            function generatePinyinCombinations(arrays) {
+                if (!arrays || arrays.length === 0) return [''];
+                const [first, ...rest] = arrays;
+                const restCombinations = generatePinyinCombinations(rest);
+                const results = [];
+                for (let i = 0; i < first.length; i++) {
+                    for (let j = 0; j < restCombinations.length; j++) {
+                        results.push(first[i] + restCombinations[j]);
+                    }
+                }
+                return results;
+            }
+
+            const pinyinArray = getPinyinInitials(text || '');
+            const combos = generatePinyinCombinations(pinyinArray).map(c => (c || '').toLowerCase());
+            return combos.some(c => c.indexOf(query) !== -1);
+        }
+
+        function filterSettingsTable(keyword) {
+            const queries = (keyword || '').trim().toLowerCase().split(/\s+/).filter(Boolean);
+            const rows = document.querySelectorAll('#sites-table-body tr');
+            rows.forEach(row => {
+                const cells = Array.from(row.querySelectorAll('td'));
+                const fields = cells.map(td => {
+                    const input = td.querySelector('input');
+                    return input ? input.value : td.textContent;
+                });
+
+                const matchesAll = queries.every(q => {
+                    return fields.some(text => textMatchesWithPinyin(text, q));
+                });
+
+                row.style.display = matchesAll ? '' : 'none';
+            });
+        }
+
+        if (settingsSearchInput) {
+            settingsSearchInput.addEventListener('input', function() {
+                filterSettingsTable(this.value);
+            });
+        }
 
         // 排序状态对象
         const sortStates = {
@@ -1636,6 +1856,69 @@
 
         // 全局键盘事件处理（快速搜索）
         function handleGlobalKeyDown(e) {
+            // 设置模态框打开时，不触发主界面的全局退出和快捷键导航
+            if (isSettingsModalOpen()) {
+                // 模态框打开时的快捷键适配（ESC 在 modal 自身 keydown 捕获里处理，这里不再处理）
+
+                const target = e.target;
+                const isInModalInput = target && settingsModal && settingsModal.contains(target) && target.matches('input, textarea');
+
+                // 在模态框打开时，允许像主界面quick search一样，直接键入触发搜索框过滤
+                if (!isInModalInput && !e.ctrlKey && !e.altKey && !e.metaKey && e.key.length === 1 && /[a-zA-Z0-9!@#$%^&*()_+\-=`~\[\]{};':",.<>/?\\|]/.test(e.key)) {
+                    if (settingsSearchInput) {
+                        e.preventDefault();
+                        settingsSearchInput.focus();
+                        settingsSearchInput.value += e.key;
+                        filterSettingsTable(settingsSearchInput.value);
+                    }
+                    return;
+                }
+
+                if (!isInModalInput && e.key === 'Backspace') {
+                    if (settingsSearchInput) {
+                        e.preventDefault();
+                        settingsSearchInput.value = settingsSearchInput.value.slice(0, -1);
+                        filterSettingsTable(settingsSearchInput.value);
+                    }
+                    return;
+                }
+
+                // F8 清空并聚焦设置搜索框
+                if (e.key === 'F8') {
+                    e.preventDefault();
+                    if (settingsSearchInput) {
+                        settingsSearchInput.value = '';
+                        settingsSearchInput.focus();
+                        filterSettingsTable('');
+                    }
+                    return;
+                }
+
+                // 方向键在动作按钮和表格输入之间导航（线性）
+                if (["ArrowLeft","ArrowRight","ArrowUp","ArrowDown"].includes(e.key)) {
+                    const focusableSelectors = '#settings-actions button, #sites-table input';
+                    const focusables = Array.from(settingsModal.querySelectorAll(focusableSelectors));
+                    const currentIndex = focusables.indexOf(document.activeElement);
+                    if (currentIndex !== -1) {
+                        e.preventDefault();
+                        let nextIndex = currentIndex;
+                        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                            nextIndex = Math.min(focusables.length - 1, currentIndex + 1);
+                        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                            nextIndex = Math.max(0, currentIndex - 1);
+                        }
+                        focusables[nextIndex].focus();
+                    } else if (focusables.length > 0) {
+                        e.preventDefault();
+                        focusables[0].focus();
+                    }
+                    return;
+                }
+
+                // 其他按键在模态框打开时不传递到主界面
+                return;
+            }
+
             if (e.key === 'Escape') {
                 GlobalQuit(e);
             }
@@ -1665,7 +1948,7 @@
                 }
             }
             // 电脑端快速搜索触发（字母、数字和标点符号，不包括空格和修饰键组合）
-            if (window.screen.width > 768 && !document.activeElement.matches('input, textarea') &&
+            if (window.screen.width > 768 && !document.activeElement.matches('input, textarea') && !isSettingsModalOpen() &&
                 !e.ctrlKey && !e.altKey && !e.metaKey && // 排除修饰键组合，确保浏览器快捷键正常工作
                 e.key.length === 1 && /[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(e.key)) {
 
@@ -1680,7 +1963,7 @@
                 return;
             }
             // 电脑端快速搜索激活
-            if (quickSearchActive && e.key === 'Backspace') {
+            if (quickSearchActive && e.key === 'Backspace' && !isSettingsModalOpen()) {
                 e.preventDefault();
                 if (quickSearchKeys.length > 0) {
                     quickSearchKeys = quickSearchKeys.slice(0, -1);
@@ -1697,7 +1980,7 @@
             }
 
             // Tab/Ctrl+Tab 新逻辑：按钮和历史项之间的智能跳转
-            if (e.key === 'Tab') {
+            if (e.key === 'Tab' && !isSettingsModalOpen()) {
                 e.preventDefault();
                 
                 if (quickSearchActive && matchedItems.length > 0) {
@@ -1741,7 +2024,7 @@
             }
 
             // F7聚焦输入框
-            if (e.key === 'F7') {
+            if (e.key === 'F7' && !isSettingsModalOpen()) {
                 e.preventDefault();
                 searchInput.focus();
                 return;
@@ -1750,7 +2033,7 @@
             // 处理控制按钮的Enter键
             const controlButtons = ['save-only', 'all-sites', 'common-sites', 'foreign-sites',
                 'edit-history', 'export-history', 'import-history'];
-            if (e.key === 'Enter' && currentFocusElement && controlButtons.includes(currentFocusElement.id)) {
+            if (e.key === 'Enter' && currentFocusElement && controlButtons.includes(currentFocusElement.id) && !isSettingsModalOpen()) {
                 e.preventDefault();
                 currentFocusElement.click();
                 return;
@@ -1765,7 +2048,7 @@
             }
 
             // 方向键导航 - 新逻辑：区分 quick search 和非 quick search
-            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key) && !isSettingsModalOpen()) {
                 // 如果焦点在输入框且是左右方向键，不阻止默认行为
                 if (document.activeElement === searchInput && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
                     return;
@@ -1803,7 +2086,7 @@
             }
 
             // 空格选择当前元素
-            if (e.key === ' ') {
+            if (e.key === ' ' && !isSettingsModalOpen()) {
                 // 如果焦点在主输入框，不处理空格选择（让输入框正常处理空格）
                 if (document.activeElement === searchInput) {
                     return;
@@ -1828,7 +2111,7 @@
             }
 
             // Enter键执行操作
-            if (e.key === 'Enter') {
+            if (e.key === 'Enter' && !isSettingsModalOpen()) {
                 e.preventDefault();
 
                 // 1. 处理快速搜索虚拟光标（最高优先级）
@@ -1872,7 +2155,7 @@
             }
 
             // F2编辑历史记录
-            if (e.key === 'F2' && currentFocusElement && currentFocusElement.classList.contains('history-item')) {
+            if (e.key === 'F2' && currentFocusElement && currentFocusElement.classList.contains('history-item') && !isSettingsModalOpen()) {
                 e.preventDefault();
                 const keyword = currentFocusElement.getAttribute('data-keyword');
                 editHistoryItem(keyword);
@@ -1880,7 +2163,7 @@
             }
 
             // Delete删除历史记录：支持删除选中项或当前焦点项
-            if (e.key === 'Delete') {
+            if (e.key === 'Delete' && !isSettingsModalOpen()) {
                 // 如果有选中项，删除选中项
                 if (selectedElements.length > 0) {
                     e.preventDefault();
@@ -1900,14 +2183,14 @@
                 }
             }
 
-            if ((e.key === 'F8' || (e.ctrlKey && e.key === 'Delete'))) {
+            if ((e.key === 'F8' || (e.ctrlKey && e.key === 'Delete')) && !isSettingsModalOpen()) {
                 e.preventDefault();
                 searchInput.value = '';
                 searchInput.focus();
             }
 
             // Ctrl+Z撤销删除
-            if (e.key === 'z' && e.ctrlKey && lastDeletedItems.length > 0) {
+            if (e.key === 'z' && e.ctrlKey && lastDeletedItems.length > 0 && !isSettingsModalOpen()) {
                 e.preventDefault();
                 undoDelete();
                 return;
@@ -3371,6 +3654,7 @@
 
                 const actionCell = document.createElement('td');
                 const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'delete-btn';
                 deleteBtn.textContent = '删除';
                 deleteBtn.addEventListener('click', () => row.remove());
                 actionCell.appendChild(deleteBtn);
