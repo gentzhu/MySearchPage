@@ -257,7 +257,7 @@
                 display: none !important;
             }
         }
-        @media (device-height<1200px) {
+        @media (max-device-width:1200px){
             .desktop-only {
                 display: none !important;
             }
@@ -754,8 +754,7 @@
             setTimeout(() => {
                 if (window.innerWidth <= 768 && mobileQuickSearch) {
                     mobileQuickSearch.focus();
-                    // 隐藏光标（兼容所有浏览器）
-                    mobileQuickSearch.style.color = 'transparent';
+
                     setTimeout(() => {
                         mobileQuickSearch.style.color = '';
                     }, 100);
@@ -1170,7 +1169,7 @@
                 e.key.length === 1 && /[a-z0-9\W]/i.test(e.key) && e.key !== ' ') {
                 e.preventDefault();
                 quickSearchActive = true;
-                quickSearchKeys += e.key.toLowerCase();
+                // quickSearchKeys += e.key.toLowerCase();
                 updateQuickSearchDisplay();
                 performQuickSearch();
 
@@ -1220,7 +1219,7 @@
             if (e.key.length === 1 && /[a-z0-9\W]/i.test(e.key) && e.key !== ' ') {
                 e.preventDefault();
                 quickSearchActive = true;
-                quickSearchKeys += e.key.toLowerCase();
+                // quickSearchKeys += e.key.toLowerCase();
                 updateQuickSearchDisplay();
                 performQuickSearch();
 
