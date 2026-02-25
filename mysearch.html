@@ -480,6 +480,7 @@
         const mobileQuickSearch = document.getElementById('mobile-quick-search');
         const mobileEscBtn = document.getElementById('mobile-esc-btn');
         let historyItems = []; // 恢复显示
+        const historymatches = []; // 匹配项列表
         // 导航相关变量
         let currentFocusElement = null;
         let selectedElements = [];
@@ -519,15 +520,15 @@
             searchInput.value = '';
             searchInput.focus();
 
-            // 清空快速搜索状态
-            quickSearchKeys = '';
-            updateQuickSearchDisplay();
-            clearMatches();
+            // // 清空快速搜索状态
+            // quickSearchKeys = '';
+            // updateQuickSearchDisplay();
+            // clearMatches();
 
-            // 显示所有元素
-            document.querySelectorAll('.history-item, button[data-site]').forEach(el => {
-                el.style.display = 'inline-block';
-            });
+            // // 显示所有元素
+            // document.querySelectorAll('.history-item, button[data-site]').forEach(el => {
+            //     el.style.display = 'inline-block';
+            // });
         });
 
         // 保存但不搜索按钮
@@ -694,12 +695,6 @@
         });
         // 点击空白处退出编辑模式或关闭模态框
         function focusQuickSearch() {
-            if (window.innerWidth <= 768 && mobileQuickSearch) {
-                mobileQuickSearch.focus();
-            }
-        }
-        // 初始化时立即聚焦
-        focusQuickSearch();
         setTimeout(() => {
             if (window.innerWidth <= 768 && mobileQuickSearch) {
                 mobileQuickSearch.focus();
@@ -708,8 +703,10 @@
                     mobileQuickSearch.style.color = '';
                 }, 100);
             }
-        }, 100);
-
+                    }, 100);
+        }
+        // 初始化时立即聚焦
+        focusQuickSearch();
         // 替换现有的点击空白处事件监听器
         document.addEventListener('click', function (e) {
             // 处理编辑模式等...
@@ -1073,10 +1070,14 @@
 
             // 获取所有可搜索元素
             const allElements = document.querySelectorAll('button[data-site], .history-item');
+            const historymatches = document.querySelectorAll('.history-item');
+            historymatches.forEach(el => {
+                el.style.display = 'none';
+            });
 
             // 先隐藏所有元素
             allElements.forEach(el => {
-                el.style.display = 'none';
+                // el.style.display = 'none';
                 el.classList.remove('highlight');
             });
 
@@ -1111,7 +1112,7 @@
                 highlightCurrentMatch();
             } else {
                 // 没有匹配项时显示所有元素
-                allElements.forEach(el => {
+                historymatches.forEach(el => {
                     el.style.display = 'none';
                 });
             }
