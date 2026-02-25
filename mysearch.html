@@ -653,8 +653,14 @@
             button.addEventListener('click', (e) => {
                 const site = button.getAttribute('data-site');
                 if (e.button === 0) { // 左键点击
-                    clearSelection(); // 清除所有选择
-                    search(site, true); // 直接搜索
+                    // 如果当前已经有选中的元素，则左键点击任何按钮都只做多选操作（切换选中状态）
+                    if (selectedElements.length > 0) {
+                        toggleSelectElement(button);
+                    } else {
+                        // 没有多选时，直接执行搜索
+                        clearSelection(); 
+                        search(site, true);
+                    }
                 }
             });
 
@@ -921,13 +927,11 @@
                 return;
             }
 
-            // 处理多选后的Enter键
+            // 处理多选后的Enter键（优先处理多选）
             if (e.key === 'Enter' && selectedElements.length > 0) {
                 e.preventDefault();
-                const sites = selectedElements.map(el => el.getAttribute('data-site')).filter(site => site);
-                if (sites.length > 0) {
-                    batchSearch(sites);
-                }
+                // 直接传递选中的元素数组给batchSearch
+                batchSearch(selectedElements);
                 return;
             }
 
@@ -1003,8 +1007,7 @@
                 // 2. 处理多选网站的情况
                 const selectedSites = selectedElements.filter(el => el.hasAttribute('data-site'));
                 if (selectedSites.length > 0) {
-                    const sites = selectedSites.map(el => el.getAttribute('data-site'));
-                    batchSearch(sites);
+                    batchSearch(selectedSites);
                     return;
                 }
                 
@@ -1366,25 +1369,28 @@
             }
         }
 
-        // 批量搜索函数
-        // 找到原batchSearch函数（约在1580行左右）
-        function batchSearch(sites) {
+        // 批量搜索函数 - 最终修复多选问题
+        function batchSearch(buttons) {
             const keyword = searchInput.value.trim();
             const processedSites = new Set(); // 用集合去重
-
-            // 只执行一次搜索
-            sites.forEach(site => {
-                if (processedSites.has(site)) return;
+            
+            // 遍历所有按钮元素
+            for (const button of buttons) {
+                const site = button.getAttribute('data-site');
+                if (!site || processedSites.has(site)) continue;
+                
                 processedSites.add(site);
 
+                // 创建搜索URL
+                let url;
                 if (linkButtons.includes(site)) {
-                    const url = siteUrls[site];
-                    window.open(url, '_blank');
-                } else if (keyword) {
-                    const url = siteUrls[site] + encodeURIComponent(keyword);
-                    window.open(url, '_blank');
+                    url = siteUrls[site];
+                } else {
+                    url = siteUrls[site] + encodeURIComponent(keyword || '');
                 }
-            });
+                
+                window.open(url, '_blank');
+            }
 
             if (keyword) {
                 addToHistory(keyword);
@@ -1533,10 +1539,12 @@
         function toggleSelectElement(element) {
             if (element.classList.contains('selected')) {
                 element.classList.remove('selected');
-                selectedElements.push(element);
+                selectedElements = selectedElements.filter(el => el !== element);
             } else {
                 element.classList.add('selected');
-                selectedElements = selectedElements.filter(el => el !== element);
+                selectedElements.push(element);
+                // 确保当前焦点元素更新
+                currentFocusElement = element;
             }
         }
         // 删除选中的历史记录
