@@ -327,6 +327,7 @@
             margin: 2px;
         }
     </style>
+    <script src="pinyin.min.js"></script>
 </head>
 
 <body class="flex1">
@@ -392,7 +393,7 @@
     </div>
 
     <div class="scrollable-content" style="margin-top: 393px; height: calc(-393px + 100vh);">
-        <div id="history-list" class="flex2"><div class="history-item" data-keyword="发给矮人国" tabindex="0" style="display: inline-block;">发给矮人国</div><div class="history-item" data-keyword="fdfasdf" tabindex="0" style="display: inline-block;">fdfasdf</div><div class="history-item" data-keyword="二晚上发" tabindex="0" style="display: inline-block;">二晚上发</div><div class="history-item" data-keyword="防辐射服" tabindex="0" style="display: inline-block;">防辐射服</div><div class="history-item" data-keyword="分瓦房" tabindex="0" style="display: inline-block;">分瓦房</div><div class="history-item" data-keyword="水电费大师傅" tabindex="0" style="display: inline-block;">水电费大师傅</div><div class="history-item" data-keyword="a" tabindex="0" style="display: inline-block;">a</div><div class="history-item" data-keyword="b" tabindex="0" style="display: inline-block;">b</div><div class="history-item" data-keyword="c" tabindex="0" style="display: inline-block;">c</div><div class="history-item" data-keyword="ccc" tabindex="0" style="display: inline-block;">ccc</div><div class="history-item" data-keyword="d" tabindex="0" style="display: inline-block;">d</div><div class="history-item" data-keyword="dfe" tabindex="0" style="display: inline-block;">dfe</div><div class="history-item" data-keyword="dfsd" tabindex="0" style="display: inline-block;">dfsd</div><div class="history-item" data-keyword="f" tabindex="0" style="display: inline-block;">f</div><div class="history-item" data-keyword="fds" tabindex="0" style="display: inline-block;">fds</div><div class="history-item" data-keyword="fesa" tabindex="0" style="display: inline-block;">fesa</div><div class="history-item" data-keyword="fesafef awA" tabindex="0" style="display: inline-block;">fesafef awA</div><div class="history-item" data-keyword="fewwafeaf" tabindex="0" style="display: inline-block;">fewwafeaf</div><div class="history-item" data-keyword="g" tabindex="0" style="display: inline-block;">g</div><div class="history-item" data-keyword="gawegewagew" tabindex="0" style="display: inline-block;">gawegewagew</div><div class="history-item" data-keyword="hesahrhre" tabindex="0" style="display: inline-block;">hesahrhre</div><div class="history-item" data-keyword="i" tabindex="0" style="display: inline-block;">i</div><div class="history-item" data-keyword="mmm" tabindex="0" style="display: inline-block;">mmm</div><div class="history-item" data-keyword="n" tabindex="0" style="display: inline-block;">n</div><div class="history-item" data-keyword="prompt" tabindex="0" style="display: inline-block;">prompt</div><div class="history-item" data-keyword="prompt cline" tabindex="0" style="display: inline-block;">prompt cline</div><div class="history-item" data-keyword="s" tabindex="0" style="display: inline-block;">s</div></div>
+        <div id="history-list" class="flex2"></div>
     </div>
 
     <div class="modal" id="error-modal">
@@ -443,7 +444,7 @@
 
     <script>
         // 网站搜索URL模板
-        const siteUrls = {
+        let siteUrls = {
             xiaohongshu: 'https://www.xiaohongshu.com/search_result?keyword=',
             douyin: 'https://www.douyin.com/search/',
             'douyin-history': 'https://www.douyin.com/user/self?from_tab_name=main&showTab=record',
@@ -1810,7 +1811,9 @@
                         const button = document.createElement('button');
                         button.textContent = nameInput.value;
                         button.setAttribute('data-site', siteInput.value);
-                        button.classList.add(siteInput.value.length > 10 ? 'small' : '');
+                        if (siteInput.value.length > 10) {
+                            button.classList.add('small');
+                        }
                         btnGroup.appendChild(button);
                     }
                 });
@@ -1881,101 +1884,94 @@
             
             // 绑定设置模态框内按钮
             // 确保事件只绑定一次
-            if (!window.eventHandlersBound) {
-                window.eventHandlersBound = true;
+            // 直接绑定设置界面按钮事件
+            document.getElementById('add-site-row').addEventListener('click', function() {
+                const tbody = document.getElementById('sites-table-body');
+                const row = document.createElement('tr');
                 
-                // 使用事件委托处理设置界面按钮
-                document.addEventListener('click', function(e) {
-                    // 新增行按钮
-                    if (e.target.id === 'add-site-row') {
-                        const tbody = document.getElementById('sites-table-body');
-                        const row = document.createElement('tr');
-                        
-                        const nameCell = document.createElement('td');
-                        const nameInput = document.createElement('input');
-                        nameInput.type = 'text';
-                        nameInput.placeholder = '按钮名称';
-                        nameInput.style.width = '100%';
-                        nameCell.appendChild(nameInput);
-                        
-                        const siteCell = document.createElement('td');
-                        const siteInput = document.createElement('input');
-                        siteInput.type = 'text';
-                        siteInput.placeholder = 'data-site';
-                        siteInput.style.width = '100%';
-                        siteCell.appendChild(siteInput);
-                        
-                        const urlCell = document.createElement('td');
-                        const urlInput = document.createElement('input');
-                        urlInput.type = 'text';
-                        urlInput.placeholder = 'URL模板';
-                        urlInput.style.width = '100%';
-                        urlCell.appendChild(urlInput);
-                        
-                        const actionCell = document.createElement('td');
-                        const deleteBtn = document.createElement('button');
-                        deleteBtn.textContent = '删除';
-                        deleteBtn.addEventListener('click', () => row.remove());
-                        actionCell.appendChild(deleteBtn);
-                        
-                        row.appendChild(nameCell);
-                        row.appendChild(siteCell);
-                        row.appendChild(urlCell);
-                        row.appendChild(actionCell);
-                        tbody.appendChild(row);
-                    }
+                const nameCell = document.createElement('td');
+                const nameInput = document.createElement('input');
+                nameInput.type = 'text';
+                nameInput.placeholder = '按钮名称';
+                nameInput.style.width = '100%';
+                nameCell.appendChild(nameInput);
+                
+                const siteCell = document.createElement('td');
+                const siteInput = document.createElement('input');
+                siteInput.type = 'text';
+                siteInput.placeholder = 'data-site';
+                siteInput.style.width = '100%';
+                siteCell.appendChild(siteInput);
+                
+                const urlCell = document.createElement('td');
+                const urlInput = document.createElement('input');
+                urlInput.type = 'text';
+                urlInput.placeholder = 'URL模板';
+                urlInput.style.width = '100%';
+                urlCell.appendChild(urlInput);
+                
+                const actionCell = document.createElement('td');
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = '删除';
+                deleteBtn.addEventListener('click', () => row.remove());
+                actionCell.appendChild(deleteBtn);
+                
+                row.appendChild(nameCell);
+                row.appendChild(siteCell);
+                row.appendChild(urlCell);
+                row.appendChild(actionCell);
+                tbody.appendChild(row);
+            });
+            
+            document.getElementById('save-settings').addEventListener('click', function() {
+                try {
+                    // 收集表格数据并更新siteUrls
+                    const newSiteUrls = {};
+                    const rows = document.querySelectorAll('#sites-table-body tr');
                     
-                    // 保存设置按钮
-                    else if (e.target.id === 'save-settings') {
-                        try {
-                            // 收集表格数据并更新siteUrls
-                            const newSiteUrls = {};
-                            const rows = document.querySelectorAll('#sites-table-body tr');
-                            
-                            rows.forEach(row => {
-                                const siteInput = row.querySelector('td:nth-child(2) input');
-                                const urlInput = row.querySelector('td:nth-child(3) input');
-                                if (siteInput.value && urlInput.value) {
-                                    newSiteUrls[siteInput.value] = urlInput.value;
-                                }
-                            });
-                            
-                            // 更新全局siteUrls
-                            siteUrls = newSiteUrls;
-                            
-                            // 更新按钮组
-                            const btnGroup = document.querySelector('.btn-group');
-                            btnGroup.innerHTML = '';
-                            
-                            rows.forEach(row => {
-                                const nameInput = row.querySelector('td:nth-child(1) input');
-                                const siteInput = row.querySelector('td:nth-child(2) input');
-                                
-                                if (nameInput.value && siteInput.value) {
-                                    const button = document.createElement('button');
-                                    button.textContent = nameInput.value;
-                                    button.setAttribute('data-site', siteInput.value);
-                                    button.classList.add(siteInput.value.length > 10 ? 'small' : '');
-                                    btnGroup.appendChild(button);
-                                }
-                            });
-                            
-                            // 重新绑定按钮事件
-                            bindButtonEvents();
-                            
-                            // 隐藏设置模态框
-                            document.getElementById('settings-modal').style.display = 'none';
-                        } catch (error) {
-                            alert('保存设置出错: ' + error.message);
+                    rows.forEach(row => {
+                        const siteInput = row.querySelector('td:nth-child(2) input');
+                        const urlInput = row.querySelector('td:nth-child(3) input');
+                        if (siteInput.value && urlInput.value) {
+                            newSiteUrls[siteInput.value] = urlInput.value;
                         }
-                    }
+                    });
                     
-                    // 取消设置按钮
-                    else if (e.target.id === 'cancel-settings') {
-                        document.getElementById('settings-modal').style.display = 'none';
-                    }
-                });
-            }
+                    // 更新全局siteUrls
+                    siteUrls = newSiteUrls;
+                    
+                    // 更新按钮组
+                    const btnGroup = document.querySelector('.btn-group');
+                    btnGroup.innerHTML = '';
+                    
+                    rows.forEach(row => {
+                        const nameInput = row.querySelector('td:nth-child(1) input');
+                        const siteInput = row.querySelector('td:nth-child(2) input');
+                        
+                        if (nameInput.value && siteInput.value) {
+                            const button = document.createElement('button');
+                            button.textContent = nameInput.value;
+                            button.setAttribute('data-site', siteInput.value);
+                            if (siteInput.value.length > 10) {
+                                button.classList.add('small');
+                            }
+                            btnGroup.appendChild(button);
+                        }
+                    });
+                    
+                    // 重新绑定按钮事件
+                    bindButtonEvents();
+                    
+                    // 隐藏设置模态框
+                    document.getElementById('settings-modal').style.display = 'none';
+                } catch (error) {
+                    alert('保存设置出错: ' + error.message);
+                }
+            });
+            
+            document.getElementById('cancel-settings').addEventListener('click', function() {
+                document.getElementById('settings-modal').style.display = 'none';
+            });
         });
 
         // 重新绑定按钮事件
@@ -2025,23 +2021,6 @@
         }
         <!-- 保留文件原有内容 -->
 
-// 在文件末尾添加以下代码
-document.getElementById('settings').addEventListener('click', function() {
-    // 显示设置模态框
-    document.getElementById('settings-modal').style.display = 'flex';
-});
-
-document.getElementById('add-site-row').addEventListener('click', function() {
-    // 新增行逻辑
-});
-
-document.getElementById('save-settings').addEventListener('click', function() {
-    // 保存设置逻辑
-});
-
-document.getElementById('cancel-settings').addEventListener('click', function() {
-    document.getElementById('settings-modal').style.display = 'none';
-});
     </script>
     
 
