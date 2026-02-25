@@ -260,10 +260,30 @@
 
         .modal-content {
             background-color: white;
-            padding: 20px;
+            padding: 20px 20px; /* 左右对称基础内边距 */
             border-radius: 5px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
             color: #333; /* 确保文字颜色为深色 */
+        }
+
+        /* 全平台隐藏设置模态框内容滚动条，但保留滚动功能 */
+        #settings-modal .modal-content {
+            /* 确保纵向滚动存在 */
+            overflow-y: auto;
+            overflow-x: hidden;
+            /* 隐藏滚动条 */
+            scrollbar-width: none;       /* Firefox */
+            -ms-overflow-style: none;    /* IE 10+ / 旧 Edge */
+        }
+        #settings-modal .modal-content::-webkit-scrollbar { /* Chrome/Safari/新 Edge */
+            width: 0;
+            height: 0;
+        }
+
+        /* 打开模态框时禁用页面滚动，但不影响模态框内部滚动 */
+        body.modal-open {
+            overflow: hidden;
+            width: 100%;
         }
         
         .modal-content p {
@@ -346,7 +366,16 @@
                 max-height: 82vh !important;
                 box-sizing: border-box;
                 overflow-x: hidden; /* 禁止模态框内容横向滚动 */
-                padding: 1px; /* 减小内边距 */
+                overflow-y: auto;  /* 保留滚动 */
+                scrollbar-gutter: stable both-edges; /* 保持左右对称的滚动槽 */
+                /* 隐藏滚动条（跨浏览器） */
+                scrollbar-width: none;       /* Firefox */
+                -ms-overflow-style: none;    /* IE 10+ / 旧 Edge */
+                padding: 4px 8px; /* 上下4px，左右8px，左右对称 */
+            }
+            #settings-modal .modal-content::-webkit-scrollbar { /* Chrome/Safari */
+                width: 0;
+                height: 0;
             }
 
             /* 减小标题区域的空白 */
@@ -363,9 +392,27 @@
 
             #settings-modal #sites-table th,
             #settings-modal #sites-table td {
-                padding: 1px; /* 减小单元格边距 */
-                font-size: 12px; /* 减小字体 */
-                vertical-align: middle; /* 垂直居中 */
+                padding: 2px 6px;
+                line-height: 1.2;
+                vertical-align: middle;
+            }
+            #sites-table th:first-child, #sites-table td:first-child { /* 左边留白略减小 */
+                padding-left: 4px;
+            }
+            #sites-table th:last-child, #sites-table td:last-child { /* 右侧腾出空间，避免贴边 */
+                padding-right: 10px;
+            }
+            #sites-table input {
+                padding: 2px 4px;
+                font-size: 14px;
+                box-sizing: border-box;
+                width: 100%;
+            }
+            #sites-table .delete-btn {
+                white-space: nowrap;
+                padding: 0 6px;
+                line-height: 1.2;
+                margin-right: 4px;
             }
 
             /* 分配列宽，确保删除按钮不被压缩 */
@@ -387,7 +434,7 @@
             
             /* 允许URL输入框横向滚动 */
             #settings-modal #sites-table td:nth-child(2) input {
-                overflow-x: auto;
+                overflow-x: hidden;
                 white-space: nowrap;
             }
 
@@ -439,7 +486,7 @@
 
             /* 确保URL列的输入框可以横向滚动 */
             #settings-modal td:nth-child(3) input {
-                overflow-x: auto !important;
+                overflow-x: hidden !important;
                 white-space: nowrap !important;
             }
 
@@ -603,9 +650,15 @@
 
         /* 设置模态框表格紧凑样式与删除按钮一行显示 */
         #sites-table th, #sites-table td {
-            padding: 2px 4px;
+            padding: 2px 6px;
             line-height: 1.2;
             vertical-align: middle;
+        }
+        #sites-table th:first-child, #sites-table td:first-child { /* 左边留白略减小 */
+            padding-left: 4px;
+        }
+        #sites-table th:last-child, #sites-table td:last-child { /* 右侧腾出空间，避免贴边 */
+            padding-right: 10px;
         }
         #sites-table input {
             padding: 2px 4px;
@@ -617,6 +670,7 @@
             white-space: nowrap;
             padding: 0 6px;
             line-height: 1.2;
+            margin-right: 4px;
         }
     </style>
     <script src="pinyin_dict_firstletter.js"></script>
@@ -699,12 +753,12 @@
             <!-- 网站表格 -->
             <table id="sites-table" style="width: 100%; border-collapse: collapse; table-layout: fixed;">
                 <colgroup>
-                    <col style="width: 25%">
-                    <col style="width: 20%">
-                    <col style="width: 35%">
-                    <col style="width: 7%">
+                    <col style="width: 22%">
+                    <col style="width: 18%">
+                    <col style="width: 40%">
+                    <col style="width: 6%">
+                    <col style="width: 6%">
                     <col style="width: 8%">
-                    <col style="width: 5%">
                 </colgroup>
                 <thead>
                     <tr>
@@ -1440,6 +1494,7 @@
             if (!settingsModal) return;
             settingsModal.style.display = 'flex';
             settingsEscStage = 0; // 重置为第一阶段
+            document.body.classList.add('modal-open');
             // 打开时刷新表格并应用当前过滤
             if (typeof populateSettingsTable === 'function') {
                 populateSettingsTable();
@@ -1456,6 +1511,7 @@
             if (!settingsModal) return;
             settingsModal.style.display = 'none';
             settingsEscStage = 0; // 复位阶段
+            document.body.classList.remove('modal-open');
         }
 
         function handleSettingsModalEscape(e) {
@@ -1521,20 +1577,178 @@
                     return;
                 }
 
-                // 方向键在动作按钮和表格输入之间导航（简化实现）
-                const focusableSelectors = '#settings-actions button, #sites-table input';
+                // 线性可聚焦元素（动作按钮 + 搜索网站 + 表格输入/按钮）
+                const focusableSelectors = '#settings-actions button, #settings-search, #sites-table input, #sites-table button';
                 const focusables = Array.from(settingsModal.querySelectorAll(focusableSelectors));
                 const currentIndex = focusables.indexOf(document.activeElement);
 
-                if (["ArrowLeft","ArrowRight","ArrowUp","ArrowDown"].includes(e.key)) {
-                    if (currentIndex !== -1) {
-                        e.preventDefault();
-                        let nextIndex = currentIndex;
-                        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-                            nextIndex = Math.min(focusables.length - 1, currentIndex + 1);
-                        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-                            nextIndex = Math.max(0, currentIndex - 1);
+                // 左右键：输入框内优先移动光标；当光标到达边界时在同一行水平换列
+                if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                    const isTextInput = e.target && e.target.matches('input[type="text"], input:not([type]), textarea, input[type="search"], input[type="url"], input[type="number"], input[type="email"], input[type="password"]');
+                    e.stopPropagation(); // 避免全局处理器同时介入
+
+                    const moveHorizontally = (direction) => {
+                        const currentRow = e.target.closest('tr');
+                        if (!currentRow) return;
+                        const isVisible = (el) => el && el.offsetParent !== null && getComputedStyle(el).display !== 'none' && getComputedStyle(el).visibility !== 'hidden' && !el.disabled;
+                        const cells = Array.from(currentRow.querySelectorAll('td'));
+                        const getCellFocusable = (td) => Array.from(td.querySelectorAll('input, button')).find(isVisible);
+                        const rowFocusables = cells.map(getCellFocusable).filter(Boolean);
+                        const currentEl = e.target.closest('input, button') || e.target;
+                        let colIndex = rowFocusables.findIndex(el => el === currentEl);
+                        if (colIndex < 0) {
+                            const currentCell = currentEl.closest('td');
+                            colIndex = Math.max(0, cells.indexOf(currentCell));
                         }
+                        const nextIndex = Math.max(0, Math.min(rowFocusables.length - 1, colIndex + direction));
+                        if (nextIndex !== colIndex && rowFocusables[nextIndex]) {
+                            const target = rowFocusables[nextIndex];
+                            target.focus();
+                            if (target.matches('input')) {
+                                // 左移到上一列 -> 光标置末尾；右移到下一列 -> 光标置开头
+                                const pos = direction < 0 ? (target.value ? target.value.length : 0) : 0;
+                                try { target.setSelectionRange(pos, pos); } catch (_) {}
+                            }
+                        }
+                    };
+
+                    if (isTextInput) {
+                        const input = e.target;
+                        const start = input.selectionStart;
+                        const end = input.selectionEnd;
+                        const len = (typeof input.value === 'string') ? input.value.length : 0;
+                        // 在边界并且没有选区时，进行跨列跳转
+                        if (e.key === 'ArrowLeft' && start === end && start === 0) {
+                            e.preventDefault();
+                            moveHorizontally(-1);
+                            return;
+                        }
+                        if (e.key === 'ArrowRight' && start === end && end === len) {
+                            e.preventDefault();
+                            moveHorizontally(1);
+                            return;
+                        }
+                        // 其他情况交给浏览器默认的光标移动
+                        return;
+                    } else {
+                        // 非输入元素时，左右默认不引发页面水平滚动
+                        e.preventDefault();
+                        return;
+                    }
+                }
+
+                // 上下键：在表格中按列跨行移动；按钮/搜索网站也参与逻辑
+                if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    const table = settingsModal.querySelector('#sites-table');
+                    const actionsBar = settingsModal.querySelector('#settings-actions');
+                    const isInTable = !!(table && e.target && table.contains(e.target));
+                    const isSearch = e.target && e.target.id === 'settings-search';
+                    const isActionsButton = e.target && actionsBar && actionsBar.contains(e.target) && e.target.tagName === 'BUTTON';
+
+                    // 搜索网站：Down -> 首行第一列；Up -> 动作栏最后一个按钮
+                    if (isSearch) {
+                        if (e.key === 'ArrowDown') {
+                            const firstRow = Array.from(settingsModal.querySelectorAll('#sites-table-body tr')).find(r => (r.offsetParent !== null) && getComputedStyle(r).display !== 'none');
+                            if (firstRow) {
+                                const firstFocusable = firstRow.querySelector('input, button');
+                                if (firstFocusable) firstFocusable.focus();
+                            }
+                        } else {
+                            const actionButtons = actionsBar ? Array.from(actionsBar.querySelectorAll('button')) : [];
+                            if (actionButtons.length > 0) actionButtons[actionButtons.length - 1].focus();
+                        }
+                        return;
+                    }
+
+                    // 动作栏按钮：Down -> 首行第一列；Up -> 搜索网站
+                    if (isActionsButton) {
+                        if (e.key === 'ArrowDown') {
+                            const firstRow = Array.from(settingsModal.querySelectorAll('#sites-table-body tr')).find(r => (r.offsetParent !== null) && getComputedStyle(r).display !== 'none');
+                            if (firstRow) {
+                                const firstFocusable = firstRow.querySelector('input, button');
+                                if (firstFocusable) firstFocusable.focus();
+                            }
+                        } else if (settingsSearchInput) {
+                            settingsSearchInput.focus();
+                        }
+                        return;
+                    }
+
+                    // 表格内：按列跨行（输入与按钮均支持）
+                    if (isInTable) {
+                        const currentRow = e.target.closest('tr');
+                        if (currentRow) {
+                            const allVisibleRows = Array.from(settingsModal.querySelectorAll('#sites-table-body tr')).filter(r => (r.offsetParent !== null) && getComputedStyle(r).display !== 'none');
+                            const rowIndex = allVisibleRows.indexOf(currentRow);
+                            if (rowIndex !== -1) {
+                                const isVisible = (el) => el && el.offsetParent !== null && getComputedStyle(el).display !== 'none' && getComputedStyle(el).visibility !== 'hidden' && !el.disabled;
+                                const currentCell = e.target.closest('td');
+                                const currentCells = Array.from(currentRow.querySelectorAll('td'));
+                                let cellIndex = Math.max(0, currentCells.indexOf(currentCell));
+
+                                const direction = (e.key === 'ArrowDown') ? 1 : -1;
+                                const nextRowIndex = Math.max(0, Math.min(allVisibleRows.length - 1, rowIndex + direction));
+
+                                // 顶部越界：上移到动作栏最后一个按钮（若有），否则搜索框
+                                if (nextRowIndex === rowIndex && direction < 0 && rowIndex === 0) {
+                                    const actionButtons = actionsBar ? Array.from(actionsBar.querySelectorAll('button')) : [];
+                                    if (actionButtons.length > 0) {
+                                        actionButtons[actionButtons.length - 1].focus();
+                                    } else if (settingsSearchInput) {
+                                        settingsSearchInput.focus();
+                                    }
+                                    return;
+                                }
+
+                                if (nextRowIndex !== rowIndex) {
+                                    const targetRow = allVisibleRows[nextRowIndex];
+                                    const targetCells = Array.from(targetRow.querySelectorAll('td'));
+                                    // 优先同列
+                                    let targetCell = targetCells[cellIndex];
+                                    let targetEl = targetCell ? Array.from(targetCell.querySelectorAll('input, button')).find(isVisible) : null;
+                                    // 若同列无可聚焦，向右再向左寻找最近的可聚焦
+                                    if (!targetEl) {
+                                        // 向右
+                                        for (let i = cellIndex + 1; i < targetCells.length; i++) {
+                                            const cand = Array.from(targetCells[i].querySelectorAll('input, button')).find(isVisible);
+                                            if (cand) { targetEl = cand; break; }
+                                        }
+                                    }
+                                    if (!targetEl) {
+                                        // 向左
+                                        for (let i = cellIndex - 1; i >= 0; i--) {
+                                            const cand = Array.from(targetCells[i].querySelectorAll('input, button')).find(isVisible);
+                                            if (cand) { targetEl = cand; break; }
+                                        }
+                                    }
+                                    if (targetEl) targetEl.focus();
+                                    return;
+                                }
+                            }
+                        }
+                        // 未找到匹配时，回退到线性移动
+                    }
+
+                    if (currentIndex !== -1) {
+                        let nextIndex = currentIndex + (e.key === 'ArrowDown' ? 1 : -1);
+                        nextIndex = Math.max(0, Math.min(focusables.length - 1, nextIndex));
+                        focusables[nextIndex].focus();
+                    } else if (focusables.length > 0) {
+                        focusables[0].focus();
+                    }
+                    return;
+                }
+
+                // 使用 Tab/Shift+Tab 实现线性导航（替代左右键）
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (currentIndex !== -1) {
+                        let nextIndex = currentIndex + (e.shiftKey ? -1 : 1);
+                        nextIndex = Math.max(0, Math.min(focusables.length - 1, nextIndex));
                         focusables[nextIndex].focus();
                     } else if (focusables.length > 0) {
                         focusables[0].focus();
@@ -3693,16 +3907,14 @@
 
         // 设置按钮事件（使用统一的表格填充与回车保存）
         document.getElementById('settings').addEventListener('click', () => {
-            // 填充并打开
             populateSettingsTable();
-            const settingsModal = document.getElementById('settings-modal');
-            settingsModal.style.display = 'flex';
+            openSettingsModal();
             const ss = document.getElementById('settings-search');
             if (ss) ss.focus();
-            
+
             const handleSettingsModalClick = function(e) {
                 if (e.target === settingsModal) {
-                    settingsModal.style.display = 'none';
+                    closeSettingsModal();
                     settingsModal.removeEventListener('click', handleSettingsModalClick);
                 }
             };
@@ -3713,8 +3925,8 @@
 
         // ESC键退出设置界面
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && document.getElementById('settings-modal').style.display === 'flex') {
-                document.getElementById('settings-modal').style.display = 'none';
+            if (e.key === 'Escape' && isSettingsModalOpen()) {
+                closeSettingsModal();
             }
         });
 
@@ -3760,7 +3972,7 @@
                 saveSiteConfigLocally({ siteUrls, buttonConfig: buttonConfigState, siteFlags });
 
                 // 关闭设置
-                document.getElementById('settings-modal').style.display = 'none';
+                closeSettingsModal();
             } catch (error) {
                 alert('保存设置出错: ' + error.message);
             }
@@ -3841,12 +4053,12 @@
                 
                 // 显示设置模态框
                 const settingsModal = document.getElementById('settings-modal');
-                settingsModal.style.display = 'flex';
+                openSettingsModal();
                 
                 // 添加点击空白处关闭功能
                 const handleSettingsModalClick = function(e) {
                     if (e.target === settingsModal) {
-                        settingsModal.style.display = 'none';
+                        closeSettingsModal();
                         settingsModal.removeEventListener('click', handleSettingsModalClick);
                     }
                 };
