@@ -387,6 +387,7 @@
             <input type="text" id="mobile-quick-search" autocomplete="off" spellcheck="false">
             <button id="sort-by-name" class="small">名称 ↑</button>
             <button id="sort-by-time" class="small">时间 ↓</button>
+            <button id="sort-by-length" class="small">长度 ↑</button>
         </div>
     </div>
 
@@ -405,6 +406,40 @@
         <button id="save-edit">保存</button>
         <button id="cancel-edit">取消</button>
     </div>
+    <!-- 新版设置模态框 -->
+    <div class="modal" id="settings-modal" style="display:none">
+        <div class="modal-content" style="width: 800px; max-height: 80vh; overflow: auto;">
+            <h3>网站设置</h3>
+            
+            <!-- 快速搜索框 -->
+            <div style="margin-bottom: 15px;">
+                <input type="text" id="settings-search" placeholder="搜索网站..." style="width: 100%; padding: 8px;">
+            </div>
+            
+            <!-- 网站表格 -->
+            <table id="sites-table" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr>
+                        <th>按钮名称</th>
+                        <th>Data-site</th>
+                        <th>Site Rules</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="sites-table-body">
+                    <!-- 动态生成行 -->
+                </tbody>
+            </table>
+            
+            <!-- 操作按钮 -->
+            <div style="margin-top: 15px;">
+                <button id="add-site-row">新增行</button>
+                <button id="save-settings" style="margin-left: 10px;">保存设置</button>
+                <button id="cancel-settings" style="margin-left: 10px;">取消</button>
+            </div>
+        </div>
+    </div>
+
 
     <script>
         // 网站搜索URL模板
@@ -487,6 +522,12 @@
         let lastDeletedItems = [];
         let quickSearchActive = false;
 
+        // 动态添加设置按钮
+        const settingsBtn = document.createElement('button');
+        settingsBtn.id = 'settings';
+        settingsBtn.textContent = '设置';
+        document.querySelector('.control-buttons').appendChild(settingsBtn);
+
         // 编辑状态标志
         let isEditMode = false;
         let isEditingHistory = false;
@@ -501,7 +542,8 @@
         // 排序状态对象
         const sortStates = {
             name: { ascending: true },
-            time: { ascending: false } // 时间默认倒序（新->旧）
+            time: { ascending: false }, // 时间默认倒序（新->旧）
+            length: { ascending: true } // 长度默认升序
         };
 
         // 排序功能（支持双向）
@@ -534,6 +576,21 @@
             renderHistory();
         }
         
+        function sortByLength() {
+            const state = sortStates.length;
+            state.ascending = !state.ascending; // 切换方向
+            
+            searchHistory.sort((a, b) =>
+                state.ascending ? a.length - b.length : b.length - a.length
+            );
+            
+            // 更新按钮文本
+            document.getElementById('sort-by-length').textContent =
+                `长度 ${state.ascending ? '↑' : '↓'}`;
+                
+            renderHistory();
+        }
+        
         // 加载搜索历史
         let searchHistory = JSON.parse(localStorage.getItem('searchHistory')) || [];
         renderHistory();
@@ -541,6 +598,7 @@
         // 排序按钮事件
         document.getElementById('sort-by-name').addEventListener('click', sortByName);
         document.getElementById('sort-by-time').addEventListener('click', sortByTime);
+        document.getElementById('sort-by-length').addEventListener('click', sortByLength);
 
         // 全局键盘事件（用于快速搜索）
         document.addEventListener('keydown', handleGlobalKeyDown);
@@ -634,6 +692,14 @@
                 editHistoryModal.style.display = 'none';
                 isEditingHistory = false;
                 currentEditItem = null;
+            }
+        });
+        
+        // ESC键取消编辑
+        historyEditInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                cancelEditBtn.click();
             }
         });
 
@@ -1560,6 +1626,328 @@
             }
         }
 
+        // 设置按钮事件
+        document.getElementById('settings').addEventListener('click', () => {
+            // 填充表格数据
+            const tbody = document.getElementById('sites-table-body');
+            tbody.innerHTML = '';
+            
+            for (const [site, url] of Object.entries(siteUrls)) {
+                const row = document.createElement('tr');
+                
+                const nameCell = document.createElement('td');
+                const nameInput = document.createElement('input');
+                nameInput.type = 'text';
+                nameInput.value = document.querySelector(`button[data-site="${site}"]`)?.textContent || site;
+                nameInput.style.width = '100%';
+                nameCell.appendChild(nameInput);
+                
+                const siteCell = document.createElement('td');
+                const siteInput = document.createElement('input');
+                siteInput.type = 'text';
+                siteInput.value = site;
+                siteInput.style.width = '100%';
+                siteCell.appendChild(siteInput);
+                
+                const urlCell = document.createElement('td');
+                const urlInput = document.createElement('input');
+                urlInput.type = 'text';
+                urlInput.value = url;
+                urlInput.style.width = '100%';
+                urlCell.appendChild(urlInput);
+                
+                const actionCell = document.createElement('td');
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = '删除';
+                deleteBtn.addEventListener('click', () => row.remove());
+                actionCell.appendChild(deleteBtn);
+                
+                row.appendChild(nameCell);
+                row.appendChild(siteCell);
+                row.appendChild(urlCell);
+                row.appendChild(actionCell);
+                tbody.appendChild(row);
+            }
+            
+            // 显示设置模态框
+            document.getElementById('settings-modal').style.display = 'flex';
+        });
+        
+        // 新增行按钮事件
+        document.getElementById('add-site-row').addEventListener('click', () => {
+            const tbody = document.getElementById('sites-table-body');
+            const row = document.createElement('tr');
+            
+            const nameCell = document.createElement('td');
+            const nameInput = document.createElement('input');
+            nameInput.type = 'text';
+            nameInput.placeholder = '按钮名称';
+            nameInput.style.width = '100%';
+            nameCell.appendChild(nameInput);
+            
+            const siteCell = document.createElement('td');
+            const siteInput = document.createElement('input');
+            siteInput.type = 'text';
+            siteInput.placeholder = 'data-site';
+            siteInput.style.width = '100%';
+            siteCell.appendChild(siteInput);
+            
+            const urlCell = document.createElement('td');
+            const urlInput = document.createElement('input');
+            urlInput.type = 'text';
+            urlInput.placeholder = 'URL模板';
+            urlInput.style.width = '100%';
+            urlCell.appendChild(urlInput);
+            
+            const actionCell = document.createElement('td');
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = '删除';
+            deleteBtn.addEventListener('click', () => row.remove());
+            actionCell.appendChild(deleteBtn);
+            
+            row.appendChild(nameCell);
+            row.appendChild(siteCell);
+            row.appendChild(urlCell);
+            row.appendChild(actionCell);
+            tbody.appendChild(row);
+        });
+        
+        // ESC键退出设置界面
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && document.getElementById('settings-modal').style.display === 'flex') {
+                document.getElementById('settings-modal').style.display = 'none';
+            }
+        });
+
+        // 保存设置
+        document.getElementById('save-settings').addEventListener('click', () => {
+            try {
+                // 收集表格数据并更新siteUrls
+                const newSiteUrls = {};
+                const rows = document.querySelectorAll('#sites-table-body tr');
+                
+                rows.forEach(row => {
+                    const siteInput = row.querySelector('td:nth-child(2) input');
+                    const urlInput = row.querySelector('td:nth-child(3) input');
+                    if (siteInput.value && urlInput.value) {
+                        newSiteUrls[siteInput.value] = urlInput.value;
+                    }
+                });
+                
+                // 更新全局siteUrls
+                siteUrls = newSiteUrls;
+                
+                // 更新按钮组
+                const btnGroup = document.querySelector('.btn-group');
+                btnGroup.innerHTML = '';
+                
+                rows.forEach(row => {
+                    const nameInput = row.querySelector('td:nth-child(1) input');
+                    const siteInput = row.querySelector('td:nth-child(2) input');
+                    
+                    if (nameInput.value && siteInput.value) {
+                        const button = document.createElement('button');
+                        button.textContent = nameInput.value;
+                        button.setAttribute('data-site', siteInput.value);
+                        button.classList.add(siteInput.value.length > 10 ? 'small' : '');
+                        btnGroup.appendChild(button);
+                    }
+                });
+                
+                // 重新绑定按钮事件
+                bindButtonEvents();
+                
+                // 隐藏设置模态框
+                document.getElementById('settings-modal').style.display = 'none';
+            } catch (error) {
+                alert('保存设置出错: ' + error.message);
+            }
+        });
+        
+        // 取消设置
+        document.getElementById('cancel-settings').addEventListener('click', () => {
+            document.getElementById('settings-modal').style.display = 'none';
+        });
+        
+        // 确保设置按钮事件在DOM加载后绑定
+        document.addEventListener('DOMContentLoaded', function() {
+            // 绑定设置按钮
+            document.getElementById('settings').addEventListener('click', function() {
+                // 填充表格数据
+                const tbody = document.getElementById('sites-table-body');
+                tbody.innerHTML = '';
+                
+                for (const [site, url] of Object.entries(siteUrls)) {
+                    const row = document.createElement('tr');
+                    
+                    const nameCell = document.createElement('td');
+                    const nameInput = document.createElement('input');
+                    nameInput.type = 'text';
+                    nameInput.value = document.querySelector(`button[data-site="${site}"]`)?.textContent || site;
+                    nameInput.style.width = '100%';
+                    nameCell.appendChild(nameInput);
+                    
+                    const siteCell = document.createElement('td');
+                    const siteInput = document.createElement('input');
+                    siteInput.type = 'text';
+                    siteInput.value = site;
+                    siteInput.style.width = '100%';
+                    siteCell.appendChild(siteInput);
+                    
+                    const urlCell = document.createElement('td');
+                    const urlInput = document.createElement('input');
+                    urlInput.type = 'text';
+                    urlInput.value = url;
+                    urlInput.style.width = '100%';
+                    urlCell.appendChild(urlInput);
+                    
+                    const actionCell = document.createElement('td');
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = '删除';
+                    deleteBtn.addEventListener('click', () => row.remove());
+                    actionCell.appendChild(deleteBtn);
+                    
+                    row.appendChild(nameCell);
+                    row.appendChild(siteCell);
+                    row.appendChild(urlCell);
+                    row.appendChild(actionCell);
+                    tbody.appendChild(row);
+                }
+                
+                // 显示设置模态框
+                document.getElementById('settings-modal').style.display = 'flex';
+            });
+            
+            // 绑定设置模态框内按钮
+            // 确保事件只绑定一次
+            if (!window.eventHandlersBound) {
+                window.eventHandlersBound = true;
+                
+                // 使用事件委托处理设置界面按钮
+                document.addEventListener('click', function(e) {
+                    // 新增行按钮
+                    if (e.target.id === 'add-site-row') {
+                        const tbody = document.getElementById('sites-table-body');
+                        const row = document.createElement('tr');
+                        
+                        const nameCell = document.createElement('td');
+                        const nameInput = document.createElement('input');
+                        nameInput.type = 'text';
+                        nameInput.placeholder = '按钮名称';
+                        nameInput.style.width = '100%';
+                        nameCell.appendChild(nameInput);
+                        
+                        const siteCell = document.createElement('td');
+                        const siteInput = document.createElement('input');
+                        siteInput.type = 'text';
+                        siteInput.placeholder = 'data-site';
+                        siteInput.style.width = '100%';
+                        siteCell.appendChild(siteInput);
+                        
+                        const urlCell = document.createElement('td');
+                        const urlInput = document.createElement('input');
+                        urlInput.type = 'text';
+                        urlInput.placeholder = 'URL模板';
+                        urlInput.style.width = '100%';
+                        urlCell.appendChild(urlInput);
+                        
+                        const actionCell = document.createElement('td');
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.textContent = '删除';
+                        deleteBtn.addEventListener('click', () => row.remove());
+                        actionCell.appendChild(deleteBtn);
+                        
+                        row.appendChild(nameCell);
+                        row.appendChild(siteCell);
+                        row.appendChild(urlCell);
+                        row.appendChild(actionCell);
+                        tbody.appendChild(row);
+                    }
+                    
+                    // 保存设置按钮
+                    else if (e.target.id === 'save-settings') {
+                        try {
+                            // 收集表格数据并更新siteUrls
+                            const newSiteUrls = {};
+                            const rows = document.querySelectorAll('#sites-table-body tr');
+                            
+                            rows.forEach(row => {
+                                const siteInput = row.querySelector('td:nth-child(2) input');
+                                const urlInput = row.querySelector('td:nth-child(3) input');
+                                if (siteInput.value && urlInput.value) {
+                                    newSiteUrls[siteInput.value] = urlInput.value;
+                                }
+                            });
+                            
+                            // 更新全局siteUrls
+                            siteUrls = newSiteUrls;
+                            
+                            // 更新按钮组
+                            const btnGroup = document.querySelector('.btn-group');
+                            btnGroup.innerHTML = '';
+                            
+                            rows.forEach(row => {
+                                const nameInput = row.querySelector('td:nth-child(1) input');
+                                const siteInput = row.querySelector('td:nth-child(2) input');
+                                
+                                if (nameInput.value && siteInput.value) {
+                                    const button = document.createElement('button');
+                                    button.textContent = nameInput.value;
+                                    button.setAttribute('data-site', siteInput.value);
+                                    button.classList.add(siteInput.value.length > 10 ? 'small' : '');
+                                    btnGroup.appendChild(button);
+                                }
+                            });
+                            
+                            // 重新绑定按钮事件
+                            bindButtonEvents();
+                            
+                            // 隐藏设置模态框
+                            document.getElementById('settings-modal').style.display = 'none';
+                        } catch (error) {
+                            alert('保存设置出错: ' + error.message);
+                        }
+                    }
+                    
+                    // 取消设置按钮
+                    else if (e.target.id === 'cancel-settings') {
+                        document.getElementById('settings-modal').style.display = 'none';
+                    }
+                });
+            }
+        });
+
+        // 重新绑定按钮事件
+        function bindButtonEvents() {
+            document.querySelectorAll('.btn-group button[data-site]').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const site = button.getAttribute('data-site');
+                    if (e.button === 0) { // 左键点击
+                        if (selectedElements.length > 0 && selectedElements.includes(button)) {
+                            toggleSelectElement(button);
+                        } else {
+                            search(site, true);
+                        }
+                    }
+                });
+
+                // 右键点击多选
+                button.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    toggleSelectElement(button);
+                });
+
+                button.addEventListener('focus', () => {
+                    if (!quickSearchActive) {
+                        currentFocusElement = button;
+                        quickSearchKeys = '';
+                        updateQuickSearchDisplay();
+                        clearMatches();
+                    }
+                });
+            });
+        }
+
         // 撤销删除
         function undoDelete() {
             if (lastDeletedItems.length === 0) return;
@@ -1574,7 +1962,26 @@
             renderHistory();
             lastDeletedItems = [];
         }
-    </script>
+        <!-- 保留文件原有内容 -->
 
+// 在文件末尾添加以下代码
+document.getElementById('settings').addEventListener('click', function() {
+    // 显示设置模态框
+    document.getElementById('settings-modal').style.display = 'flex';
+});
+
+document.getElementById('add-site-row').addEventListener('click', function() {
+    // 新增行逻辑
+});
+
+document.getElementById('save-settings').addEventListener('click', function() {
+    // 保存设置逻辑
+});
+
+document.getElementById('cancel-settings').addEventListener('click', function() {
+    document.getElementById('settings-modal').style.display = 'none';
+});
+    </script>
+    
 
 </body></html>
