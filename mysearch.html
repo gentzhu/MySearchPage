@@ -59,7 +59,7 @@
 
         .clear-input {
             position: absolute;
-            right: 4px;
+            right: -2px;
             top: 0;
             bottom: 0;
             height: 100%;
@@ -68,7 +68,7 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            font-size: 18px;
+            font-size: 60px;
             color: #999;
             padding: 0 6px;
             margin: 0;
@@ -192,6 +192,10 @@
             box-sizing: border-box !important;
             line-height: 1.2 !important;
             transition: all 0.2s !important;
+        }
+
+        .history-item.hidden {
+            display: none !important;
         }
 
         .history-item.highlight {
@@ -514,15 +518,15 @@
 
             /* 小屏清空图标垂直居中并与input等高 */
             .clear-input {
-                right: 2px;
-                top: 0;
+                right: -4px;
+                top: 4px;
                 bottom: 0;
                 height: 100%;
                 transform: none;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 16px;
+                font-size: 40px;
                 padding: 0 4px;
                 margin: 0;
                 line-height: 1;
@@ -667,7 +671,7 @@
 
             <!-- 快速搜索框 -->
             <div style="margin-bottom: 4px;">
-                <input type="text" id="settings-search" placeholder="搜索网站..." style="width: 100%; padding: 2px 4px; font-size: 12px; height: 18px; box-sizing: border-box;">
+                <input type="text" id="settings-search" placeholder="搜索网站..." style="width: 100%; padding: 2px 4px; font-size: 20px; height: 28px; box-sizing: border-box;">
             </div>
 
             <!-- 操作按钮（移动到上面） -->
@@ -1892,6 +1896,7 @@
 
         // 点击空白处退出编辑模式或关闭模态框
         function focusQuickSearch(e) {
+            // 移动端处理：如果焦点不在输入框，先设置焦点
             if (screen.width <= 768 && document.activeElement !== quicksearchinput) {
                 setTimeout(() => {
                     if (quicksearchinput) {
@@ -1903,11 +1908,10 @@
                 }, 100);
                 return;
             }
-            else if (document.activeElement === quicksearchinput) {
-                quickSearchKeys = quicksearchinput.value;
-                performQuickSearch();
-                return;
-            }
+            
+            // 执行快速搜索（适用于所有设备）
+            quickSearchKeys = quicksearchinput.value;
+            performQuickSearch();
         }
 
         // 清除所有匹配高亮
@@ -2407,7 +2411,7 @@
                 } else {
                     // 只隐藏不匹配的历史项，按钮保持显示
                     if (element.classList.contains('history-item')) {
-                        element.style.display = 'none';
+                        element.classList.add('hidden');
                     }
                 }
             });
@@ -2426,7 +2430,7 @@
 
         function showAllHistoryItems() {
             document.querySelectorAll('.history-item').forEach(item => {
-                item.style.display = 'inline-block';
+                item.classList.remove('hidden');
             });
         }
         // 使用拼音库获取拼音首字母
@@ -3032,7 +3036,7 @@
         }
         function showAllHistoryItems() {
             document.querySelectorAll('.history-item').forEach(item => {
-                item.style.display = 'inline-block';
+                item.classList.remove('hidden');
             });
         }
         function toggleSelectElement(element) {
