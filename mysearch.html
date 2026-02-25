@@ -835,7 +835,12 @@
 
         // 移动端快速搜索处理
         if (mobileQuickSearch) {
-            mobileQuickSearch.addEventListener('input', focusQuickSearch)
+            // 修改输入事件处理：仅更新快速搜索内容
+            mobileQuickSearch.addEventListener('input', function(e) {
+                quickSearchKeys = this.value;
+                performQuickSearch();
+            });
+            
             // 允许空格输入
             mobileQuickSearch.addEventListener('keydown', function (e) {
                 if (e.key === 'Enter') {
@@ -2309,43 +2314,6 @@
             // 绑定设置模态框内按钮
             // 确保事件只绑定一次
             // 直接绑定设置界面按钮事件
-            document.getElementById('add-site-row').addEventListener('click', function () {
-                const tbody = document.getElementById('sites-table-body');
-                const row = document.createElement('tr');
-
-                const nameCell = document.createElement('td');
-                const nameInput = document.createElement('input');
-                nameInput.type = 'text';
-                nameInput.placeholder = '按钮名称';
-                nameInput.style.width = '100%';
-                nameCell.appendChild(nameInput);
-
-                const siteCell = document.createElement('td');
-                const siteInput = document.createElement('input');
-                siteInput.type = 'text';
-                siteInput.placeholder = 'data-site';
-                siteInput.style.width = '100%';
-                siteCell.appendChild(siteInput);
-
-                const urlCell = document.createElement('td');
-                const urlInput = document.createElement('input');
-                urlInput.type = 'text';
-                urlInput.placeholder = 'URL模板';
-                urlInput.style.width = '100%';
-                urlCell.appendChild(urlInput);
-
-                const actionCell = document.createElement('td');
-                const deleteBtn = document.createElement('button');
-                deleteBtn.textContent = '删除';
-                deleteBtn.addEventListener('click', () => row.remove());
-                actionCell.appendChild(deleteBtn);
-
-                row.appendChild(nameCell);
-                row.appendChild(siteCell);
-                row.appendChild(urlCell);
-                row.appendChild(actionCell);
-                tbody.appendChild(row);
-            });
 
             document.getElementById('save-settings').addEventListener('click', function () {
                 try {
