@@ -411,7 +411,6 @@
     <div class="edit-history-modal" id="edit-history-modal" style="display: none;">
         <input type="text" id="history-edit-input">
         <button id="save-edit">保存</button>
-        <button id="cancel-edit">取消</button>
     </div>
     <!-- 新版设置模态框 -->
     <div class="modal" id="settings-modal" style="display:none">
@@ -442,7 +441,6 @@
             <div style="margin-top: 15px;">
                 <button id="add-site-row">新增行</button>
                 <button id="save-settings" style="margin-left: 10px;">保存设置</button>
-                <button id="cancel-settings" style="margin-left: 10px;">取消</button>
             </div>
         </div>
     </div>
@@ -517,7 +515,6 @@
         const editHistoryModal = document.getElementById('edit-history-modal');
         const historyEditInput = document.getElementById('history-edit-input');
         const saveEditBtn = document.getElementById('save-edit');
-        const cancelEditBtn = document.getElementById('cancel-edit');
         const errorModal = document.getElementById('error-modal');
         const mobileQuickSearch = document.getElementById('mobile-quick-search');
         const mobileEscBtn = document.getElementById('mobile-esc-btn');
@@ -771,16 +768,13 @@
         historyEditInput.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 e.preventDefault();
-                cancelEditBtn.click();
+                editHistoryModal.style.display = 'none';
+                isEditingHistory = false;
+                currentEditItem = null;
             }
         });
 
-        // 取消编辑历史记录
-        cancelEditBtn.addEventListener('click', () => {
-            editHistoryModal.style.display = 'none';
-            isEditingHistory = false;
-            currentEditItem = null;
-        });
+
         document.addEventListener('click', (e) => {
             // 处理编辑模式
             if (isEditMode && !e.target.closest('.history-item') && e.target !== editHistoryBtn) {
@@ -1168,7 +1162,9 @@
             // e.preventDefault();
             if (isEditMode) {
                 e.preventDefault();
-                cancelEditBtn.click();
+                editHistoryModal.style.display = 'none';
+                isEditingHistory = false;
+                currentEditItem = null;
                 return;
             }
             else if (document.activeElement === searchInput) {
@@ -1742,6 +1738,20 @@
             if (currentEditItem) {
                 historyEditInput.value = keyword;
                 editHistoryModal.style.display = 'block';
+                
+                // 添加点击空白处关闭功能
+                const handleEditModalClick = function(e) {
+                    if (!e.target.closest('.edit-history-modal')) {
+                        editHistoryModal.style.display = 'none';
+                        isEditingHistory = false;
+                        currentEditItem = null;
+                        document.removeEventListener('click', handleEditModalClick);
+                    }
+                };
+                // 延迟添加监听器，避免立即触发
+                setTimeout(() => {
+                    document.addEventListener('click', handleEditModalClick);
+                }, 100);
 
                 // 设置光标位置（使用点击位置计算）
                 setTimeout(() => {
@@ -2211,47 +2221,20 @@
             }
 
             // 显示设置模态框
-            document.getElementById('settings-modal').style.display = 'flex';
+            const settingsModal = document.getElementById('settings-modal');
+            settingsModal.style.display = 'flex';
+            
+            // 添加点击空白处关闭功能
+            const handleSettingsModalClick = function(e) {
+                if (e.target === settingsModal) {
+                    settingsModal.style.display = 'none';
+                    settingsModal.removeEventListener('click', handleSettingsModalClick);
+                }
+            };
+            settingsModal.addEventListener('click', handleSettingsModalClick);
         });
 
-        // 新增行按钮事件
-        document.getElementById('add-site-row').addEventListener('click', () => {
-            const tbody = document.getElementById('sites-table-body');
-            const row = document.createElement('tr');
 
-            const nameCell = document.createElement('td');
-            const nameInput = document.createElement('input');
-            nameInput.type = 'text';
-            nameInput.placeholder = '按钮名称';
-            nameInput.style.width = '100%';
-            nameCell.appendChild(nameInput);
-
-            const siteCell = document.createElement('td');
-            const siteInput = document.createElement('input');
-            siteInput.type = 'text';
-            siteInput.placeholder = 'data-site';
-            siteInput.style.width = '100%';
-            siteCell.appendChild(siteInput);
-
-            const urlCell = document.createElement('td');
-            const urlInput = document.createElement('input');
-            urlInput.type = 'text';
-            urlInput.placeholder = 'URL模板';
-            urlInput.style.width = '100%';
-            urlCell.appendChild(urlInput);
-
-            const actionCell = document.createElement('td');
-            const deleteBtn = document.createElement('button');
-            deleteBtn.textContent = '删除';
-            deleteBtn.addEventListener('click', () => row.remove());
-            actionCell.appendChild(deleteBtn);
-
-            row.appendChild(nameCell);
-            row.appendChild(siteCell);
-            row.appendChild(urlCell);
-            row.appendChild(actionCell);
-            tbody.appendChild(row);
-        });
 
         // ESC键退出设置界面
         document.addEventListener('keydown', (e) => {
@@ -2307,10 +2290,7 @@
             }
         });
 
-        // 取消设置
-        document.getElementById('cancel-settings').addEventListener('click', () => {
-            document.getElementById('settings-modal').style.display = 'none';
-        });
+
 
         // 确保设置按钮事件在DOM加载后绑定
         document.addEventListener('DOMContentLoaded', function () {
@@ -2358,7 +2338,17 @@
                 }
                 
                 // 显示设置模态框
-                document.getElementById('settings-modal').style.display = 'flex';
+                const settingsModal = document.getElementById('settings-modal');
+                settingsModal.style.display = 'flex';
+                
+                // 添加点击空白处关闭功能
+                const handleSettingsModalClick = function(e) {
+                    if (e.target === settingsModal) {
+                        settingsModal.style.display = 'none';
+                        settingsModal.removeEventListener('click', handleSettingsModalClick);
+                    }
+                };
+                settingsModal.addEventListener('click', handleSettingsModalClick);
             });
             
             // 绑定Gitee按钮
@@ -2499,9 +2489,7 @@
                 }
             });
 
-            document.getElementById('cancel-settings').addEventListener('click', function () {
-                document.getElementById('settings-modal').style.display = 'none';
-            });
+
 
             // 同步到Gitee功能 - 复用导出逻辑
             // 同步到Gitee功能 - 完整实现（异步）
@@ -2624,9 +2612,8 @@
                         <label>访问令牌(token):</label>
                         <input type="password" id="gitee-token" value="${config.token || ''}" style="width:100%">
                     </div>
-                    <div style="display:flex;justify-content:space-between">
+                    <div>
                         <button id="save-gitee-config">保存配置</button>
-                        <button id="cancel-gitee-config">取消</button>
                     </div>
                 `;
                 
@@ -2646,9 +2633,21 @@
                     alert('配置已保存!');
                 });
                 
-                box.querySelector('#cancel-gitee-config').addEventListener('click', function() {
-                    document.body.removeChild(modal);
+                // 点击模态框外关闭
+                modal.addEventListener('click', function(e) {
+                    if (e.target === modal) {
+                        document.body.removeChild(modal);
+                    }
                 });
+                
+                // ESC键关闭
+                const handleEscape = function(e) {
+                    if (e.key === 'Escape') {
+                        document.body.removeChild(modal);
+                        document.removeEventListener('keydown', handleEscape);
+                    }
+                };
+                document.addEventListener('keydown', handleEscape);
                 
                 modal.appendChild(box);
                 document.body.appendChild(modal);
