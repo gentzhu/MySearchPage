@@ -159,6 +159,7 @@
         .history-item.selected {
             background-color: #e0e0e0;
         }
+
         #quick-search-hint {
             position: fixed;
             bottom: 20px;
@@ -225,8 +226,10 @@
             padding: 6px 12px;
             margin-right: 5px;
         }
+
         .mobile-quick-search-wrapper {
-            display: flex;            /* 使按钮水平排列 */
+            display: flex;
+            /* 使按钮水平排列 */
             right: 120px;
             /* 调整到历史标题右侧 */
             top: 10px;
@@ -249,18 +252,21 @@
             /* 固定高度 */
             font-size: 14px;
             border: 1px solid #000000;
-            caret-color: transparent; 
+            caret-color: transparent;
             /* 隐藏光标 */
-            }
+        }
+
         @media (device-width>1200px) {
             .mobile-only {
                 display: none !important;
             }
         }
-        @media (max-device-width:1200px){
+
+        @media (max-device-width:1200px) {
             .desktop-only {
                 display: none !important;
             }
+
             .fixed-header {
                 padding: 2px 2px;
             }
@@ -269,6 +275,7 @@
                 padding: 2px 2px;
                 font-size: 16px;
             }
+
             button {
                 padding: 2px 1px;
                 font-size: 14px;
@@ -285,6 +292,7 @@
                 box-shadow: 0 0 0 1px #4a90e2;
             }
         }
+
         #mobile-search-input {
             position: fixed;
             bottom: 3px;
@@ -294,6 +302,7 @@
             opacity: 0;
             pointer-events: none;
         }
+
         .history-title {
             font-weight: bold;
             font-size: 14px;
@@ -372,8 +381,7 @@
             <div class="history-title">搜索历史</div>
             <div class="mobile-quick-search-wrapper mobile-only">
                 <button id="mobile-esc-btn" class="mobile-only button">Esc</button>
-                <input type="text" id="mobile-quick-search" class="mobile-only" autocomplete="off"
-                    spellcheck="false">
+                <input type="text" id="mobile-quick-search" class="mobile-only" autocomplete="off" spellcheck="false">
             </div>
         </div>
     </div>
@@ -493,609 +501,341 @@
         let searchHistory = JSON.parse(localStorage.getItem('searchHistory')) || [];
         renderHistory();
 
-        // 初始化事件监听
-        initEventListeners();
+        // 全局键盘事件（用于快速搜索）
+        document.addEventListener('keydown', handleGlobalKeyDown);
 
-        function initEventListeners() {
-            window.addEventListener('DOMContentLoaded', function () {
-                if (window.innerWidth <= 768) {
-                    mobileQuickSearch.focus();
-                } else {
-                    searchInput.focus();
-                }
+        // 输入框事件
+        searchInput.addEventListener('input', handleInput);
+
+        searchInput.addEventListener('focus', () => {
+            currentFocusElement = searchInput;
+            quickSearchActive = false;
+        });
+
+        // 清空输入框按钮
+        // 修改清空按钮事件监听器
+        clearInputBtn.addEventListener('click', () => {
+            // 清空主搜索框
+            searchInput.value = '';
+            searchInput.focus();
+
+            // 清空快速搜索状态
+            quickSearchKeys = '';
+            updateQuickSearchDisplay();
+            clearMatches();
+
+            // 显示所有元素
+            document.querySelectorAll('.history-item, button[data-site]').forEach(el => {
+                el.style.display = 'inline-block';
             });
-            // 全局键盘事件（用于快速搜索）
-            document.addEventListener('keydown', handleGlobalKeyDown);
+        });
 
-            // 输入框事件
-            searchInput.addEventListener('input', handleInput);
-            searchInput.addEventListener('keydown', handleInputKeyDown);
-            searchInput.addEventListener('focus', () => {
-                currentFocusElement = searchInput;
-                quickSearchActive = false;
-            });
-
-            // 清空输入框按钮
-            // 修改清空按钮事件监听器
-            clearInputBtn.addEventListener('click', () => {
-                // 清空主搜索框
+        // 保存但不搜索按钮
+        saveOnlyBtn.addEventListener('click', () => {
+            const keyword = searchInput.value.trim();
+            if (keyword) {
+                addToHistory(keyword);
                 searchInput.value = '';
-                searchInput.focus();
+            }
+        });
 
-                // 清空快速搜索状态
-                quickSearchKeys = '';
-                updateQuickSearchDisplay();
-                clearMatches();
+        // 编辑历史按钮
+        // 编辑历史按钮
+        editHistoryBtn.addEventListener('click', (e) => {
+            e.preventDefault(); // 新增
+            e.stopPropagation();
+            isEditMode = !isEditMode;
+            editHistoryBtn.textContent = isEditMode ? '退出编辑' : '编辑历史';
+            renderHistory();
+        });
 
-                // 显示所有元素
-                document.querySelectorAll('.history-item, button[data-site]').forEach(el => {
-                    el.style.display = 'inline-block';
-                });
-            });
+        // 导出历史按钮
+        exportHistoryBtn.addEventListener('click', (e) => {
+            e.preventDefault(); // 新增
+            e.stopPropagation(); // 新增
+            exportHistory();
+        });
 
-            // 保存但不搜索按钮
-            saveOnlyBtn.addEventListener('click', () => {
-                const keyword = searchInput.value.trim();
-                if (keyword) {
-                    addToHistory(keyword);
-                    searchInput.value = '';
+        // 导入历史按钮
+        importHistoryBtn.addEventListener('click', (e) => {
+            e.preventDefault(); // 新增
+            e.stopPropagation(); // 新增
+            importHistory();
+        });
+
+        // 批量搜索按钮
+        allSitesBtn.addEventListener('click', () => batchSearch(allSites));
+        commonSitesBtn.addEventListener('click', () => batchSearch(commonSites));
+        foreignSitesBtn.addEventListener('click', () => batchSearch(foreignSites));
+        // 为所有搜索按钮添加事件监听
+        document.querySelectorAll('.btn-group button[data-site], .control-buttons button[data-site]').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const site = button.getAttribute('data-site');
+                if (e.button === 0) { // 左键点击
+                    if (selectedElements.length > 0 && selectedElements.includes(button)) {
+                        toggleSelectElement(button);
+                    } else {
+                        search(site, true);
+                    }
                 }
             });
 
-            // 编辑历史按钮
-            // 编辑历史按钮
-            editHistoryBtn.addEventListener('click', (e) => {
-                e.preventDefault(); // 新增
-                e.stopPropagation();
-                isEditMode = !isEditMode;
-                editHistoryBtn.textContent = isEditMode ? '退出编辑' : '编辑历史';
-                renderHistory();
+            // 右键点击多选
+            button.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                toggleSelectElement(button);
             });
 
-            // 导出历史按钮
-            exportHistoryBtn.addEventListener('click', (e) => {
-                e.preventDefault(); // 新增
-                e.stopPropagation(); // 新增
-                exportHistory();
-            });
-
-            // 导入历史按钮
-            importHistoryBtn.addEventListener('click', (e) => {
-                e.preventDefault(); // 新增
-                e.stopPropagation(); // 新增
-                importHistory();
-            });
-
-            // 批量搜索按钮
-            allSitesBtn.addEventListener('click', () => batchSearch(allSites));
-            commonSitesBtn.addEventListener('click', () => batchSearch(commonSites));
-            foreignSitesBtn.addEventListener('click', () => batchSearch(foreignSites));
-            // 为所有搜索按钮添加事件监听
-            document.querySelectorAll('.btn-group button[data-site], .control-buttons button[data-site]').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    const site = button.getAttribute('data-site');
-                    if (e.button === 0) { // 左键点击
-                        if (selectedElements.length > 0 && selectedElements.includes(button)) {
-                            toggleSelectElement(button);
-                        } else {
-                            search(site, true);
-                        }
-                    }
-                });
-
-                // 右键点击多选
-                button.addEventListener('contextmenu', (e) => {
-                    e.preventDefault();
-                    toggleSelectElement(button);
-                });
-
-                button.addEventListener('focus', () => {
-                    if (!quickSearchActive) {
-                        currentFocusElement = button;
-                        quickSearchKeys = '';
-                        updateQuickSearchDisplay();
-                        clearMatches();
-                    }
-                });
-            });
-
-            // 单独处理编辑历史和导出历史按钮
-            // 单独处理编辑历史和导出历史按钮
-
-            // 保存编辑的历史记录
-            saveEditBtn.addEventListener('click', () => {
-                if (currentEditItem && historyEditInput.value.trim()) {
-                    const oldKeyword = currentEditItem.getAttribute('data-keyword');
-                    const newKeyword = historyEditInput.value.trim();
-                    if (oldKeyword !== newKeyword) {
-                        removeFromHistory(oldKeyword);
-                        addToHistory(newKeyword);
-                    }
-                    editHistoryModal.style.display = 'none';
-                    isEditingHistory = false;
-                    currentEditItem = null;
+            button.addEventListener('focus', () => {
+                if (!quickSearchActive) {
+                    currentFocusElement = button;
+                    quickSearchKeys = '';
+                    updateQuickSearchDisplay();
+                    clearMatches();
                 }
             });
+        });
 
-            // 取消编辑历史记录
-            cancelEditBtn.addEventListener('click', () => {
+        // 单独处理编辑历史和导出历史按钮
+        // 单独处理编辑历史和导出历史按钮
+
+        // 保存编辑的历史记录
+        saveEditBtn.addEventListener('click', () => {
+            if (currentEditItem && historyEditInput.value.trim()) {
+                const oldKeyword = currentEditItem.getAttribute('data-keyword');
+                const newKeyword = historyEditInput.value.trim();
+                if (oldKeyword !== newKeyword) {
+                    removeFromHistory(oldKeyword);
+                    addToHistory(newKeyword);
+                }
                 editHistoryModal.style.display = 'none';
                 isEditingHistory = false;
                 currentEditItem = null;
-            });
-            document.addEventListener('click', (e) => {
-                // 处理编辑模式
-                if (isEditMode && !e.target.closest('.history-item') && e.target !== editHistoryBtn) {
-                    isEditMode = false;
-                    editHistoryBtn.textContent = '编辑历史';
-                    renderHistory();
-                }
+            }
+        });
 
-                // 关闭编辑模态框
-                if (isEditingHistory && !e.target.closest('#edit-history-modal') && e.target !== editHistoryBtn) {
-                    editHistoryModal.style.display = 'none';
-                    isEditingHistory = false;
-                    currentEditItem = null;
-                }
-
-                // 点击空白处处理
-                if (!e.target.closest('button, input, .history-item, #quick-search-hint')) {
-                    if (document.activeElement === searchInput) {
-                        searchInput.blur();
-                    }
-                    if (quickSearchActive) {
-                        quickSearchKeys = '';
-                        updateQuickSearchDisplay();
-                        clearMatches();
-                        quickSearchActive = false;
-                        showAllHistoryItems();
-                    }
-                }
-                // 移动端快速搜索处理
-                // 移动端快速搜索处理
-
-
-                // ESC按钮处理
-                document.getElementById('mobile-esc-btn').addEventListener('click', function (e) {
-                    e.stopPropagation();
-
-                    // 第一段：清空搜索框
-                    if (mobileQuickSearch.value) {
-                        mobileQuickSearch.value = '';
-                        quickSearchKeys = '';
-                        updateQuickSearchDisplay();
-                        clearMatches();
-                        showAllHistoryItems();
-                        return;
-                    }
-
-                    // 第二段：取消匹配状态
-                    if (document.querySelector('.highlight')) {
-                        clearMatches();
-                        showAllHistoryItems();
-                        return;
-                    }
-
-                    // 第三段：关闭输入法
-                    if (document.activeElement === mobileQuickSearch) {
-                        mobileQuickSearch.blur();
-                    }
-                });
-
-                // 3. 修复电脑窄屏快速定位
-                if (mobileQuickSearch) {
-                    mobileQuickSearch.addEventListener('input', function () {
-                        // 在窄屏下也执行快速搜索
-                        if (window.innerWidth <= 1200) {
-                            quickSearchKeys = this.value.toLowerCase();
-                            updateQuickSearchDisplay();
-                            performQuickSearch();
-                        }
-                    });
-                }
-
-                // 4. 修复清空搜索框快捷键
-                // 修改全局键盘事件处理
-
-                // 在全局键盘事件中修改ESC处理
-                document.addEventListener('keydown', function (e) {
-                    // ... 其他代码 ...
-
-                    // ESC键处理
-                    if (e.key === 'Escape') {
-                        e.preventDefault();
-
-                        // 第一次按ESC：清空快速搜索状态
-                        if (quickSearchKeys || document.querySelector('.highlight')) {
-                            quickSearchKeys = '';
-                            updateQuickSearchDisplay();
-                            clearMatches();
-
-                            // 显示所有元素
-                            document.querySelectorAll('.history-item, button[data-site]').forEach(el => {
-                                el.style.display = 'inline-block';
-                            });
-
-                            return;
-                        }
-
-                        // 第二次按ESC：退出输入法
-                        if (document.activeElement === searchInput) {
-                            searchInput.blur();
-                        }
-                        if (document.activeElement === mobileQuickSearch) {
-                            mobileQuickSearch.blur();
-                        }
-
-                        return;
-                    }
-
-                    // ... 其他代码 ...
-                });
-                // 5. 页面加载时自动聚焦
-                window.addEventListener('DOMContentLoaded', function () {
-                    if (window.innerWidth <= 768) {
-                        mobileQuickSearch.focus();
-                    } else {
-                        searchInput.focus();
-                    }
-                });
-
-            });
-            // 点击空白处退出编辑模式或关闭模态框
-            function focusQuickSearch() {
-                if (window.innerWidth <= 768 && mobileQuickSearch) {
-                    mobileQuickSearch.focus();
-                }
+        // 取消编辑历史记录
+        cancelEditBtn.addEventListener('click', () => {
+            editHistoryModal.style.display = 'none';
+            isEditingHistory = false;
+            currentEditItem = null;
+        });
+        document.addEventListener('click', (e) => {
+            // 处理编辑模式
+            if (isEditMode && !e.target.closest('.history-item') && e.target !== editHistoryBtn) {
+                isEditMode = false;
+                editHistoryBtn.textContent = '编辑历史';
+                renderHistory();
             }
 
-            // 初始化时立即聚焦
-            focusQuickSearch();
-            setTimeout(() => {
-                if (window.innerWidth <= 768 && mobileQuickSearch) {
-                    mobileQuickSearch.focus();
-
-                    setTimeout(() => {
-                        mobileQuickSearch.style.color = '';
-                    }, 100);
-                }
-            }, 100);
-            // 点击空白处时重新聚焦
-            // 替换现有的点击空白处事件监听器
-
-            // 添加失焦事件监听器
-            mobileQuickSearch.addEventListener('blur', function () {
-                isInputMethodActive = false;
-            });
-            // 替换现有的点击空白处事件监听器
-            document.addEventListener('click', function (e) {
-                // 处理编辑模式等...
-
-                // 点击空白处处理输入法
-                if (!e.target.closest('button, input, .history-item, #quick-search-hint')) {
-                    // 移动端处理
-                    if (window.innerWidth <= 768) {
-                        // 第一次点击：聚焦并弹出输入法
-                        if (!isInputMethodActive) {
-                            mobileQuickSearch.focus();
-                            isInputMethodActive = true;
-                        }
-                        // 第二次点击：关闭输入法
-                        else {
-                            mobileQuickSearch.blur();
-                            isInputMethodActive = false;
-                        }
-                    }
-                    // 电脑端处理
-                    else {
-                        if (document.activeElement === searchInput) {
-                            searchInput.blur();
-                        }
-                    }
-                }
-            });
-
-            // 添加输入框失焦事件
-            mobileQuickSearch.addEventListener('blur', function () {
-                isInputMethodActive = false;
-            });
-            // 移动端快速搜索处理
-            if (mobileQuickSearch) {
-                mobileQuickSearch.addEventListener('input', function () {
-                    const keywords = this.value.toLowerCase().split(/\s+/).filter(Boolean);
-                    if (window.innerWidth <= 1200) { // 匹配CSS媒体查询条件
-                        quickSearchKeys = this.value.toLowerCase();
-                        performQuickSearch();
-                    }
-                    if (keywords.length === 0) {
-                        showAllHistoryItems();
-                        return;
-                    }
-
-                    document.querySelectorAll('.history-item, button').forEach(element => {
-                        const text = element.textContent.toLowerCase();
-                        const pinyin = getPinyinInitials(text);
-                        let isMatch = true;
-
-                        // 检查每个关键词是否匹配（支持不连续匹配）
-                        for (const keyword of keywords) {
-                            if (!text.includes(keyword) && !pinyin.includes(keyword)) {
-                                isMatch = false;
-                                break;
-                            }
-                        }
-
-                        if (isMatch) {
-                            element.classList.add('highlight');
-                            if (element.classList.contains('history-item')) {
-                                element.style.display = 'inline-block';
-                            }
-                        } else {
-                            element.classList.remove('highlight');
-                            if (element.classList.contains('history-item')) {
-                                element.style.display = 'none';
-                            }
-                        }
-                    });
-                });
-
-                // 空格键处理（不中断搜索）
-                mobileQuickSearch.addEventListener('keydown', function (e) {
-                    if (e.key === ' ') {
-                        e.preventDefault(); // 阻止默认空格行为
-                        this.value += ' '; // 手动添加空格
-                        this.dispatchEvent(new Event('input')); // 触发搜索
-                    } else if (e.key === 'Enter') {
-                        const firstMatch = document.querySelector('.highlight.history-item, .highlight[data-site]');
-                        if (firstMatch) {
-                            searchInput.value = firstMatch.textContent;
-                            searchInput.focus();
-                        }
-                    }
-                });
-                // ESC按钮处理
-                // 替换现有的 mobileEscBtn 事件监听器
-                // 替换现有的 mobileEscBtn 事件监听器
-                mobileEscBtn.addEventListener('click', function (e) {
-                    e.stopPropagation();
-
-                    // 第一次点击：清空搜索框和匹配状态
-                    if (mobileQuickSearch.value || document.querySelector('.highlight')) {
-                        mobileQuickSearch.value = '';
-                        quickSearchKeys = '';
-                        updateQuickSearchDisplay();
-                        clearMatches();
-
-                        // 显示所有历史项和按钮
-                        document.querySelectorAll('.history-item, button[data-site]').forEach(el => {
-                            el.style.display = 'inline-block';
-                        });
-
-                        return;
-                    }
-
-                    // 第二次点击：退出输入法
-                    if (document.activeElement === mobileQuickSearch) {
-                        mobileQuickSearch.blur();
-                    }
-                })
+            // 关闭编辑模态框
+            if (isEditingHistory && !e.target.closest('#edit-history-modal') && e.target !== editHistoryBtn) {
+                editHistoryModal.style.display = 'none';
+                isEditingHistory = false;
+                currentEditItem = null;
             }
 
-            // 简化版显示所有历史项
-            function showAllHistoryItems() {
-                document.querySelectorAll('.history-item').forEach(item => {
-                    item.style.display = 'inline-block';
-                });
-            }
-
-            // 全局键盘事件
-            document.addEventListener('keydown', (e) => {
-                // 处理编辑模态框内的按键
-                if (isEditingHistory) {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        saveEditBtn.click();
-                        return;
-                    }
-                    if ((e.key === 'F8' || (e.ctrlKey && e.key === 'Delete'))) {
-                        e.preventDefault();
-                        searchInput.value = '';
-                        searchInput.focus();
-                    }
-
-                    if (e.key === 'Escape') {
-                        e.preventDefault();
-                        cancelEditBtn.click();
-                        return;
-                    }
-                    return;
+            // 点击空白处处理
+            if (!e.target.closest('button, input, .history-item, #quick-search-hint')) {
+                if (document.activeElement === searchInput) {
+                    searchInput.blur();
                 }
-
-                // F7聚焦输入框
-                if (e.key === 'F7') {
-                    e.preventDefault();
-                    searchInput.focus();
-                    return;
-                }
-
-                // 处理控制按钮的Enter键
-                const controlButtons = ['save-only', 'all-sites', 'common-sites', 'foreign-sites',
-                    'edit-history', 'export-history', 'import-history'];
-                if (e.key === 'Enter' && currentFocusElement && controlButtons.includes(currentFocusElement.id)) {
-                    e.preventDefault();
-                    currentFocusElement.click();
-                    return;
-                }
-
-                // 处理多选后的Enter键
-                if (e.key === 'Enter' && selectedElements.length > 0) {
-                    e.preventDefault();
-                    const sites = selectedElements.map(el => el.getAttribute('data-site')).filter(site => site);
-                    if (sites.length > 0) {
-                        batchSearch(sites);
-                    }
-                    return;
-                }
-
-                // ESC退出输入框或多选模式
-                // ESC只处理快速搜索
-                if (e.key === 'Escape' && quickSearchKeys) {
-                    e.preventDefault();
+                if (quickSearchActive) {
                     quickSearchKeys = '';
                     updateQuickSearchDisplay();
                     clearMatches();
                     quickSearchActive = false;
                     showAllHistoryItems();
-                    return;
                 }
+            }
+            // 移动端ESC按钮处理
+            document.getElementById('mobile-esc-btn').addEventListener('click', function (e) {
+                e.stopPropagation();
 
-                // 方向键导航
-                if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
-                    // 如果焦点在输入框且是左右方向键，不阻止默认行为
-                    if (document.activeElement === searchInput && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
-                        return;
-                    }
-
-                    e.preventDefault();
-                    navigateWithArrowKeys(e.key);
-                    return;
-                }
-
-                // 空格选择当前元素
-                if (e.key === ' ' && !quickSearchActive && currentFocusElement && currentFocusElement.tagName === 'BUTTON') {
-                    e.preventDefault();
-                    toggleSelectElement(currentFocusElement);
-                    return;
-                } else if (e.key.length === 1 && (!quickSearchActive || e.key !== ' ') && /[a-z0-9\W]/i.test(e.key)) {
-                    e.preventDefault();
-                    quickSearchActive = true;
-                    quickSearchKeys += e.key.toLowerCase();
+                // 第一段：清空搜索框
+                if (mobileQuickSearch.value) {
+                    mobileQuickSearch.value = '';
+                    quickSearchKeys = '';
                     updateQuickSearchDisplay();
-                    performQuickSearch();
-                }
-
-                // Enter键执行操作
-                // Enter键执行操作
-                if (e.key === 'Enter' && currentFocusElement) {
-                    e.preventDefault();
-                    if (quickSearchActive && matchedItems.length > 0) {
-                        searchInput.value = matchedItems[0].element.textContent;
-                        searchInput.focus();
-                    } else if (currentFocusElement === searchInput) {
-                        const defaultSites = ['bing', 'baidu', 'google'];
-                        batchSearch(defaultSites);
-                    } else if (currentFocusElement.classList.contains('history-item')) {
-                        const keyword = currentFocusElement.getAttribute('data-keyword');
-                        searchInput.value = keyword;
-                        searchInput.focus();
-                    } else if (currentFocusElement.hasAttribute('data-site')) {
-                        const site = currentFocusElement.getAttribute('data-site');
-                        search(site, true);
-                    }
+                    clearMatches();
+                    showAllHistoryItems();
                     return;
                 }
 
-                // F2编辑历史记录
-                if (e.key === 'F2' && currentFocusElement && currentFocusElement.classList.contains('history-item')) {
-                    e.preventDefault();
-                    const keyword = currentFocusElement.getAttribute('data-keyword');
-                    editHistoryItem(keyword);
+                // 第二段：取消匹配状态
+                if (document.querySelector('.highlight')) {
+                    clearMatches();
+                    showAllHistoryItems();
                     return;
                 }
 
-                // Delete或F4删除选中的历史记录
-                if ((e.key === 'Delete' || e.key === 'F4') && selectedElements.length > 0) {
-                    e.preventDefault();
-                    deleteSelectedHistoryItems();
-                    return;
-                }
-
-                // Ctrl+Z撤销删除
-                if (e.key === 'z' && e.ctrlKey && lastDeletedItems.length > 0) {
-                    e.preventDefault();
-                    undoDelete();
-                    return;
+                // 第三段：关闭输入法
+                if (document.activeElement === mobileQuickSearch) {
+                    mobileQuickSearch.blur();
                 }
             });
+
+            // 3. 修复电脑窄屏快速定位
+            if (mobileQuickSearch) {
+                mobileQuickSearch.addEventListener('input', function () {
+                    // 在窄屏下也执行快速搜索
+                    if (window.innerWidth <= 1200) {
+                        quickSearchKeys = this.value.toLowerCase();
+                        updateQuickSearchDisplay();
+                        performQuickSearch();
+                    }
+                });
+            }
+            // 4. 修复清空搜索框快捷键
+            // 5. 页面加载时自动聚焦
+            window.addEventListener('DOMContentLoaded', function () {
+                searchInput.focus();
+            });
+        });
+        // 点击空白处退出编辑模式或关闭模态框
+        function focusQuickSearch() {
+            if (window.innerWidth <= 768 && mobileQuickSearch) {
+                mobileQuickSearch.focus();
+            }
+        }
+        // 初始化时立即聚焦
+        focusQuickSearch();
+        setTimeout(() => {
+            if (window.innerWidth <= 768 && mobileQuickSearch) {
+                mobileQuickSearch.focus();
+
+                setTimeout(() => {
+                    mobileQuickSearch.style.color = '';
+                }, 100);
+            }
+        }, 100);
+
+        // 替换现有的点击空白处事件监听器
+        document.addEventListener('click', function (e) {
+            // 处理编辑模式等...
+
+            // 点击空白处处理输入法
+            if (!e.target.closest('button, input, .history-item, #quick-search-hint')) {
+                // 移动端处理
+                if (window.innerWidth <= 768) {
+                    // 第一次点击：聚焦并弹出输入法
+                    if (!isInputMethodActive) {
+                        mobileQuickSearch.focus();
+                        isInputMethodActive = true;
+                    }
+                    // 第二次点击：关闭输入法
+                    else {
+                        mobileQuickSearch.blur();
+                        isInputMethodActive = false;
+                    }
+                }
+                // 电脑端处理
+                else {
+                    if (document.activeElement === searchInput) {
+                        searchInput.blur();
+                    }
+                }
+            }
+        });
+
+        // 添加输入框失焦事件
+        mobileQuickSearch.addEventListener('blur', function () {
+            isInputMethodActive = false;
+        });
+        // 移动端快速搜索处理
+        if (mobileQuickSearch) {
+            mobileQuickSearch.addEventListener('input', function () {
+                const keywords = this.value.toLowerCase().split(/\s+/).filter(Boolean);
+                if (window.innerWidth <= 1200) { // 匹配CSS媒体查询条件
+                    quickSearchKeys = this.value.toLowerCase();
+                    performQuickSearch();
+                }
+                if (keywords.length === 0) {
+                    showAllHistoryItems();
+                    return;
+                }
+
+                document.querySelectorAll('.history-item, button').forEach(element => {
+                    const text = element.textContent.toLowerCase();
+                    const pinyin = getPinyinInitials(text);
+                    let isMatch = true;
+
+                    // 检查每个关键词是否匹配（支持不连续匹配）
+                    for (const keyword of keywords) {
+                        if (!text.includes(keyword) && !pinyin.includes(keyword)) {
+                            isMatch = false;
+                            break;
+                        }
+                    }
+
+                    if (isMatch) {
+                        element.classList.add('highlight');
+                        if (element.classList.contains('history-item')) {
+                            element.style.display = 'inline-block';
+                        }
+                    } else {
+                        element.classList.remove('highlight');
+                        if (element.classList.contains('history-item')) {
+                            element.style.display = 'none';
+                        }
+                    }
+                });
+            });
+
+            // 空格键处理（不中断搜索）
+            mobileQuickSearch.addEventListener('keydown', function (e) {
+                if (e.key === ' ') {
+                    e.preventDefault(); // 阻止默认空格行为
+                    this.value += ' '; // 手动添加空格
+                    this.dispatchEvent(new Event('input')); // 触发搜索
+                } else if (e.key === 'Enter') {
+                    const firstMatch = document.querySelector('.highlight.history-item, .highlight[data-site]');
+                    if (firstMatch) {
+                        searchInput.value = firstMatch.textContent;
+                        searchInput.focus();
+                    }
+                }
+            });
+            // ESC按钮处理
+            // 替换现有的 mobileEscBtn 事件监听器
+            // 替换现有的 mobileEscBtn 事件监听器
+            mobileEscBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+
+                // 第一次点击：清空搜索框和匹配状态
+                if (mobileQuickSearch.value || document.querySelector('.highlight')) {
+                    mobileQuickSearch.value = '';
+                    quickSearchKeys = '';
+                    updateQuickSearchDisplay();
+                    clearMatches();
+
+                    // 显示所有历史项和按钮
+                    document.querySelectorAll('.history-item, button[data-site]').forEach(el => {
+                        el.style.display = 'inline-block';
+                    });
+
+                    return;
+                }
+
+                // 第二次点击：退出输入法
+                if (document.activeElement === mobileQuickSearch) {
+                    mobileQuickSearch.blur();
+                }
+            })
         }
 
+        // 简化版显示所有历史项
+        function showAllHistoryItems() {
+            document.querySelectorAll('.history-item').forEach(item => {
+                item.style.display = 'inline-block';
+            });
+        }
         // 新版快速搜索触摸处理
 
         // 清除选中状态
         function clearSelection() {
             selectedElements.forEach(el => el.classList.remove('selected'));
             selectedElements = [];
-        }
-
-        // 显示错误弹窗
-        function showErrorModal() {
-            errorModal.style.display = 'flex';
-            setTimeout(() => {
-                errorModal.style.display = 'none';
-            }, 2000);
-        }
-
-        // 输入框键盘事件处理
-        function handleInputKeyDown(e) {
-            // 此  函数现在为空，因为Enter键处理已移到全局键盘事件
-        }
-
-        // 改进的方向键导航
-        function navigateWithArrowKeys(key) {
-            const allElements = Array.from(document.querySelectorAll('button, .history-item, input'));
-            const currentIndex = allElements.indexOf(currentFocusElement);
-
-            if (currentIndex === -1) {
-                const firstFocusable = document.querySelector('button, .history-item, input');
-                if (firstFocusable) {
-                    firstFocusable.focus();
-                    currentFocusElement = firstFocusable;
-                }
-                return;
-            }
-
-            const currentRect = currentFocusElement.getBoundingClientRect();
-            let bestCandidate = null;
-            let minDistance = Infinity;
-
-            allElements.forEach((el, index) => {
-                if (index === currentIndex) return;
-
-                const rect = el.getBoundingClientRect();
-                let isCandidate = false;
-                let distance = 0;
-
-                if (key === 'ArrowDown') {
-                    isCandidate = rect.top > currentRect.bottom - 5;
-                    distance = Math.sqrt(
-                        Math.pow(rect.left - currentRect.left, 2) +
-                        Math.pow(rect.top - currentRect.bottom, 2)
-                    );
-                } else if (key === 'ArrowUp') {
-                    isCandidate = rect.bottom < currentRect.top + 5;
-                    distance = Math.sqrt(
-                        Math.pow(rect.left - currentRect.left, 2) +
-                        Math.pow(currentRect.top - rect.bottom, 2)
-                    );
-                } else if (key === 'ArrowLeft') {
-                    isCandidate = index < currentIndex;
-                    distance = currentIndex - index;
-                } else if (key === 'ArrowRight') {
-                    isCandidate = index > currentIndex;
-                    distance = index - currentIndex;
-                }
-
-                if (isCandidate && distance < minDistance) {
-                    minDistance = distance;
-                    bestCandidate = el;
-                }
-            });
-
-            if (bestCandidate) {
-                bestCandidate.focus();
-                currentFocusElement = bestCandidate;
-                bestCandidate.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }
         }
 
         // 切换元素选中状态
@@ -1109,54 +849,7 @@
             }
         }
 
-        // 删除选中的历史记录
-        function deleteSelectedHistoryItems() {
-            const itemsToDelete = selectedElements.filter(el => el.classList.contains('history-item'));
-            if (itemsToDelete.length === 0) return;
-
-            lastDeletedItems = itemsToDelete.map(item => ({
-                keyword: item.getAttribute('data-keyword'),
-                element: item
-            }));
-
-            itemsToDelete.forEach(item => {
-                const keyword = item.getAttribute('data-keyword');
-                removeFromHistory(keyword);
-            });
-
-            selectedElements = selectedElements.filter(el => !el.classList.contains('history-item'));
-
-            if (itemsToDelete.length > 0) {
-                const firstDeleted = itemsToDelete[0];
-                const allItems = Array.from(document.querySelectorAll('.history-item, button'));
-                const index = allItems.indexOf(firstDeleted);
-
-                const nextFocus = allItems[index - 1] || allItems[index + 1] || searchInput;
-                if (nextFocus) {
-                    nextFocus.focus();
-                    currentFocusElement = nextFocus;
-                }
-            }
-        }
-
-        // 撤销删除
-        function undoDelete() {
-            if (lastDeletedItems.length === 0) return;
-
-            lastDeletedItems.forEach(item => {
-                if (!searchHistory.includes(item.keyword)) {
-                    searchHistory.unshift(item.keyword);
-                }
-            });
-
-            localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
-            renderHistory();
-            lastDeletedItems = [];
-        }
-
         // 全局键盘事件处理（快速搜索）
-        // 全局键盘事件处理（快速搜索）
-        // 修改全局键盘事件处理
         function handleGlobalKeyDown(e) {
             if (e.key === 'Escape' && document.activeElement === searchInput) {
                 e.preventDefault();
@@ -1227,6 +920,158 @@
                     matchedItems[0].element.focus();
                     currentFocusElement = matchedItems[0].element;
                 }
+                return;
+            }
+                if (e.key === 'Escape') {
+                e.preventDefault();
+
+                // 第一次按ESC：清空快速搜索状态
+                if (quickSearchKeys || document.querySelector('.highlight')) {
+                    quickSearchKeys = '';
+                    updateQuickSearchDisplay();
+                    clearMatches();
+
+                    // 显示所有元素
+                    document.querySelectorAll('.history-item, button[data-site]').forEach(el => {
+                        el.style.display = 'inline-block';
+                    });
+
+                    return;
+                }
+
+                // 第二次按ESC：退出输入法
+                if (document.activeElement === searchInput) {
+                    searchInput.blur();
+                }
+                if (document.activeElement === mobileQuickSearch) {
+                    mobileQuickSearch.blur();
+                }
+
+                return;
+                }
+                if (isEditingHistory) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    saveEditBtn.click();
+                    return;
+                }
+                if ((e.key === 'F8' || (e.ctrlKey && e.key === 'Delete'))) {
+                    e.preventDefault();
+                    searchInput.value = '';
+                    searchInput.focus();
+                }
+
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    cancelEditBtn.click();
+                    return;
+                }
+                return;
+            }
+
+            // F7聚焦输入框
+            if (e.key === 'F7') {
+                e.preventDefault();
+                searchInput.focus();
+                return;
+            }
+
+            // 处理控制按钮的Enter键
+            const controlButtons = ['save-only', 'all-sites', 'common-sites', 'foreign-sites',
+                'edit-history', 'export-history', 'import-history'];
+            if (e.key === 'Enter' && currentFocusElement && controlButtons.includes(currentFocusElement.id)) {
+                e.preventDefault();
+                currentFocusElement.click();
+                return;
+            }
+
+            // 处理多选后的Enter键
+            if (e.key === 'Enter' && selectedElements.length > 0) {
+                e.preventDefault();
+                const sites = selectedElements.map(el => el.getAttribute('data-site')).filter(site => site);
+                if (sites.length > 0) {
+                    batchSearch(sites);
+                }
+                return;
+            }
+
+            // ESC退出输入框或多选模式
+            // ESC只处理快速搜索
+            if (e.key === 'Escape' && quickSearchKeys) {
+                e.preventDefault();
+                quickSearchKeys = '';
+                updateQuickSearchDisplay();
+                clearMatches();
+                quickSearchActive = false;
+                showAllHistoryItems();
+                return;
+            }
+
+            // 方向键导航
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                // 如果焦点在输入框且是左右方向键，不阻止默认行为
+                if (document.activeElement === searchInput && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+                    return;
+                }
+
+                e.preventDefault();
+                navigateWithArrowKeys(e.key);
+                return;
+            }
+
+            // 空格选择当前元素
+            if (e.key === ' ' && !quickSearchActive && currentFocusElement && currentFocusElement.tagName === 'BUTTON') {
+                e.preventDefault();
+                toggleSelectElement(currentFocusElement);
+                return;
+            } else if (e.key.length === 1 && (!quickSearchActive || e.key !== ' ') && /[a-z0-9\W]/i.test(e.key)) {
+                e.preventDefault();
+                quickSearchActive = true;
+                quickSearchKeys += e.key.toLowerCase();
+                updateQuickSearchDisplay();
+                performQuickSearch();
+            }
+
+            // Enter键执行操作
+            // Enter键执行操作
+            if (e.key === 'Enter' && currentFocusElement) {
+                e.preventDefault();
+                if (quickSearchActive && matchedItems.length > 0) {
+                    searchInput.value = matchedItems[0].element.textContent;
+                    searchInput.focus();
+                } else if (currentFocusElement === searchInput) {
+                    const defaultSites = ['bing', 'baidu', 'google'];
+                    batchSearch(defaultSites);
+                } else if (currentFocusElement.classList.contains('history-item')) {
+                    const keyword = currentFocusElement.getAttribute('data-keyword');
+                    searchInput.value = keyword;
+                    searchInput.focus();
+                } else if (currentFocusElement.hasAttribute('data-site')) {
+                    const site = currentFocusElement.getAttribute('data-site');
+                    search(site, true);
+                }
+                return;
+            }
+
+            // F2编辑历史记录
+            if (e.key === 'F2' && currentFocusElement && currentFocusElement.classList.contains('history-item')) {
+                e.preventDefault();
+                const keyword = currentFocusElement.getAttribute('data-keyword');
+                editHistoryItem(keyword);
+                return;
+            }
+
+            // Delete或F4删除选中的历史记录
+            if ((e.key === 'Delete' || e.key === 'F4') && selectedElements.length > 0) {
+                e.preventDefault();
+                deleteSelectedHistoryItems();
+                return;
+            }
+
+            // Ctrl+Z撤销删除
+            if (e.key === 'z' && e.ctrlKey && lastDeletedItems.length > 0) {
+                e.preventDefault();
+                undoDelete();
                 return;
             }
         }
@@ -1649,6 +1494,115 @@
                 element.classList.add('selected');
                 selectedElements = selectedElements.filter(el => el !== element);
             }
+        }
+        // 删除选中的历史记录
+        function deleteSelectedHistoryItems() {
+            const itemsToDelete = selectedElements.filter(el => el.classList.contains('history-item'));
+            if (itemsToDelete.length === 0) return;
+
+            lastDeletedItems = itemsToDelete.map(item => ({
+                keyword: item.getAttribute('data-keyword'),
+                element: item
+            }));
+
+            itemsToDelete.forEach(item => {
+                const keyword = item.getAttribute('data-keyword');
+                removeFromHistory(keyword);
+            });
+
+            selectedElements = selectedElements.filter(el => !el.classList.contains('history-item'));
+
+            if (itemsToDelete.length > 0) {
+                const firstDeleted = itemsToDelete[0];
+                const allItems = Array.from(document.querySelectorAll('.history-item, button'));
+                const index = allItems.indexOf(firstDeleted);
+
+                const nextFocus = allItems[index - 1] || allItems[index + 1] || searchInput;
+                if (nextFocus) {
+                    nextFocus.focus();
+                    currentFocusElement = nextFocus;
+                }
+            }
+        }
+
+                // 显示错误弹窗
+        function showErrorModal() {
+            errorModal.style.display = 'flex';
+            setTimeout(() => {
+                errorModal.style.display = 'none';
+            }, 2000);
+        }
+        // 改进的方向键导航
+        function navigateWithArrowKeys(key) {
+            const allElements = Array.from(document.querySelectorAll('button, .history-item, input'));
+            const currentIndex = allElements.indexOf(currentFocusElement);
+
+            if (currentIndex === -1) {
+                const firstFocusable = document.querySelector('button, .history-item, input');
+                if (firstFocusable) {
+                    firstFocusable.focus();
+                    currentFocusElement = firstFocusable;
+                }
+                return;
+            }
+
+            const currentRect = currentFocusElement.getBoundingClientRect();
+            let bestCandidate = null;
+            let minDistance = Infinity;
+
+            allElements.forEach((el, index) => {
+                if (index === currentIndex) return;
+
+                const rect = el.getBoundingClientRect();
+                let isCandidate = false;
+                let distance = 0;
+
+                if (key === 'ArrowDown') {
+                    isCandidate = rect.top > currentRect.bottom - 5;
+                    distance = Math.sqrt(
+                        Math.pow(rect.left - currentRect.left, 2) +
+                        Math.pow(rect.top - currentRect.bottom, 2)
+                    );
+                } else if (key === 'ArrowUp') {
+                    isCandidate = rect.bottom < currentRect.top + 5;
+                    distance = Math.sqrt(
+                        Math.pow(rect.left - currentRect.left, 2) +
+                        Math.pow(currentRect.top - rect.bottom, 2)
+                    );
+                } else if (key === 'ArrowLeft') {
+                    isCandidate = index < currentIndex;
+                    distance = currentIndex - index;
+                } else if (key === 'ArrowRight') {
+                    isCandidate = index > currentIndex;
+                    distance = index - currentIndex;
+                }
+
+                if (isCandidate && distance < minDistance) {
+                    minDistance = distance;
+                    bestCandidate = el;
+                }
+            });
+
+            if (bestCandidate) {
+                bestCandidate.focus();
+                currentFocusElement = bestCandidate;
+                bestCandidate.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+
+        // 撤销删除
+function undoDelete() {
+            if (lastDeletedItems.length === 0) return;
+
+            lastDeletedItems.forEach(item => {
+                if (!searchHistory.includes(item.keyword)) {
+                    searchHistory.unshift(item.keyword);
+                }
+            });
+
+            localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
+            renderHistory();
+            lastDeletedItems = [];
         }
     </script>
 </body>
