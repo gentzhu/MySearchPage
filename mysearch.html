@@ -1063,6 +1063,7 @@
             if ((e.key === 'F8' || (e.ctrlKey && e.key === 'Delete'))) {
                 e.preventDefault();
                 searchInput.value = '';
+                searchInput.focus();
             }
 
             // Ctrl+Z撤销删除
@@ -1121,7 +1122,7 @@
                 return;
             }
             // 获取所有可搜索元素
-            const allElements = document.querySelectorAll('button[data-site], .history-item');
+            const allElements = document.querySelectorAll('.history-item, button[data-site], .control-buttons button');
             
             // 先显示所有历史项
             showAllHistoryItems();
