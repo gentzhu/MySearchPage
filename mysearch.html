@@ -263,6 +263,14 @@
             padding: 20px;
             border-radius: 5px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            color: #333; /* 确保文字颜色为深色 */
+        }
+        
+        .modal-content p {
+            color: #333; /* 确保段落文字颜色为深色 */
+            margin: 0;
+            text-align: center;
+            font-size: 16px;
         }
 
         .edit-history-modal {
@@ -663,7 +671,6 @@
 
     <div class="edit-history-modal" id="edit-history-modal" style="display: none;">
         <input type="text" id="history-edit-input">
-        <button id="save-edit">保存</button>
     </div>
     <!-- 新版设置模态框 -->
     <div class="modal" id="settings-modal" style="display:none" tabindex="-1">
@@ -676,9 +683,12 @@
             </div>
 
             <!-- 操作按钮（移动到上面） -->
-            <div id="settings-actions" style="margin-bottom: 4px; display: flex; gap: 2px; flex-wrap: wrap; max-height: 40px; overflow: hidden;">
+            <div id="settings-actions" style="margin-bottom: 4px; display: flex; gap: 2px; flex-wrap: wrap;">
                 <button id="add-site-row">新增行</button>
-                <button id="save-settings">保存设置</button>
+                <button id="delete-selected-rows">删除选中</button>
+                <button id="save-settings">保存并关闭</button>
+                <button id="toggle-context">右键开关</button>
+                <button id="toggle-require">单开开关</button>
                 <button id="upload-sites-config">上传网站配置</button>
                 <button id="download-sites-config">下载网站配置</button>
                 <button id="export-config">导出配置文件</button>
@@ -691,14 +701,18 @@
                 <colgroup>
                     <col style="width: 25%">
                     <col style="width: 20%">
-                    <col style="width: 40%">
-                    <col style="width: 15%">
+                    <col style="width: 35%">
+                    <col style="width: 7%">
+                    <col style="width: 8%">
+                    <col style="width: 5%">
                 </colgroup>
                 <thead>
                     <tr>
                         <th>按钮名称</th>
                         <th>Data-site</th>
                         <th>Site Urls</th>
+                        <th>右键</th>
+                        <th>单开</th>
                         <th>操作</th>
                     </tr>
                 </thead>
@@ -716,6 +730,10 @@
     <script>
         // 当前网站配置（从IndexedDB加载）
         let siteUrls = {};
+        // 站点额外标志（右键/单开）
+        let siteFlags = {}; // { [dataSite]: { rightClick: boolean, requireKeyword: boolean } }
+        // 最近一次按钮配置（含标志）
+        let buttonConfigState = [];
 
         // IndexedDB 数据库管理类
         class SiteConfigDB {
@@ -1093,7 +1111,14 @@
                 const config = await siteConfigDB.loadConfig();
                 if (config && config.siteUrls && config.buttonConfig) {
                     siteUrls = config.siteUrls;
-                    applyButtonConfig(config.buttonConfig);
+                    // 恢复按钮配置与站点标志
+                    buttonConfigState = config.buttonConfig || [];
+                    siteFlags = config.siteFlags || {};
+                    // 为缺失标志的站点补默认值
+                    Object.keys(siteUrls).forEach(k => {
+                        if (!siteFlags[k]) siteFlags[k] = { rightClick: false, allowBlank: false, requireKeyword: true };
+                    });
+                    applyButtonConfig(buttonConfigState);
                     return;
                 }
 
@@ -1103,9 +1128,20 @@
                     const parsedConfig = JSON.parse(localConfig);
                     if (parsedConfig.siteUrls && parsedConfig.buttonConfig) {
                         // 迁移到IndexedDB
-                        await siteConfigDB.saveConfig(parsedConfig);
-                        siteUrls = parsedConfig.siteUrls;
-                        applyButtonConfig(parsedConfig.buttonConfig);
+                        // 兼容旧数据：没有siteFlags则生成默认
+                        const migrated = {
+                            siteUrls: parsedConfig.siteUrls,
+                            buttonConfig: parsedConfig.buttonConfig,
+                            siteFlags: parsedConfig.siteFlags || {}
+                        };
+                        Object.keys(migrated.siteUrls).forEach(k => {
+                            if (!migrated.siteFlags[k]) migrated.siteFlags[k] = { rightClick: false, allowBlank: false, requireKeyword: true };
+                        });
+                        await siteConfigDB.saveConfig(migrated);
+                        siteUrls = migrated.siteUrls;
+                        buttonConfigState = migrated.buttonConfig;
+                        siteFlags = migrated.siteFlags;
+                        applyButtonConfig(buttonConfigState);
                         // 清除localStorage中的旧数据
                         localStorage.removeItem('siteConfig');
                         alert('已将配置从localStorage迁移到IndexedDB！数据更安全了。');
@@ -1169,14 +1205,27 @@
             const btnGroup = document.querySelector('.btn-group');
             if (btnGroup) {
                 btnGroup.innerHTML = '';
+                // 缓存状态
+                buttonConfigState = buttonConfig || [];
                 
-                buttonConfig.forEach(btnConfig => {
+                buttonConfigState.forEach(btnConfig => {
                     const button = document.createElement('button');
                     button.textContent = btnConfig.name;
-                    button.setAttribute('data-site', btnConfig.dataSite);
+                    
+                    // 兼容性处理：支持旧格式的 datasite 和新格式的 dataSite
+                    const dataSite = btnConfig.dataSite || btnConfig.datasite;
+                    button.setAttribute('data-site', dataSite);
+                    
                     if (btnConfig.isSmall) {
                         button.classList.add('small');
                     }
+                    // 设置右键与单开(允许空白)状态供插件读取
+                    const flags = siteFlags[dataSite] || {};
+                    const allowBlank = !!flags.allowBlank;
+                    button.setAttribute('data-rightclick', String(!!flags.rightClick));
+                    button.setAttribute('data-allowblank', String(!!allowBlank));
+                    // 兼容旧插件读取
+                    button.setAttribute('data-requirekeyword', String(!allowBlank));
                     // 允许主页面高亮逻辑风格，复用 highlight 类
                     button.addEventListener('focus', () => button.classList.add('highlight'));
                     button.addEventListener('blur', () => button.classList.remove('highlight'));
@@ -1233,6 +1282,29 @@
                 urlInput.value = url;
                 urlInput.style.width = '100%';
                 urlCell.appendChild(urlInput);
+
+                // 右键状态
+                const rightCell = document.createElement('td');
+                const rightInput = document.createElement('input');
+                rightInput.type = 'checkbox';
+                const rf = siteFlags[site] || {};
+                rightInput.checked = !!rf.rightClick;
+                rightCell.appendChild(rightInput);
+                
+                // 单开（需关键词）状态
+                const requireCell = document.createElement('td');
+                const requireInput = document.createElement('input');
+                requireInput.type = 'checkbox';
+                // 单开 = 允许空白 = allowBlank = !requireKeyword(兼容)
+                // 修复：正确处理未定义的情况，默认为false
+                if (typeof rf.allowBlank === 'boolean') {
+                    requireInput.checked = rf.allowBlank;
+                } else if (typeof rf.requireKeyword === 'boolean') {
+                    requireInput.checked = !rf.requireKeyword;
+                } else {
+                    requireInput.checked = false; // 默认不允许空白搜索
+                }
+                requireCell.appendChild(requireInput);
                 
                 const actionCell = document.createElement('td');
                 const deleteBtn = document.createElement('button');
@@ -1244,8 +1316,16 @@
                 row.appendChild(nameCell);
                 row.appendChild(siteCell);
                 row.appendChild(urlCell);
+                row.appendChild(rightCell);
+                row.appendChild(requireCell);
                 row.appendChild(actionCell);
                 tbody.appendChild(row);
+
+                // 行选中（点击空白处）
+                row.addEventListener('click', (e) => {
+                    if (e.target.closest('input,button')) return;
+                    row.classList.toggle('selected');
+                });
             }
         }
 
@@ -1293,6 +1373,40 @@
         // 位置记忆变量 - 用于 Tab/Ctrl+Tab 跳转
         let lastButtonPosition = null;  // 上次在按钮区域的位置
         let lastHistoryPosition = null; // 上次在历史区域的位置
+
+        // 错误提示模态框函数
+        function showErrorModal() {
+            const modal = document.getElementById('error-modal');
+            if (modal) {
+                modal.style.display = 'flex';
+                
+                // 点击模态框外部关闭
+                const handleModalClick = function(e) {
+                    if (e.target === modal) {
+                        modal.style.display = 'none';
+                        modal.removeEventListener('click', handleModalClick);
+                    }
+                };
+                modal.addEventListener('click', handleModalClick);
+                
+                // ESC键关闭
+                const handleEscapeKey = function(e) {
+                    if (e.key === 'Escape') {
+                        modal.style.display = 'none';
+                        document.removeEventListener('keydown', handleEscapeKey);
+                        modal.removeEventListener('click', handleModalClick);
+                    }
+                };
+                document.addEventListener('keydown', handleEscapeKey);
+                
+                // 3秒后自动关闭
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                    document.removeEventListener('keydown', handleEscapeKey);
+                    modal.removeEventListener('click', handleModalClick);
+                }, 3000);
+            }
+        }
 
         // 动态添加设置按钮
         const settingsBtn = document.createElement('button');
@@ -1785,22 +1899,21 @@
         // 单独处理编辑历史和导出历史按钮
 
         // 保存编辑的历史记录（使用IndexedDB）
-        saveEditBtn.addEventListener('click', async () => {
-            if (currentEditItem && historyEditInput.value.trim()) {
+        // 编辑历史：使用 Enter 保存并关闭（移除保存按钮）
+        if (historyEditInput) {
+            historyEditInput.addEventListener('keydown', async (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (!currentEditItem) return;
+                    const newVal = historyEditInput.value.trim();
+                    if (!newVal) { editHistoryModal.style.display = 'none'; isEditingHistory = false; currentEditItem = null; return; }
                 const oldKeyword = currentEditItem.getAttribute('data-keyword');
-                const newKeyword = historyEditInput.value.trim();
+                    const newKeyword = newVal;
                 if (oldKeyword !== newKeyword) {
                     try {
-                        // 更新IndexedDB中的记录
                         await searchHistoryDB.updateHistory(oldKeyword, newKeyword);
-                        
-                        // 更新本地searchHistory数组
-                        const historyItem = searchHistory.find(item => item.keyword === oldKeyword);
-                        if (historyItem) {
-                            historyItem.keyword = newKeyword;
-                        }
-                        
-                        // 重新渲染历史记录
+                            const idx = searchHistory.findIndex(item => item.keyword === oldKeyword);
+                            if (idx !== -1) { searchHistory[idx].keyword = newKeyword; }
                         renderHistory();
                     } catch (error) {
                         console.error('更新历史记录失败:', error);
@@ -1812,6 +1925,7 @@
                 currentEditItem = null;
             }
         });
+        }
 
         // ESC键取消编辑
         historyEditInput.addEventListener('keydown', (e) => {
@@ -2639,8 +2753,13 @@
                 if (currentItem.type === 'button') {
                     if (currentItem.element.hasAttribute('data-site')) {
                         const site = currentItem.element.getAttribute('data-site');
-                        const keyword = searchInput.value.trim() || currentItem.element.textContent;
-                        const url = siteUrls[site] + encodeURIComponent(keyword);
+                        const keyword = searchInput.value.trim();
+                        if (!doesSiteAllowBlank(site) && !keyword) {
+                            showErrorModal();
+                            return;
+                        }
+                        const url = keyword ? (siteUrls[site] + encodeURIComponent(keyword))
+                                            : siteUrls[site].replace(/\?.*$/, '');
                         window.open(url, '_blank');
                     } else {
                         currentItem.element.click();
@@ -2746,16 +2865,34 @@
         }
 
 
-        // 搜索功能
+        // 搜索功能（单开=允许空白打开）
+        function doesSiteAllowBlank(site) {
+            // 根源判断：只看保存到配置中的 allowBlank
+            if (siteFlags && siteFlags[site] && typeof siteFlags[site].allowBlank === 'boolean') {
+                return !!siteFlags[site].allowBlank;
+            }
+            return false;
+        }
+
         function search(site, immediate = false) {
+            console.log(`搜索函数：site=${site}, keyword="${searchInput.value.trim()}"`);
+            const btn = document.querySelector(`.btn-group button[data-site="${site}"]`);
+            if (btn) {
+                console.log(`按钮属性检查:
+                    data-allowblank: ${btn.getAttribute('data-allowblank')}
+                    data-requirekeyword: ${btn.getAttribute('data-requirekeyword')}
+                    outerHTML: ${btn.outerHTML.slice(0, 100)}...`);
+            } else {
+                console.log(`未找到匹配的按钮: ${site}`);
+            }
             const keyword = searchInput.value.trim();
 
-            // 确保使用正确的site规则
             if (!siteUrls[site]) {
                 console.error(`未知的网站: ${site}`);
                 return;
             }
 
+            // 链接型按钮：直接打开（已在 doesSiteAllowBlank 中放行空白）
             if (linkButtons.includes(site)) {
                 if (keyword) {
                     navigator.clipboard.writeText(keyword).catch(err => {
@@ -2768,14 +2905,37 @@
                 return;
             }
 
+            if (!keyword) {
+                const allowBlank = doesSiteAllowBlank(site);
+                console.log(`空白搜索检查: allowBlank=${allowBlank}`);
+                if (!allowBlank) {
+                    console.log(`禁止空白打开: ${site}`);
+                    showErrorModal();
+                    
+                    // 添加视觉反馈
+                    const btn = document.querySelector(`button[data-site="${site}"]`);
+                    if (btn) {
+                        btn.style.border = '2px solid red';
+                        setTimeout(() => {
+                            btn.style.border = '';
+                        }, 1000);
+                    }
+                    return;
+                }
+                console.log(`允许空白打开: ${site}`);
+            }
+
             if (keyword) {
-                // 确保搜索时保存历史记录
                 addToHistory(keyword);
-                const url = siteUrls[site] + encodeURIComponent(keyword);
+                const url = linkButtons.includes(site)
+                    ? siteUrls[site]
+                    : siteUrls[site] + encodeURIComponent(keyword);
                 window.open(url, '_blank');
             } else {
-                // 没有关键词时打开默认页面
-                const url = siteUrls[site].replace(/\?.*$/, ''); // 移除查询参数
+                // 允许空白打开主页
+                const url = linkButtons.includes(site)
+                    ? siteUrls[site]
+                    : siteUrls[site].replace(/\?.*$/, '');
                 window.open(url, '_blank');
             }
         }
@@ -2787,12 +2947,14 @@
 
             // 遍历所有按钮元素
             for (const button of buttons) {
-                const site = button.getAttribute('data-site');
+                const site = (typeof button === 'string') ? button : button.getAttribute('data-site');
                 if (!site || processedSites.has(site)) continue;
 
                 processedSites.add(site);
 
-                // 创建搜索URL
+                // 空白打开控制：不允许空白的站点在无关键词时跳过
+                if (!keyword && !doesSiteAllowBlank(site)) continue;
+
                 let url;
                 if (linkButtons.includes(site)) {
                     url = siteUrls[site];
@@ -3146,7 +3308,7 @@
                         nextFocus.focus();
                         currentFocusElement = nextFocus;
                         if (nextFocus !== searchInput) {
-                            // 确保元素可见且不产生平滑滚动导致的“飞”感
+                            // 确保元素可见且不产生平滑滚动导致的"飞"感
                             nextFocus.scrollIntoView({ behavior: 'auto', block: 'nearest' });
                         }
                     }
@@ -3156,10 +3318,19 @@
 
         // 显示错误弹窗
         function showErrorModal() {
+            console.log('显示错误提示模态框');
+            // 确保模态框可见
             errorModal.style.display = 'flex';
+            errorModal.style.zIndex = '2000';
+            errorModal.style.backgroundColor = 'rgba(255,0,0,0.5)'; // 红色背景更显眼
+            errorModal.querySelector('.modal-content').style.border = '2px solid red';
+            errorModal.querySelector('p').style.fontSize = '20px';
+            errorModal.querySelector('p').style.color = 'white';
+            
             setTimeout(() => {
+                console.log('隐藏错误提示模态框');
                 errorModal.style.display = 'none';
-            }, 2000);
+            }, 5000);
         }
         // 改进的方向键导航，参考war-c.js并保留左右键原逻辑
         // 记录上次方向键动作和位置
@@ -3520,54 +3691,15 @@
             }
         }
 
-        // 设置按钮事件
+        // 设置按钮事件（使用统一的表格填充与回车保存）
         document.getElementById('settings').addEventListener('click', () => {
-            // 填充表格数据
-            const tbody = document.getElementById('sites-table-body');
-            tbody.innerHTML = '';
-
-            for (const [site, url] of Object.entries(siteUrls)) {
-                const row = document.createElement('tr');
-
-                const nameCell = document.createElement('td');
-                const nameInput = document.createElement('input');
-                nameInput.type = 'text';
-                nameInput.value = document.querySelector(`button[data-site="${site}"]`)?.textContent || site;
-                nameInput.style.width = '100%';
-                nameCell.appendChild(nameInput);
-
-                const siteCell = document.createElement('td');
-                const siteInput = document.createElement('input');
-                siteInput.type = 'text';
-                siteInput.value = site;
-                siteInput.style.width = '100%';
-                siteCell.appendChild(siteInput);
-
-                const urlCell = document.createElement('td');
-                const urlInput = document.createElement('input');
-                urlInput.type = 'text';
-                urlInput.value = url;
-                urlInput.style.width = '100%';
-                urlCell.appendChild(urlInput);
-
-                const actionCell = document.createElement('td');
-                const deleteBtn = document.createElement('button');
-                deleteBtn.textContent = '删除';
-                deleteBtn.addEventListener('click', () => row.remove());
-                actionCell.appendChild(deleteBtn);
-
-                row.appendChild(nameCell);
-                row.appendChild(siteCell);
-                row.appendChild(urlCell);
-                row.appendChild(actionCell);
-                tbody.appendChild(row);
-            }
-
-            // 显示设置模态框
+            // 填充并打开
+            populateSettingsTable();
             const settingsModal = document.getElementById('settings-modal');
             settingsModal.style.display = 'flex';
+            const ss = document.getElementById('settings-search');
+            if (ss) ss.focus();
             
-            // 添加点击空白处关闭功能
             const handleSettingsModalClick = function(e) {
                 if (e.target === settingsModal) {
                     settingsModal.style.display = 'none';
@@ -3586,52 +3718,110 @@
             }
         });
 
-        // 保存设置
-        document.getElementById('save-settings').addEventListener('click', () => {
+        // 设置界面：统一使用 Enter 保存并关闭
+        function saveSettingsFromTable() {
             try {
-                // 收集表格数据并更新siteUrls
                 const newSiteUrls = {};
+                const newButtonConfig = [];
+                const newSiteFlags = {};
                 const rows = document.querySelectorAll('#sites-table-body tr');
-
-                rows.forEach(row => {
-                    const siteInput = row.querySelector('td:nth-child(2) input');
-                    const urlInput = row.querySelector('td:nth-child(3) input');
-                    if (siteInput.value && urlInput.value) {
-                        newSiteUrls[siteInput.value] = urlInput.value;
-                    }
-                });
-
-                // 更新全局siteUrls
-                siteUrls = newSiteUrls;
-
-                // 更新按钮组
-                const btnGroup = document.querySelector('.btn-group');
-                btnGroup.innerHTML = '';
 
                 rows.forEach(row => {
                     const nameInput = row.querySelector('td:nth-child(1) input');
                     const siteInput = row.querySelector('td:nth-child(2) input');
+                    const urlInput = row.querySelector('td:nth-child(3) input');
+                    const rightInput = row.querySelector('td:nth-child(4) input[type="checkbox"]');
+                    const requireInput = row.querySelector('td:nth-child(5) input[type="checkbox"]');
 
-                    if (nameInput.value && siteInput.value) {
-                        const button = document.createElement('button');
-                        button.textContent = nameInput.value;
-                        button.setAttribute('data-site', siteInput.value);
-                        if (siteInput.value.length > 10) {
-                            button.classList.add('small');
+                    if (siteInput && urlInput && siteInput.value && urlInput.value) {
+                        newSiteUrls[siteInput.value] = urlInput.value;
+                        if (nameInput && nameInput.value) {
+                            newButtonConfig.push({
+                                name: nameInput.value,
+                                dataSite: siteInput.value,
+                                isSmall: siteInput.value.length > 10
+                            });
                         }
-                        btnGroup.appendChild(button);
+                        newSiteFlags[siteInput.value] = {
+                            rightClick: !!(rightInput && rightInput.checked),
+                            allowBlank: !!(requireInput && requireInput.checked)
+                        };
                     }
                 });
 
-                // 重新绑定按钮事件
-                bindButtonEvents();
+                siteUrls = newSiteUrls;
+                siteFlags = newSiteFlags;
+                buttonConfigState = newButtonConfig;
 
-                // 隐藏设置模态框
+                // 更新按钮组
+                applyButtonConfig(buttonConfigState);
+
+                // 保存到IndexedDB
+                saveSiteConfigLocally({ siteUrls, buttonConfig: buttonConfigState, siteFlags });
+
+                // 关闭设置
                 document.getElementById('settings-modal').style.display = 'none';
             } catch (error) {
                 alert('保存设置出错: ' + error.message);
             }
-        });
+        }
+
+        // 设置模态框内按键：Enter 保存并关闭
+        if (settingsModal) {
+            settingsModal.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    saveSettingsFromTable();
+                }
+            });
+
+            // 保存并关闭按钮点击
+            const saveSettingsBtn = document.getElementById('save-settings');
+            if (saveSettingsBtn) {
+                saveSettingsBtn.addEventListener('click', function() {
+                    saveSettingsFromTable();
+                });
+            }
+
+            // 捕获阶段阻断主页面的 Enter，在设置模态框打开时生效
+            document.addEventListener('keydown', function(e) {
+                if (!isSettingsModalOpen()) return;
+                if (e.key !== 'Enter') return;
+                // 仅当事件目标不在模态框内时阻断，避免影响模态框内部的保存逻辑
+                const isInsideModal = settingsModal.contains(e.target);
+                if (!isInsideModal) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+            }, true);
+
+            // 上方动作：删除选中 / 批量开关
+            const deleteBtn = document.getElementById('delete-selected-rows');
+            const toggleContextBtn = document.getElementById('toggle-context');
+            const toggleRequireBtn = document.getElementById('toggle-require');
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', () => {
+                    document.querySelectorAll('#sites-table-body tr.selected').forEach(tr => tr.remove());
+                });
+            }
+            if (toggleContextBtn) {
+                toggleContextBtn.addEventListener('click', () => {
+                    document.querySelectorAll('#sites-table-body tr.selected').forEach(tr => {
+                        const cb = tr.querySelector('td:nth-child(4) input[type="checkbox"]');
+                        if (cb) cb.checked = !cb.checked;
+                    });
+                });
+            }
+            if (toggleRequireBtn) {
+                toggleRequireBtn.addEventListener('click', () => {
+                    document.querySelectorAll('#sites-table-body tr.selected').forEach(tr => {
+                        const cb = tr.querySelector('td:nth-child(5) input[type="checkbox"]');
+                        if (cb) cb.checked = !cb.checked;
+                    });
+                });
+            }
+        }
 
 
 
@@ -3696,7 +3886,10 @@
                     try {
                         const config = await siteConfigDB.importConfig(file);
                         siteUrls = config.siteUrls;
-                        applyButtonConfig(config.buttonConfig);
+                        buttonConfigState = config.buttonConfig || [];
+                        siteFlags = config.siteFlags || {};
+                        Object.keys(siteUrls).forEach(k => { if (!siteFlags[k]) siteFlags[k] = { rightClick: false, requireKeyword: false }; });
+                        applyButtonConfig(buttonConfigState);
                         populateSettingsTable();
                         alert('配置导入成功！');
                     } catch (error) {
@@ -3794,66 +3987,7 @@
                 tbody.appendChild(row);
             });
 
-            document.getElementById('save-settings').addEventListener('click', async function () {
-                try {
-                    // 收集表格数据并更新siteUrls
-                    const newSiteUrls = {};
-                    const buttonConfig = [];
-                    const rows = document.querySelectorAll('#sites-table-body tr');
-
-                    rows.forEach(row => {
-                        const nameInput = row.querySelector('td:nth-child(1) input');
-                        const siteInput = row.querySelector('td:nth-child(2) input');
-                        const urlInput = row.querySelector('td:nth-child(3) input');
-                        
-                        if (siteInput.value && urlInput.value) {
-                            newSiteUrls[siteInput.value] = urlInput.value;
-                            
-                            if (nameInput.value) {
-                                buttonConfig.push({
-                                    name: nameInput.value,
-                                    dataSite: siteInput.value,
-                                    isSmall: siteInput.value.length > 10
-                                });
-                            }
-                        }
-                    });
-
-                    // 更新全局siteUrls
-                    siteUrls = newSiteUrls;
-
-                    // 更新按钮组
-                    const btnGroup = document.querySelector('.btn-group');
-                    btnGroup.innerHTML = '';
-
-                    buttonConfig.forEach(btnConfig => {
-                        const button = document.createElement('button');
-                        button.textContent = btnConfig.name;
-                        button.setAttribute('data-site', btnConfig.dataSite);
-                        if (btnConfig.isSmall) {
-                            button.classList.add('small');
-                        }
-                        btnGroup.appendChild(button);
-                    });
-
-                    // 重新绑定按钮事件
-                    bindButtonEvents();
-
-                    // 保存到IndexedDB
-                    const config = {
-                        siteUrls: newSiteUrls,
-                        buttonConfig: buttonConfig
-                    };
-                    await saveSiteConfigLocally(config);
-
-                    // 隐藏设置模态框
-                    document.getElementById('settings-modal').style.display = 'none';
-                    
-                    alert('设置已保存到IndexedDB！');
-                } catch (error) {
-                    alert('保存设置出错: ' + error.message);
-                }
-            });
+            // 已移除保存设置按钮，改为 Enter 保存
 
             // 上传网站配置到Gitee
             document.getElementById('upload-sites-config').addEventListener('click', async function() {
@@ -3867,9 +4001,11 @@
                     }
                     
                     // 收集当前网站配置数据
+                    // 统一存储 allowBlank
                     const siteConfigData = {
                         siteUrls: siteUrls,
-                        buttonConfig: []
+                        buttonConfig: [],
+                        siteFlags: siteFlags || {}
                     };
                     
                     // 收集按钮配置信息
@@ -3957,8 +4093,16 @@
                         throw new Error('Gitee返回的数据不包含文件内容');
                     }
                     
-                    // 解码内容
-                    const decodedContent = atob(fileData.content);
+                    // 解码内容 - 修复UTF-8编码问题
+                    const base64Content = fileData.content.replace(/\s+/g, ''); // 移除换行符
+                    const binaryString = atob(base64Content);
+                    // 正确处理UTF-8编码
+                    const bytes = new Uint8Array(binaryString.length);
+                    for (let i = 0; i < binaryString.length; i++) {
+                        bytes[i] = binaryString.charCodeAt(i);
+                    }
+                    const decoder = new TextDecoder('utf-8');
+                    const decodedContent = decoder.decode(bytes);
                     const siteConfigData = JSON.parse(decodedContent);
                     
                     // 验证数据格式
@@ -3968,12 +4112,33 @@
                     
                     // 更新全局siteUrls
                     siteUrls = siteConfigData.siteUrls;
+                    buttonConfigState = siteConfigData.buttonConfig || [];
+                    siteFlags = siteConfigData.siteFlags || {};
+                    
+                    // 兼容性处理：确保所有站点都有正确的标志格式
+                    Object.keys(siteUrls).forEach(k => { 
+                        if (!siteFlags[k]) {
+                            siteFlags[k] = { rightClick: false, allowBlank: false, requireKeyword: true };
+                        } else {
+                            // 兼容旧格式：如果只有requireKeyword，转换为allowBlank
+                            if (siteFlags[k].hasOwnProperty('requireKeyword') && !siteFlags[k].hasOwnProperty('allowBlank')) {
+                                siteFlags[k].allowBlank = !siteFlags[k].requireKeyword;
+                            }
+                            // 确保有默认值
+                            if (!siteFlags[k].hasOwnProperty('allowBlank')) {
+                                siteFlags[k].allowBlank = false;
+                            }
+                            if (!siteFlags[k].hasOwnProperty('requireKeyword')) {
+                                siteFlags[k].requireKeyword = !siteFlags[k].allowBlank;
+                            }
+                        }
+                    });
                     
                     // 应用按钮配置
-                    applyButtonConfig(siteConfigData.buttonConfig);
+                    applyButtonConfig(buttonConfigState);
                     
                     // 保存到本地配置
-                    saveSiteConfigLocally(siteConfigData);
+                    saveSiteConfigLocally({ siteUrls, buttonConfig: buttonConfigState, siteFlags });
                     
                     alert('网站配置下载成功！已应用最新配置并保存到本地');
                     
@@ -4119,7 +4284,7 @@
                     </div>
                 `;
                 
-                box.querySelector('#save-gitee-config').addEventListener('click', function() {
+                function saveGiteeConfigAndClose() {
                     const owner = document.getElementById('gitee-owner').value.trim();
                     const repo = document.getElementById('gitee-repo').value.trim();
                     const path = document.getElementById('gitee-path').value.trim();
@@ -4134,6 +4299,15 @@
                     localStorage.setItem('giteeConfig', JSON.stringify({ owner, repo, path, sitesPath, token }));
                     document.body.removeChild(modal);
                     alert('配置已保存!');
+                }
+
+                box.querySelector('#save-gitee-config').addEventListener('click', saveGiteeConfigAndClose);
+                // 回车保存并关闭
+                box.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        saveGiteeConfigAndClose();
+                    }
                 });
                 
                 // 点击模态框外关闭
