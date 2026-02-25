@@ -1161,39 +1161,32 @@
                 }
 
                 const combinations = generateCombinations(pinyinArray).map(combo => combo.toLowerCase());
-                let isMatch = false;
+                let allQueriesMatched = true;
 
-                // 先检查文本匹配（原逻辑）：每个查询词必须是连续子串
-                let textMatch = true;
+                // 对每个查询词独立检查：在文本或拼音组合中连续出现
                 for (const query of queries) {
-                    if (text.indexOf(query) === -1) {
-                        textMatch = false;
-                        break;
-                    }
-                }
-                if (textMatch) {
-                    isMatch = true;
-                } else {
-                    // 拼音匹配：检查每个查询词是否在任何一个组合中连续出现
-                    let pinyinMatch = true;
-                    for (const query of queries) {
-                        let queryMatched = false;
-                        // 检查这个查询词是否在任何一个组合中连续出现
+                    let queryMatched = false;
+                    
+                    // 检查在文本中是否连续出现
+                    if (text.indexOf(query) !== -1) {
+                        queryMatched = true;
+                    } else {
+                        // 检查在拼音组合中是否连续出现
                         for (const combo of combinations) {
                             if (combo.indexOf(query) !== -1) {
                                 queryMatched = true;
                                 break;
                             }
                         }
-                        if (!queryMatched) {
-                            pinyinMatch = false;
-                            break;
-                        }
                     }
-                    isMatch = pinyinMatch;
+                    
+                    if (!queryMatched) {
+                        allQueriesMatched = false;
+                        break;
+                    }
                 }
 
-                if (isMatch) {
+                if (allQueriesMatched) {
                     matchedItems.push({
                         element: element,
                         type: element.classList.contains('history-item') ? 'history' : 'button'
@@ -1255,15 +1248,10 @@
                         }
                     }
                 }
-                // 处理非中文字符（原逻辑）
-                else if (/[a-zA-Z]/.test(char)) {
-                    console.log(`[DEBUG] Non-Chinese letter: ${char}`);
-                    charSet = [char.toLowerCase()];
-                }
-                // 其他字符忽略（保持原样）
+                // 处理非中文字符：数字和字母都直接返回字符本身
                 else {
-                    console.log(`[DEBUG] Skipping non-letter char: ${char}`);
-                    charSet = [''];
+                    console.log(`[DEBUG] Non-Chinese char: ${char}`);
+                    charSet = [char.toLowerCase()];
                 }
                 result.push(charSet);
             }
