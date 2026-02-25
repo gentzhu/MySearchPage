@@ -327,7 +327,7 @@
             margin: 2px;
         }
     </style>
-    <script src="pinyin.min.js"></script>
+    <script src="pinyin_dict_firstletter.js"></script>
 </head>
 
 <body class="flex1">
@@ -1143,7 +1143,7 @@
 
             allElements.forEach(element => {
                 const text = element.textContent.toLowerCase();
-                const pinyin = getPinyinInitials(text);
+                const pinyin = getPinyinInitials(text).toLowerCase(); // 转换为小写
                 let isMatch = false;
 
                 // 统一处理逻辑：每个查询词必须连续出现（子串匹配），顺序不限
@@ -1199,35 +1199,49 @@
         }
         // 使用拼音库获取拼音首字母
         function getPinyinInitials(text) {
-            const pinyinMap = {
-                '小': 'x', '红': 'h', '书': 's', '抖': 'd', '音': 'y', '知': 'z', '乎': 'h',
-                '哔': 'b', '哩': 'l', '必': 'b', '应': 'y', '谷': 'g', '歌': 'g', '推': 't',
-                '特': 't', '幕': 'm', '布': 'b', '安': 'a', '卡': 'k', '牌': 'p', '分': 'f',
-                '享': 'x', '社': 's', '区': 'q', '豌': 'w', '豆': 'd', '荚': 'j', '酷': 'k',
-                '通': 't', '义': 'y', '千': 'q', '问': 'w', '喜': 'x', '马': 'm', '拉': 'l',
-                '雅': 'y', '微': 'w', '信': 'x', '淘': 't', '宝': 'b', '京': 'j', '东': 'd',
-                '头': 't', '条': 't', '百': 'b', '度': 'd', '网': 'w', '易': 'y', '搜': 's',
-                '狗': 'g', '神': 's', '奇': 'q', '多': 'd', '快': 'k', '好': 'h', '有': 'y',
-                '道': 'd', '今': 'j', '日': 'r', '热': 'r', '点': 'd', '精': 'j', '选': 'x',
-                '清': 'q', '除': 'c', '历': 'l', '史': 's', '导': 'd', '出': 'c', '外': 'w',
-                '网': 'w', '所': 's', '有': 'y', '常': 'c', '用': 'y', '编': 'b', '辑': 'j',
-                '仅': 'j', '保': 'b', '存': 'c', '微': 'w', '信': 'x', '凌': 'l', '风': 'f',
-                '云': 'y', '盘': 'p', '之': 'z', '家': 'j', '快': 'k', '速': 's', '搜': 's',
-                '索': 's', '记': 'j', '录': 'l', '藏': 'c'
-            };
-            return text.split('').map(char => {
-                // 1. 处理中文字符（严格检测Unicode中文范围）
-                if (/[\u4e00-\u9fa5]/.test(char)) {
-                    // 优先使用映射表，找不到则尝试其他方法（如使用pinyin库）
-                    return pinyinMap[char] || '';
+            console.log('[DEBUG] getPinyinInitials called with text:', text);
+            if (!text) return '';
+            let result = '';
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                const unicode = char.charCodeAt(0);
+                console.log(`[DEBUG] Processing char: ${char}, unicode: ${unicode}`);
+                
+                // 处理中文字符（Unicode范围：19968-40869）
+                if (unicode >= 19968 && unicode <= 40869) {
+                    console.log(`[DEBUG] Chinese char detected: ${char} (${unicode})`);
+                    
+                    // 先检查多音字
+                    if (pinyin_dict_firstletter.polyphone[unicode]) {
+                        const poly = pinyin_dict_firstletter.polyphone[unicode];
+                        console.log(`[DEBUG] Found polyphone mapping: ${poly}`);
+                        result += poly;
+                    }
+                    // 再检查常规字典
+                    else {
+                        const idx = unicode - 19968;
+                        console.log(`[DEBUG] Checking all dict at index: ${idx}`);
+                        if (idx < pinyin_dict_firstletter.all.length) {
+                            const dictChar = pinyin_dict_firstletter.all.charAt(idx);
+                            console.log(`[DEBUG] Found dict char: ${dictChar}`);
+                            result += dictChar;
+                        } else {
+                            console.log(`[DEBUG] Index ${idx} out of range (max: ${pinyin_dict_firstletter.all.length})`);
+                        }
+                    }
                 }
-                // 2. 处理英文字母
+                // 处理非中文字符（原逻辑）
                 else if (/[a-zA-Z]/.test(char)) {
-                    return char.toLowerCase();
+                    console.log(`[DEBUG] Non-Chinese letter: ${char}`);
+                    result += char.toLowerCase();
                 }
-                // 3. 其他字符（数字、符号等）返回空字符串
-                return '';
-            }).join('');
+                // 其他字符忽略（保持原样）
+                else {
+                    console.log(`[DEBUG] Skipping non-letter char: ${char}`);
+                }
+            }
+            console.log('[DEBUG] Final result:', result);
+            return result;
         }
 
         // 快速搜索匹配算法
