@@ -171,25 +171,6 @@
             background-color: #e0e0e0;
         }
 
-        #quick-search-hint {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-size: 12px;
-            /* display: block; */
-            z-index: 100;
-            cursor: pointer;
-        }
-
-        #current-keys {
-            font-weight: bold;
-            color: #4a90e2;
-        }
-
         .modal {
             display: none;
             position: fixed;
@@ -257,7 +238,7 @@
         #mobile-quick-search {
             width: 100px;
             /* 缩小宽度 */
-            padding: 4px 8px;
+            padding: 2px 2px;
             /* 减小内边距 */
             height: 16px;
             /* 固定高度 */
@@ -284,7 +265,7 @@
             }
 
             #search-input {
-                padding: 2px 2px;
+                padding: 2px 4px;
                 font-size: 16px;
             }
 
@@ -380,7 +361,6 @@
             <button data-site="kimi">Kimi</button>
             <button data-site="deepseek">DeepSeek</button>
             <button data-site="ximalaya">喜马拉雅搜索</button>
-            <button data-site="pinduoduo">拼多多</button>
             <button data-site="jd">京东</button>
             <button data-site="taobao">淘宝</button>
             <button data-site="weixin">微信搜索</button>
@@ -392,7 +372,7 @@
         <div class="history-container">
             <div class="history-title">搜索历史</div>
             <div class="mobile-quick-search-wrapper ">
-                <button id="mobile-esc-btn" class="mobile-only button">Esc</button>
+                <button id="mobile-esc-btn" class="mobile-only button"> Esc </button>
                 <input type="text" id="mobile-quick-search" autocomplete="off" spellcheck="false">
             </div>
         </div>
@@ -401,8 +381,6 @@
     <div class="scrollable-content">
         <div id="history-list"></div>
     </div>
-
-    <div id="quick-search-hint" class="desktop-only">快速搜索: <span id="current-keys">[无]</span></div>
 
     <div class="modal" id="error-modal">
         <div class="modal-content">
@@ -446,7 +424,6 @@
             kimi: 'https://kimi.moonshot.cn/',
             deepseek: 'https://chat.deepseek.com/',
             ximalaya: 'https://www.ximalaya.com/so/',
-            pinduoduo: 'https://yangkeduo.com/search_result.html?search_key=',
             jd: 'https://search.jd.com/Search?keyword=',
             taobao: 'https://s.taobao.com/search?q=',
             weixin: 'https://weixin.sogou.com/weixin?type=2&s_from=input&ie=utf8&query=',
@@ -483,7 +460,6 @@
         const exportHistoryBtn = document.getElementById('export-history');
         const importHistoryBtn = document.getElementById('import-history');
         const clearInputBtn = document.querySelector('.clear-input');
-        const currentKeysDisplay = document.getElementById('current-keys');
         const editHistoryModal = document.getElementById('edit-history-modal');
         const historyEditInput = document.getElementById('history-edit-input');
         const saveEditBtn = document.getElementById('save-edit');
@@ -491,7 +467,6 @@
         const errorModal = document.getElementById('error-modal');
         const mobileQuickSearch = document.getElementById('mobile-quick-search');
         const mobileEscBtn = document.getElementById('mobile-esc-btn');
-        const quicksearchhint = document.getElementById('quick-search-hint');
         let historyItems = []; // 恢复显示
         const historymatches = []; // 匹配项列表
         // 导航相关变量
@@ -631,37 +606,8 @@
                 currentEditItem = null;
             }
 
-            // 移动端ESC按钮处理
-            document.getElementById('mobile-esc-btn').addEventListener('click', function (e) {
-                e.stopPropagation();
-                // 第一段：清空搜索框
-                if (mobileQuickSearch.value) {
-                    mobileQuickSearch.value = '';
-                    quickSearchKeys = '';
-                    updateQuickSearchDisplay();
-                    clearMatches();
-                    showAllHistoryItems();
-                    return;
-                }
-
-                else if (document.activeElement === mobileQuickSearch && !mobileQuickSearch.value) {
-                    mobileQuickSearch.blur();
-                }
-            });
-
-            // 4. 修复清空搜索框快捷键
-            // 5. 页面加载时自动聚焦
-            window.addEventListener('DOMContentLoaded', function () {
-                searchInput.focus();
-            });
-        });
-        window.addEventListener('load', adjustScrollableArea);
-        window.addEventListener('resize', adjustScrollableArea);
-
-        // 替换现有的点击空白处事件监听器
-        document.addEventListener('click', function (e) {
             // 点击空白处处理输入法
-            if (!e.target.closest('button, input, .history-item, #quick-search-hint')) {
+            if (!e.target.closest('button, input, .history-item')) {
                 // 移动端处理
                 if (screen.width <= 768) {
                     // 第一次点击：聚焦并弹出输入法
@@ -678,16 +624,18 @@
                 // 电脑端处理
                 else {
                     if (document.activeElement === searchInput) { searchInput.blur(); }
-                    if (document.activeElement === quicksearchhint) {
+                    if (document.activeElement === mobileQuickSearch) {
                         quickSearchKeys = '';
-                        updateQuickSearchDisplay();
-                        clearMatches();
                         quickSearchActive = false;
-                        showAllHistoryItems();
+                        mobileQuickSearch.blur();
                     }
                 }
             }
         });
+        // 5. 页面加载时自动聚焦
+        window.addEventListener('DOMContentLoaded', function () { searchInput.focus(); });
+        window.addEventListener('load', adjustScrollableArea);
+        window.addEventListener('resize', adjustScrollableArea);
 
         // 初始化时立即聚焦
         focusQuickSearch();
@@ -695,16 +643,6 @@
         // 移动端快速搜索处理
         if (mobileQuickSearch) {
             mobileQuickSearch.addEventListener('input', focusQuickSearch)
-            //if (screen.width <= 1200) { // 匹配CSS媒体查询条件
-            //            {quickSearchKeys = this.value.toLowerCase();
-            //          performQuickSearch();
-            //    }
-            //        if (keywords.length === 0) {
-            //          showAllHistoryItems();
-            //        return;
-            //  }
-            // });
-
             // 空格键处理（不中断搜索）
             mobileQuickSearch.addEventListener('keydown', function (e) {
                 if (e.key === ' ') {
@@ -720,29 +658,9 @@
                 }
             });
             // ESC按钮处理
-            // 替换现有的 mobileEscBtn 事件监听器
             mobileEscBtn.addEventListener('click', function (e) {
-                e.stopPropagation();
-
-                // 第一次点击：清空搜索框和匹配状态
-                if (mobileQuickSearch.value || document.querySelector('.highlight')) {
-                    mobileQuickSearch.value = '';
-                    quickSearchKeys = '';
-                    updateQuickSearchDisplay();
-                    clearMatches();
-
-                    // 显示所有历史项和按钮
-                    document.querySelectorAll('.history-item, button[data-site]').forEach(el => {
-                        el.style.display = 'inline-block';
-                    });
-
-                    return;
-                }
-
-                // 第二次点击：退出输入法
-                if (document.activeElement === mobileQuickSearch) {
-                    mobileQuickSearch.blur();
-                }
+                // e.stopPropagation();
+                GlobalQuit(e);
             })
         }
 
@@ -759,26 +677,9 @@
                 }, 100);
                 return;
             }
-            else if (window.screen.width > 768) {
-                //e.preventDefault();
-                //quickSearchActive = true;
-                //quickSearchKeys += e.key.toLowerCase();
-                //updateQuickSearchDisplay();
+            else if (document.activeElement === mobileQuickSearch) {
                 quickSearchKeys = mobileQuickSearch.value.toLowerCase();
                 performQuickSearch();
-                // if (matchedItems.length > 0) {
-                //     matchedItems[0].element.focus();
-                //     currentFocusElement = matchedItems[0].element;
-                // }
-                return;
-            }
-            else if (screen.width <= 768 && document.activeElement === mobileQuickSearch) {
-                quickSearchKeys = this.value.toLowerCase();
-                performQuickSearch();
-
-                //     if (keywords.length === 0) {
-                //         showAllHistoryItems();
-                // }
                 return;
             }
         }
@@ -795,7 +696,7 @@
         // 全局键盘事件处理（快速搜索）
         function handleGlobalKeyDown(e) {
             if (e.key === 'Escape') {
-                GlobalQuit();
+                GlobalQuit(e);
             }
             if (window.screen.width > 768 && !document.activeElement.matches('input, textarea') &&
                 e.key.length === 1 && /[a-z0-9\W]/i.test(e.key) && e.key !== ' ') {
@@ -837,12 +738,6 @@
                     e.preventDefault();
                     searchInput.value = '';
                     searchInput.focus();
-                }
-
-                if (e.key === 'Escape') {
-                    e.preventDefault();
-                    cancelEditBtn.click();
-                    return;
                 }
                 return;
             }
@@ -935,31 +830,33 @@
             }
         }
 
-        function GlobalQuit() {
-            e.preventDefault();
-            if (document.activeElement === searchInput) {
+        function GlobalQuit(e) {
+            // e.preventDefault();
+            if (isEditMode) {
+                e.preventDefault();
+                cancelEditBtn.click();
+                return;
+            }
+            else if (document.activeElement === searchInput) {
                 // e.preventDefault();
                 searchInput.blur();
                 return;
             }
             // ESC只取消快速搜索，不影响选中状态
-            if (quickSearchActive && quickSearchKeys.length > 0) {
+            else if (quickSearchKeys.length > 0) {
                 // e.preventDefault();
                 quickSearchKeys = '';
                 updateQuickSearchDisplay();
                 // quickSearchActive = false;
-                quicksearchhint.blur();
+                mobileQuickSearch.blur();
                 return;
             }
             // 第一次按ESC：清空快速搜索状态
-            else if (quickSearchActive && quickSearchKeys.length === 0) {
+            else if (!quickSearchKeys && matchedItems.length < document.querySelectorAll('.history-item').length) {
                 clearMatches();
                 showAllHistoryItems();
                 // 显示所有元素
                 quickSearchActive = false;
-                document.querySelectorAll('.history-item, button[data-site]').forEach(el => {
-                    el.style.display = 'inline-block';
-                });
                 return;
             }
             return;
@@ -968,9 +865,8 @@
         // 修改 updateQuickSearchDisplay 函数
         function updateQuickSearchDisplay() {
             // 添加防重复更新检查
-            if (currentKeysDisplay.textContent === quickSearchKeys) return;
-
-            currentKeysDisplay.textContent = quickSearchKeys || '[无]';
+            if (mobileQuickSearch.value === quickSearchKeys) return;
+            mobileQuickSearch.value = quickSearchKeys || '';
         }
         // 执行快速搜索
         // 修改 performQuickSearch 函数
@@ -978,9 +874,9 @@
             const searchTerms = quickSearchKeys.split('').filter(Boolean);
             clearMatches();
             if (searchTerms.length === 0) {
-        showAllHistoryItems();
-        return; // 关键：必须在这里提前返回
-    }
+                showAllHistoryItems();
+                return; // 关键：必须在这里提前返回
+            }
             // 获取所有可搜索元素
             const allElements = document.querySelectorAll('button[data-site], .history-item');
             const historymatches = document.querySelectorAll('.history-item');
@@ -1004,8 +900,7 @@
                     isMatch = searchTerms.every(term => text.includes(term));
                 } else {
                     isMatch = searchTerms.every(term =>
-                        pinyin.includes(term) ||
-                        text.includes(term)
+                        pinyin.includes(term) ||text.includes(term)
                     );
                 }
                 if (isMatch) {
