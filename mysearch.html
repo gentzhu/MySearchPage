@@ -1075,6 +1075,14 @@
                 content: "单";
                 font-size: 9px;
             }
+            
+            #sites-table th:nth-child(6) { /* 桌面/手机列 */
+                font-size: 0 !important;
+            }
+            #sites-table th:nth-child(6)::after {
+                content: "桌";
+                font-size: 9px;
+            }
         }
 
         /* 表格列宽调整功能样式 */
@@ -1223,6 +1231,7 @@
                         <th class="resizable-header">Site Urls<div class="column-resizer"></div></th>
                         <th class="resizable-header">右键<div class="column-resizer"></div></th>
                         <th class="resizable-header">单开<div class="column-resizer"></div></th>
+                        <th class="resizable-header">桌面/手机<div class="column-resizer"></div></th>
                         <th class="resizable-header">操作</th>
                     </tr>
                 </thead>
@@ -1852,6 +1861,12 @@
                 const requireInput = createThreeStateCheckbox(currentMode);
                 requireCell.appendChild(requireInput);
                 
+                // 桌面/手机状态（二状态复选框）
+                const desktopCell = document.createElement('td');
+                const desktopMode = rf.desktopMode !== undefined ? rf.desktopMode : true; // 默认为桌面端
+                const desktopInput = createDesktopMobileCheckbox(desktopMode);
+                desktopCell.appendChild(desktopInput);
+                
                 const actionCell = document.createElement('td');
                 const deleteBtn = document.createElement('button');
                 deleteBtn.className = 'delete-btn';
@@ -1864,6 +1879,7 @@
                 row.appendChild(urlCell);
                 row.appendChild(rightCell);
                 row.appendChild(requireCell);
+                row.appendChild(desktopCell);
                 row.appendChild(actionCell);
                 tbody.appendChild(row);
 
@@ -2189,6 +2205,26 @@
                 this.setAttribute('data-checked', nextChecked ? '1' : '0');
                 this.textContent = nextChecked ? '☑' : '☒';
                 this.title = nextChecked ? '启用右键' : '禁用右键';
+            });
+            
+            return checkbox;
+        }
+
+        // 创建桌面/手机复选框
+        function createDesktopMobileCheckbox(isDesktop = true) {
+            const checkbox = document.createElement('div');
+            checkbox.className = 'two-state-checkbox';
+            checkbox.setAttribute('data-desktop', isDesktop ? '1' : '0');
+            checkbox.textContent = isDesktop ? '🖥' : '📱';
+            checkbox.title = isDesktop ? '桌面端网站' : '手机端网站';
+            
+            // 点击切换状态
+            checkbox.addEventListener('click', function() {
+                const currentDesktop = this.getAttribute('data-desktop') === '1';
+                const nextDesktop = !currentDesktop;
+                this.setAttribute('data-desktop', nextDesktop ? '1' : '0');
+                this.textContent = nextDesktop ? '🖥' : '📱';
+                this.title = nextDesktop ? '桌面端网站' : '手机端网站';
             });
             
             return checkbox;
@@ -5179,6 +5215,7 @@
                     const urlInput = row.querySelector('td:nth-child(3) input');
                     const rightCheckbox = row.querySelector('td:nth-child(4) .two-state-checkbox');
                     const requireCheckbox = row.querySelector('td:nth-child(5) .three-state-checkbox');
+                    const desktopCheckbox = row.querySelector('td:nth-child(6) .two-state-checkbox'); // 桌面/手机复选框
 
                     if (siteInput && urlInput && siteInput.value && urlInput.value) {
                         newSiteUrls[siteInput.value] = urlInput.value;
@@ -5199,9 +5236,14 @@
                         const siteMode = requireCheckbox ? 
                             parseInt(requireCheckbox.getAttribute('data-state')) : SITE_MODES.NO_BLANK;
                         
+                        // 处理桌面/手机状态
+                        const desktopMode = desktopCheckbox ? 
+                            (desktopCheckbox.getAttribute('data-desktop') === '1') : true;
+                        
                         newSiteFlags[siteInput.value] = {
                             rightClick: rightClickEnabled,
                             mode: siteMode,
+                            desktopMode: desktopMode,
                             // 兼容旧格式
                             allowBlank: siteMode === SITE_MODES.BOTH,
                             requireKeyword: siteMode === SITE_MODES.NO_BLANK
@@ -5528,6 +5570,11 @@
                 const requireInput = createThreeStateCheckbox(SITE_MODES.NO_BLANK); // 默认禁止单开
                 requireCell.appendChild(requireInput);
 
+                // 桌面/手机状态（二状态复选框）
+                const desktopCell = document.createElement('td');
+                const desktopInput = createDesktopMobileCheckbox(true); // 默认为桌面端
+                desktopCell.appendChild(desktopInput);
+
                 const actionCell = document.createElement('td');
                 const deleteBtn = document.createElement('button');
                 deleteBtn.className = 'delete-btn';
@@ -5540,6 +5587,7 @@
                 row.appendChild(urlCell);
                 row.appendChild(rightCell);
                 row.appendChild(requireCell);
+                row.appendChild(desktopCell);
                 row.appendChild(actionCell);
                 tbody.appendChild(row);
             });
