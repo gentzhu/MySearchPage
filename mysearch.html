@@ -529,6 +529,8 @@
         let lastDeletedItems = [];
         let quickSearchActive = false;
         let lastFocusArea = null; // 记录最后聚焦的区域：'buttons' 或 'history'
+        let lastButtonIndex = -1; // 记录按钮区域最后聚焦的索引
+        let lastHistoryIndex = -1; // 记录历史区域最后聚焦的索引
 
         // 动态添加设置按钮
         const settingsBtn = document.createElement('button');
@@ -886,6 +888,7 @@
                 console.log(`[QUICK SEARCH] Key: ${e.key}, Matches: ${matchedItems.length}, Index: ${currentMatchIndex}`);
                 
                 // 处理方向键导航（只在匹配项间移动）
+                // 处理方向键导航（二维布局）
                 if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -894,15 +897,47 @@
                     
                     console.log(`[QUICK ARROW] Before: ${currentMatchIndex}`);
                     
-                    // 计算新位置
-                    let direction = 0;
-                    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
-                        direction = 1;
-                    } else {
-                        direction = -1;
-                    }
+                    // 获取当前元素位置
+                    const currentRect = matchedItems[currentMatchIndex].element.getBoundingClientRect();
+                    const currentCenterX = currentRect.left + currentRect.width/2;
+                    const currentCenterY = currentRect.top + currentRect.height/2;
                     
-                    currentMatchIndex = (currentMatchIndex + direction + matchedItems.length) % matchedItems.length;
+                    let bestCandidate = null;
+                    let minDistance = Infinity;
+                    let candidateIndex = -1;
+                    
+                    // 根据方向寻找最近元素
+                    matchedItems.forEach((item, index) => {
+                        if (index === currentMatchIndex) return;
+                        
+                        const rect = item.element.getBoundingClientRect();
+                        const centerX = rect.left + rect.width/2;
+                        const centerY = rect.top + rect.height/2;
+                        
+                        // 计算相对位置
+                        const dx = centerX - currentCenterX;
+                        const dy = centerY - currentCenterY;
+                        const distance = Math.sqrt(dx*dx + dy*dy);
+                        
+                        // 检查方向是否匹配（增加方向敏感度）
+                        let isDirectionMatch = false;
+                        if (e.key === 'ArrowUp' && dy < -5 && Math.abs(dx) < currentRect.width) isDirectionMatch = true;
+                        else if (e.key === 'ArrowDown' && dy > 5 && Math.abs(dx) < currentRect.width) isDirectionMatch = true;
+                        else if (e.key === 'ArrowLeft' && dx < -5 && Math.abs(dy) < currentRect.height) isDirectionMatch = true;
+                        else if (e.key === 'ArrowRight' && dx > 5 && Math.abs(dy) < currentRect.height) isDirectionMatch = true;
+                        
+                        // 选择同方向最近元素
+                        if (isDirectionMatch && distance < minDistance) {
+                            minDistance = distance;
+                            bestCandidate = item;
+                            candidateIndex = index;
+                        }
+                    });
+                    
+                    // 找到候选则跳转，否则保持原位
+                    if (candidateIndex !== -1) {
+                        currentMatchIndex = candidateIndex;
+                    }
                     
                     highlightCurrentMatch();
                     console.log(`[QUICK ARROW] After: ${currentMatchIndex}`);
@@ -1016,44 +1051,46 @@
                 const buttons = Array.from(document.querySelectorAll('.btn-group button, .control-buttons button'));
                 const historyItems = Array.from(document.querySelectorAll('.history-item'));
                 
-                // 初始化lastFocusArea
+                // 初始化lastFocusArea和lastFocusIndex
                 if (!lastFocusArea) {
                     lastFocusArea = buttons.length > 0 ? 'buttons' : 'history';
                 }
                 
-                // 根据最后聚焦区域确定当前聚焦区域
-                let currentArea = lastFocusArea;
-                let currentIndex;
+                // 记录当前区域最后聚焦元素
+                if (lastFocusArea === 'buttons' && currentFocusElement && buttons.includes(currentFocusElement)) {
+                    lastButtonIndex = buttons.indexOf(currentFocusElement);
+                } else if (lastFocusArea === 'history' && currentFocusElement && historyItems.includes(currentFocusElement)) {
+                    lastHistoryIndex = historyItems.indexOf(currentFocusElement);
+                }
                 
-                if (currentArea === 'buttons') {
-                    currentIndex = buttons.indexOf(currentFocusElement);
-                    if (currentIndex === -1 || currentIndex === buttons.length - 1) {
-                        // 切换到history区域
-                        currentArea = 'history';
-                        currentIndex = 0;
-                        currentFocusElement = historyItems[currentIndex] || buttons[0];
+                // 确定新区域
+                let newArea = lastFocusArea === 'buttons' ? 'history' : 'buttons';
+                
+                // 切换到新区域
+                let newFocusElement = null;
+                if (newArea === 'buttons' && buttons.length > 0) {
+                    // 如果有记录的最后按钮索引且有效
+                    if (lastButtonIndex !== -1 && lastButtonIndex < buttons.length) {
+                        newFocusElement = buttons[lastButtonIndex];
                     } else {
-                        // 在buttons区域内下一个
-                        currentIndex++;
-                        currentFocusElement = buttons[currentIndex];
+                        newFocusElement = buttons[0];
                     }
-                } else {
-                    currentIndex = historyItems.indexOf(currentFocusElement);
-                    if (currentIndex === -1 || currentIndex === historyItems.length - 1) {
-                        // 切换到buttons区域
-                        currentArea = 'buttons';
-                        currentIndex = 0;
-                        currentFocusElement = buttons[currentIndex] || historyItems[0];
+                } else if (newArea === 'history' && historyItems.length > 0) {
+                    // 如果有记录的最后历史索引且有效
+                    if (lastHistoryIndex !== -1 && lastHistoryIndex < historyItems.length) {
+                        newFocusElement = historyItems[lastHistoryIndex];
                     } else {
-                        // 在history区域内下一个
-                        currentIndex++;
-                        currentFocusElement = historyItems[currentIndex];
+                        newFocusElement = historyItems[0];
                     }
                 }
                 
-                lastFocusArea = currentArea;
-                currentFocusElement.focus();
-                console.log(`[TAB] New focus: ${currentFocusElement.textContent}`);
+                // 更新状态
+                if (newFocusElement) {
+                    lastFocusArea = newArea;
+                    currentFocusElement = newFocusElement;
+                    currentFocusElement.focus();
+                    console.log(`[TAB] Switched to ${newArea}, focused: ${currentFocusElement.textContent}`);
+                }
                 return;
             }
 
