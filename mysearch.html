@@ -653,11 +653,8 @@
             button.addEventListener('click', (e) => {
                 const site = button.getAttribute('data-site');
                 if (e.button === 0) { // 左键点击
-                    if (selectedElements.length > 0 && selectedElements.includes(button)) {
-                        toggleSelectElement(button);
-                    } else {
-                        search(site, true);
-                    }
+                    clearSelection(); // 清除所有选择
+                    search(site, true); // 直接搜索
                 }
             });
 
@@ -987,13 +984,14 @@
             if (e.key === 'Enter') {
                 e.preventDefault();
                 
-                // 处理快速搜索虚拟光标
+                // 1. 处理快速搜索虚拟光标（最高优先级）
                 if (quickSearchActive && matchedItems.length > 0) {
                     const currentItem = matchedItems[currentMatchIndex];
                     if (currentItem.type === 'button') {
                         if (searchInput.value.trim()) {
-                            const sites = [currentItem.element.getAttribute('data-site')];
-                            batchSearch(sites);
+                            clearSelection(); // 清除所有选择
+                            const site = currentItem.element.getAttribute('data-site');
+                            search(site, true); // 使用单个搜索函数
                         }
                     } else if (currentItem.type === 'history') {
                         searchInput.value = currentItem.element.textContent;
@@ -1002,28 +1000,29 @@
                     return;
                 }
                 
-                // 处理实际焦点元素
-                if (currentFocusElement) {
-                    // 情况1：在按钮组上且搜索框有关键词
-                    if (currentFocusElement.hasAttribute('data-site') && searchInput.value.trim()) {
-                        const sites = selectedElements.length > 0
-                            ? selectedElements.map(el => el.getAttribute('data-site')).filter(site => site)
-                            : [currentFocusElement.getAttribute('data-site')];
-                        batchSearch(sites);
-                    }
-                    // 情况2：在历史项上
-                    else if (currentFocusElement.classList.contains('history-item')) {
-                        const keyword = currentFocusElement.getAttribute('data-keyword');
-                        searchInput.value = keyword;
-                        searchInput.focus();
-                    }
-                    // 情况3：在搜索框且有选中的网站
-                    else if (currentFocusElement === searchInput && searchInput.value.trim() && selectedElements.length > 0) {
-                        const sites = selectedElements.map(el => el.getAttribute('data-site')).filter(site => site);
-                        batchSearch(sites);
-                    }
+                // 2. 处理多选网站的情况
+                const selectedSites = selectedElements.filter(el => el.hasAttribute('data-site'));
+                if (selectedSites.length > 0) {
+                    const sites = selectedSites.map(el => el.getAttribute('data-site'));
+                    batchSearch(sites);
+                    return;
                 }
-                return;
+                
+                // 3. 处理当前焦点在网站按钮上
+                if (currentFocusElement && currentFocusElement.hasAttribute('data-site') && searchInput.value.trim()) {
+                    clearSelection(); // 清除所有选择
+                    const site = currentFocusElement.getAttribute('data-site');
+                    search(site, true); // 使用单个搜索函数
+                    return;
+                }
+                
+                // 4. 处理历史项
+                if (currentFocusElement && currentFocusElement.classList.contains('history-item')) {
+                    const keyword = currentFocusElement.getAttribute('data-keyword');
+                    searchInput.value = keyword;
+                    searchInput.focus();
+                    return;
+                }
             }
 
             // F2编辑历史记录
@@ -1095,15 +1094,14 @@
         // 执行快速搜索
         // 修改 performQuickSearch 函数
         function performQuickSearch() {
-            const searchTerms = quickSearchKeys.split('').filter(Boolean);
+            const searchString = quickSearchKeys.toLowerCase();
             clearMatches();
-            if (searchTerms.length === 0) {
+            if (!searchString) {
                 showAllHistoryItems();
-                return; // 关键：必须在这里提前返回
+                return;
             }
             // 获取所有可搜索元素
             const allElements = document.querySelectorAll('button[data-site], .history-item');
-            const historyItems = document.querySelectorAll('.history-item');
             
             // 先显示所有历史项
             showAllHistoryItems();
@@ -1116,15 +1114,15 @@
             allElements.forEach(element => {
                 const text = element.textContent.toLowerCase();
                 const pinyin = getPinyinInitials(text);
-                const isChinese = /[\u4e00-\u9fa5]/.test(quickSearchKeys);
+                const isChinese = /[\u4e00-\u9fa5]/.test(searchString);
                 let isMatch = false;
 
                 if (isChinese) {
-                    isMatch = searchTerms.every(term => text.includes(term));
+                    // 中文模式：匹配文本中任意位置的子串
+                    isMatch = text.includes(searchString);
                 } else {
-                    isMatch = searchTerms.every(term =>
-                        pinyin.includes(term) || text.includes(term)
-                    );
+                    // 非中文模式：只匹配开头部分
+                    isMatch = text.startsWith(searchString) || pinyin.startsWith(searchString);
                 }
                 if (isMatch) {
                     matchedItems.push({
@@ -1338,7 +1336,13 @@
         // 搜索功能
         function search(site, immediate = false) {
             const keyword = searchInput.value.trim();
-
+            
+            // 确保使用正确的site规则
+            if (!siteUrls[site]) {
+                console.error(`未知的网站: ${site}`);
+                return;
+            }
+            
             if (linkButtons.includes(site)) {
                 if (keyword) {
                     navigator.clipboard.writeText(keyword).catch(err => {
@@ -1354,6 +1358,10 @@
             if (keyword) {
                 addToHistory(keyword);
                 const url = siteUrls[site] + encodeURIComponent(keyword);
+                window.open(url, '_blank');
+            } else {
+                // 没有关键词时打开默认页面
+                const url = siteUrls[site].replace(/\?.*$/, ''); // 移除查询参数
                 window.open(url, '_blank');
             }
         }
