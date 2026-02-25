@@ -332,6 +332,102 @@
                 max-width: 600px !important;
                 max-height: 82vh !important;
                 box-sizing: border-box;
+                overflow-x: hidden; /* 禁止模态框内容横向滚动 */
+                padding: 1px; /* 减小内边距 */
+            }
+
+            /* 减小标题区域的空白 */
+            #settings-modal .modal-content h2 {
+                margin: 2px 0;
+                font-size: 16px;
+            }
+
+            /* 小屏模式下设置模态框内的表格与按钮样式 */
+            #settings-modal #sites-table {
+                table-layout: fixed; /* 固定表格布局 */
+                width: 100%;
+            }
+
+            #settings-modal #sites-table th,
+            #settings-modal #sites-table td {
+                padding: 1px; /* 减小单元格边距 */
+                font-size: 12px; /* 减小字体 */
+                vertical-align: middle; /* 垂直居中 */
+            }
+
+            /* 分配列宽，确保删除按钮不被压缩 */
+            #settings-modal #sites-table th:nth-child(1),
+            #settings-modal #sites-table td:nth-child(1) { width: 30%; }
+            #settings-modal #sites-table th:nth-child(2),
+            #settings-modal #sites-table td:nth-child(2) { width: 50%; }
+            #settings-modal #sites-table th:nth-child(3),
+            #settings-modal #sites-table td:nth-child(3) { width: 20%; text-align: right; }
+
+
+            #settings-modal #sites-table input {
+                font-size: 12px; /* 减小输入框字体 */
+                padding: 1px 2px;
+                height: 18px; /* 减小高度 */
+                box-sizing: border-box; /* 确保padding不影响总高度 */
+                width: 100%;
+            }
+            
+            /* 允许URL输入框横向滚动 */
+            #settings-modal #sites-table td:nth-child(2) input {
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+
+            #settings-modal #sites-table button,
+            #settings-modal .button-wrapper button {
+                font-size: 12px; /* 减小按钮字体 */
+                padding: 0 2px;
+                line-height: 1.2;
+                height: 18px; /* 减小高度 */
+                min-width: auto;
+            }
+
+            #settings-modal .button-wrapper {
+                justify-content: flex-start;
+                flex-wrap: wrap; /* 允许换行 */
+                max-height: 40px; /* 限制最大高度，隐喻不超过两行 */
+                overflow: hidden;
+            }
+
+            /* 小屏模式下所有模态框按钮样式统一 */
+            #settings-modal button {
+                font-size: 12px !important;
+                padding: 0 2px !important;
+                height: 18px !important;
+                line-height: 1.2 !important;
+                margin: 0 !important;
+                box-sizing: border-box !important;
+            }
+
+            /* 小屏模式下所有模态框输入框样式统一 */
+            #settings-modal input {
+                font-size: 12px !important;
+                padding: 1px 2px !important;
+                height: 18px !important;
+                box-sizing: border-box !important;
+            }
+
+            /* 小屏模式下表格和单元格样式 */
+            #settings-modal table {
+                font-size: 12px !important;
+            }
+
+            #settings-modal th, 
+            #settings-modal td {
+                padding: 1px !important;
+                font-size: 12px !important;
+                vertical-align: middle !important;
+            }
+
+            /* 确保URL列的输入框可以横向滚动 */
+            #settings-modal td:nth-child(3) input {
+                overflow-x: auto !important;
+                white-space: nowrap !important;
             }
 
             .fixed-header {
@@ -566,16 +662,16 @@
     </div>
     <!-- 新版设置模态框 -->
     <div class="modal" id="settings-modal" style="display:none" tabindex="-1">
-        <div class="modal-content" style="width: 1000px; max-height: 85vh; overflow: auto;">
-            <h3>网站设置</h3>
+        <div class="modal-content" style="width: 95vw; max-width: 800px; max-height: 85vh; overflow-y: auto; overflow-x: hidden; box-sizing: border-box;">
+            <h3 style="margin: 4px 0; font-size: 16px;">网站设置</h3>
 
             <!-- 快速搜索框 -->
-            <div style="margin-bottom: 10px;">
-                <input type="text" id="settings-search" placeholder="搜索网站..." style="width: 100%; padding: 8px;">
+            <div style="margin-bottom: 4px;">
+                <input type="text" id="settings-search" placeholder="搜索网站..." style="width: 100%; padding: 2px 4px; font-size: 12px; height: 18px; box-sizing: border-box;">
             </div>
 
             <!-- 操作按钮（移动到上面） -->
-            <div id="settings-actions" style="margin-bottom: 10px; display: flex; gap: 6px; flex-wrap: wrap;">
+            <div id="settings-actions" style="margin-bottom: 4px; display: flex; gap: 2px; flex-wrap: wrap; max-height: 40px; overflow: hidden;">
                 <button id="add-site-row">新增行</button>
                 <button id="save-settings">保存设置</button>
                 <button id="upload-sites-config">上传网站配置</button>
@@ -588,10 +684,10 @@
             <!-- 网站表格 -->
             <table id="sites-table" style="width: 100%; border-collapse: collapse; table-layout: fixed;">
                 <colgroup>
-                    <col style="width: 18%">
-                    <col style="width: 18%">
-                    <col style="width: 58%">
-                    <col style="width: 6%">
+                    <col style="width: 25%">
+                    <col style="width: 20%">
+                    <col style="width: 40%">
+                    <col style="width: 15%">
                 </colgroup>
                 <thead>
                     <tr>
