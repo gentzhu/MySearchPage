@@ -9,13 +9,13 @@
         .flex1 {
             display: flex;
             flex-wrap: wrap;
-            gap: 5px;
+            gap: 2px;
         }
 
         .flex2 {
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 3px;
         }
 
         body {
@@ -80,26 +80,28 @@
         }
 
         button {
-            padding: 4px 6px;
+            padding: 2px 4px;
             border: 1px solid #000;
             background: transparent;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 16px;
             transition: all 0.2s;
             text-align: center;
             white-space: normal;
             word-wrap: break-word;
+            box-shadow: 0 0 0 0px transparent; /* 预留阴影空间 */
         }
 
         button.small {
-            font-size: 12px;
-            padding: 2px 2px;
+            font-size: 14px;
+            padding: 1px 2px;
             line-height: 1.2;
         }
 
         button.highlight {
-            background-color: #f0f0f0;
-            box-shadow: 0 0 0 2px #4a90e2;
+            background: transparent;
+            border: 2px solid #2563eb;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.4);
         }
 
         button.selected {
@@ -109,7 +111,7 @@
         .btn-group {
             /* display: flex; */
             /* flex-wrap: wrap; */
-            gap: 5px;
+            gap: 2px;
             /* margin-bottom: 5px; */
             width: 100%;
         }
@@ -126,6 +128,15 @@
             /* 启用弹性滚动 */
             box-sizing: border-box;
             /* 确保padding包含在高度内 */
+            
+            /* 隐藏滚动条但保持滚动功能 */
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE and Edge */
+        }
+
+        /* 隐藏 Webkit 滚动条 */
+        .scrollable-content::-webkit-scrollbar {
+            display: none;
         }
 
         /* .history-header {
@@ -159,19 +170,20 @@
             display: inline-block;
             /* margin-right: 8px; */
             /* margin-bottom: 8px; */
-            padding: 4px 8px;
+            padding: 2px 6px;
             border: 1px solid #ddd;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 16px;
+            box-shadow: 0 0 0 0px transparent; /* 预留阴影空间 */
         }
 
         .history-item.highlight {
-            border-color: #4a90e2;
-            box-shadow: 0 0 0 2px #4a90e2;
+            border: 2px solid #2563eb;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.4);
         }
 
         .history-item.editable {
-            border: 1px dashed #000;
+            border: 2px dashed #000;
             background-color: #fff9f9;
         }
 
@@ -179,17 +191,36 @@
             background-color: #e0e0e0;
         }
 
-        /* Quick search 虚拟光标样式 */
+        /* Quick search 虚拟光标样式 - 覆盖所有其他样式 */
         .cursor-highlight {
-            border: 2px solid #28a745 !important;
-            box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.3) !important;
+            background: transparent !important; /* 完全透明背景 */
+            border: 2px solid #10B981 !important; /* 更明亮的绿色边框 */
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.8) !important; /* 更明显的阴影 */
+        }
+
+        /* 更具体的选择器确保覆盖 */
+        button.cursor-highlight,
+        .history-item.cursor-highlight {
+            background: transparent !important; /* 完全透明背景 */
+            border: 2px solid #10B981 !important;
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.8) !important;
+        }
+
+        /* 覆盖所有可能的背景色样式 */
+        button.cursor-highlight.highlight,
+        .history-item.cursor-highlight.highlight {
+            background: transparent !important;
+            border: 2px solid #10B981 !important;
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.8) !important;
         }
 
         /* Quick search 状态下的选中样式 - 组合显示 */
-        .cursor-highlight.selected {
-            background-color: #e0e0e0 !important;
-            border: 2px solid #28a745 !important;
-            box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.3) !important;
+        .cursor-highlight.selected,
+        button.cursor-highlight.selected,
+        .history-item.cursor-highlight.selected {
+            background-color: #e0e0e0 !important; /* 选中时才有背景 */
+            border: 2px solid #10B981 !important;
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.8) !important;
         }
 
         .modal {
@@ -292,27 +323,29 @@
             }
 
             button {
-                padding: 1px 1px;
-                font-size: 16px;
+                padding: 1px 2px;
+                font-size: 18px;
                 margin: 0px;
                 width: auto;
             }
 
             .btn-group {
-                gap: 2px;
+                gap: 1px;
             }
 
             .control-buttons {
-                gap: 2px;
+                gap: 1px;
             }
 
             button.small {
-                font-size: 12px;
+                font-size: 16px;
                 padding: 1px 1px;
             }
 
             button.highlight {
-                box-shadow: 0 0 0 1px #4a90e2;
+                background: transparent;
+                border: 2px solid #2563eb;
+                box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.4);
             }
         }
 
@@ -339,8 +372,8 @@
         }
 
         button {
-            padding: 2px 3px;
-            margin: 2px;
+            padding: 1px 2px;
+            margin: 1px;
         }
     </style>
     <script src="pinyin_dict_firstletter.js"></script>
@@ -966,7 +999,9 @@
                     if (quickSearchKeys) {
                         performQuickSearch();
                     } else {
-                        clearQuickSearchState();
+                        // 清空输入但保持匹配状态，符合两次ESC逻辑
+                        showAllHistoryItems();
+                        // 保持quickSearchActive和matchedItems状态不变
                     }
                 }
                 return;
@@ -1204,17 +1239,19 @@
                 searchInput.blur();
                 return;
             }
-            // ESC只取消快速搜索，不影响选中状态
+            // 第一次ESC：失焦mobile-quick-search，但保持匹配项
             else if (mobileQuickSearch.value) {
                 // e.preventDefault();
                 mobileQuickSearch.value = '';
-                clearQuickSearchState(); // 清理快速搜索状态和样式
+                quickSearchKeys = '';
+                updateQuickSearchDisplay();
                 mobileQuickSearch.blur();
+                // 注意：这里不清理匹配项，保持quickSearchActive状态
                 return;
             }
-            // 第一次按ESC：清空快速搜索状态
-            else if (!mobileQuickSearch.value && matchedItems.length < document.querySelectorAll('.history-item').length) {
-                clearQuickSearchState(); // 清理快速搜索状态和样式
+            // 第二次ESC：消除所有匹配项
+            else if (!mobileQuickSearch.value && (quickSearchActive || matchedItems.length > 0)) {
+                clearQuickSearchState();
                 return;
             }
             return;
@@ -2917,5 +2954,7 @@
 
 
 </body>
+
+</html>
 
 </html>
