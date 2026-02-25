@@ -388,6 +388,8 @@
             <div class="history-title">搜索历史</div>
             <button id="mobile-esc-btn" class="mobile-only button"> Esc </button>
             <input type="text" id="mobile-quick-search" autocomplete="off" spellcheck="false">
+            <button id="sort-by-name" class="small">按名称排序</button>
+            <button id="sort-by-time" class="small">按时间排序</button>
         </div>
     </div>
 
@@ -406,7 +408,9 @@
         <button id="save-edit">保存</button>
         <button id="cancel-edit">取消</button>
     </div>
+
     <script>
+        // 网站搜索URL模板
         const siteUrls = {
             xiaohongshu: 'https://www.xiaohongshu.com/search_result?keyword=',
             douyin: 'https://www.douyin.com/search/',
@@ -486,24 +490,69 @@
         let lastDeletedItems = [];
         let quickSearchActive = false;
 
-        // 编辑状态标志 (保持不变)
+        // 编辑状态标志
         let isEditMode = false;
         let isEditingHistory = false;
         let currentEditItem = null;
         let isInputMethodActive = false;
 
-        // 快速搜索相关变量 - 移除了quickSearchKeys
+        // 快速搜索相关变量
+        let quickSearchKeys = '';
         let matchedItems = [];
         let currentMatchIndex = -1;
 
-        // 加载搜索历史 (保持不变)
+        // 加载搜索历史
         let searchHistory = JSON.parse(localStorage.getItem('searchHistory')) || [];
         renderHistory();
+        
+        // 排序状态对象
+        const sortStates = {
+            name: { ascending: true },
+            time: { ascending: false } // 时间默认倒序（新->旧）
+        };
 
-        // 全局键盘事件
+        // 排序功能（支持双向）
+        function sortByName() {
+            const state = sortStates.name;
+            state.ascending = !state.ascending; // 切换方向
+            
+            searchHistory.sort((a, b) =>
+                state.ascending ? a.localeCompare(b) : b.localeCompare(a)
+            );
+            
+            // 更新按钮文本
+            document.getElementById('sort-by-name').textContent =
+                `按名称排序 ${state.ascending ? '↑' : '↓'}`;
+                
+            renderHistory();
+        }
+        
+        function sortByTime() {
+            const state = sortStates.time;
+            state.ascending = !state.ascending; // 切换方向
+            
+            const history = JSON.parse(localStorage.getItem('searchHistory')) || [];
+            searchHistory = state.ascending ? [...history].reverse() : [...history];
+            
+            // 更新按钮文本
+            document.getElementById('sort-by-time').textContent =
+                `按时间排序 ${state.ascending ? '↑' : '↓'}`;
+                
+            renderHistory();
+        }
+        
+        // 排序按钮事件
+        document.getElementById('sort-by-name').addEventListener('click', sortByName);
+        document.getElementById('sort-by-time').addEventListener('click', sortByTime);
+        
+        // 初始化按钮文本
+        document.getElementById('sort-by-name').textContent = '按名称排序 ↑';
+        document.getElementById('sort-by-time').textContent = '按时间排序 ↓';
+
+        // 全局键盘事件（用于快速搜索）
         document.addEventListener('keydown', handleGlobalKeyDown);
 
-        // 输入框事件 (保持不变)
+        // 输入框事件
         searchInput.addEventListener('input', handleInput);
 
         searchInput.addEventListener('focus', () => {
@@ -543,10 +592,7 @@
             e.stopPropagation(); // 新增
             importHistory();
         });
-        mobileEscBtn.addEventListener('click', function (e) {
-            // e.stopPropagation();
-            GlobalQuit(e);
-        })
+
         // 批量搜索按钮
         allSitesBtn.addEventListener('click', () => batchSearch(allSites));
         commonSitesBtn.addEventListener('click', () => batchSearch(commonSites));
@@ -650,8 +696,17 @@
         window.addEventListener('load', adjustScrollableArea);
         window.addEventListener('resize', adjustScrollableArea);
 
-        // 新增：桌面端快速搜索输入监听
-        mobileQuickSearch.addEventListener('input', performQuickSearch);
+        // 移动端快速搜索处理
+        if (screen.width <= 768) {
+            mobileQuickSearch.addEventListener('input', performQuickSearch())
+            // 空格键处理（不中断搜索）
+            // ESC按钮处理
+        }
+        mobileEscBtn.addEventListener('click', function (e) {
+            // e.stopPropagation();
+            GlobalQuit(e);
+        })
+        // 点击空白处退出编辑模式或关闭模态框
 
         // 清除所有匹配高亮
         function clearMatches() {
@@ -662,13 +717,14 @@
             currentMatchIndex = -1;
         }
 
-        // 全局键盘事件处理（简化版）
+        // 全局键盘事件处理（快速搜索）
         function handleGlobalKeyDown(e) {
             if (e.key === 'Escape') {
                 GlobalQuit(e);
             }
-            if (window.screen.width > 768 && document.activeElement !== searchInput && /^[a-z0-9\u4e00-\u9fa5]$/i.test(e.key)) {
-                if (document.activeElement !== mobileQuickSearch) { mobileQuickSearch.focus(); }
+            if (window.screen.width > 768 && document.activeElement !== searchInput && /[a-z0-9\W]/i.test(e.key)) {
+                if (document.activeElement !== mobileQuickSearch) 
+                { mobileQuickSearch.focus(); }
                 performQuickSearch();
                 return;
             }
@@ -803,6 +859,7 @@
                 return;
             }
         }
+
         function GlobalQuit(e) {
             // e.preventDefault();
             if (isEditMode) {
@@ -835,55 +892,114 @@
             return;
         }
 
-        // 执行快速搜索（重构版）
         function performQuickSearch() {
-            const searchTerm = mobileQuickSearch.value.toLowerCase();
+            const searchTerms = mobileQuickSearch.value.toLowerCase().split('').filter(Boolean);
             clearMatches();
-
-            if (!searchTerm) {
+            if (searchTerms.length === 0) {
                 showAllHistoryItems();
-                return;
+                return; // 关键：必须在这里提前返回
             }
-
+            // 获取所有可搜索元素
             const allElements = document.querySelectorAll('button[data-site], .history-item');
+            const historymatches = document.querySelectorAll('.history-item');
+            historymatches.forEach(el => {
+                el.style.display = 'none';
+            });
+
+            // 所有元素去高亮
             allElements.forEach(el => {
+                // el.style.display = 'none';
                 el.classList.remove('highlight');
             });
 
             allElements.forEach(element => {
                 const text = element.textContent.toLowerCase();
                 const pinyin = getPinyinInitials(text);
-                const isChinese = /[\u4e00-\u9fa5]/.test(searchTerm);
-
+                const isChinese = /[\u4e00-\u9fa5]/.test(quickSearchKeys);
                 let isMatch = false;
-                if (isChinese) {
-                    isMatch = text.includes(searchTerm);
-                } else {
-                    isMatch = pinyin.includes(searchTerm) || text.includes(searchTerm);
-                }
 
+                if (isChinese) {
+                    isMatch = searchTerms.every(term => text.includes(term));
+                } else {
+                    isMatch = searchTerms.every(term =>
+                        pinyin.includes(term) || text.includes(term)
+                    );
+                }
                 if (isMatch) {
                     matchedItems.push({
                         element: element,
                         type: element.classList.contains('history-item') ? 'history' : 'button'
                     });
+                    matchedItems[0].element.focus();
+                    highlightMatchedItems();
                 }
+
             });
 
-            if (matchedItems.length > 0) {
-                currentMatchIndex = 0;
-                highlightMatchedItems();
-            }
+        }
+        // 使用拼音库获取拼音首字母
+        function getPinyinInitials(text) {
+            const pinyinMap = {
+                '小': 'x', '红': 'h', '书': 's', '抖': 'd', '音': 'y', '知': 'z', '乎': 'h',
+                '哔': 'b', '哩': 'l', '必': 'b', '应': 'y', '谷': 'g', '歌': 'g', '推': 't',
+                '特': 't', '幕': 'm', '布': 'b', '安': 'a', '卡': 'k', '牌': 'p', '分': 'f',
+                '享': 'x', '社': 's', '区': 'q', '豌': 'w', '豆': 'd', '荚': 'j', '酷': 'k',
+                '通': 't', '义': 'y', '千': 'q', '问': 'w', '喜': 'x', '马': 'm', '拉': 'l',
+                '雅': 'y', '微': 'w', '信': 'x', '淘': 't', '宝': 'b', '京': 'j', '东': 'd',
+                '头': 't', '条': 't', '百': 'b', '度': 'd', '网': 'w', '易': 'y', '搜': 's',
+                '狗': 'g', '神': 's', '奇': 'q', '多': 'd', '快': 'k', '好': 'h', '有': 'y',
+                '道': 'd', '今': 'j', '日': 'r', '热': 'r', '点': 'd', '精': 'j', '选': 'x',
+                '清': 'q', '除': 'c', '历': 'l', '史': 's', '导': 'd', '出': 'c', '外': 'w',
+                '网': 'w', '所': 's', '有': 'y', '常': 'c', '用': 'y', '编': 'b', '辑': 'j',
+                '仅': 'j', '保': 'b', '存': 'c', '微': 'w', '信': 'x', '凌': 'l', '风': 'f',
+                '云': 'y', '盘': 'p', '之': 'z', '家': 'j', '快': 'k', '速': 's', '搜': 's',
+                '索': 's', '记': 'j', '录': 'l', '藏': 'c'
+            };
+            return text.split('').map(char => {
+                // 1. 处理中文字符（严格检测Unicode中文范围）
+                if (/[\u4e00-\u9fa5]/.test(char)) {
+                    // 优先使用映射表，找不到则尝试其他方法（如使用pinyin库）
+                    return pinyinMap[char] || '';
+                }
+                // 2. 处理英文字母
+                else if (/[a-zA-Z]/.test(char)) {
+                    return char.toLowerCase();
+                }
+                // 3. 其他字符（数字、符号等）返回空字符串
+                return '';
+            }).join('');
         }
 
-        // 高亮匹配项（简化版）
-        function highlightMatchedItems() {
+        // 快速搜索匹配算法
+        function matchQuickSearch(text, pinyinInitials, searchTerms) {
+            return searchTerms.every(term => {
+                if (pinyinInitials.includes(term)) return true;
+                if (text.includes(term)) return true;
+                return false;
+            });
+        }
+
+        // 循环切换匹配项
+        function cycleMatches(direction) {
             if (matchedItems.length === 0) return;
 
+            if (currentMatchIndex >= 0) {
+                matchedItems[currentMatchIndex].element.classList.remove('highlight');
+            }
+
+            currentMatchIndex = (currentMatchIndex + direction + matchedItems.length) % matchedItems.length;
+
+            highlightMatchedItems();
+        }
+
+        // 高亮当前匹配项
+        function highlightMatchedItems() {
             matchedItems.forEach(item => {
                 item.element.classList.add('highlight');
+                item.element.style.display = 'inline-block';
             });
 
+            // 滚动到当前选中的匹配项
             matchedItems[currentMatchIndex].element.scrollIntoView({
                 behavior: 'smooth',
                 block: 'nearest'
@@ -1301,37 +1417,6 @@
             localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
             renderHistory();
             lastDeletedItems = [];
-        }
-        function getPinyinInitials(text) {
-            const pinyinMap = {
-                '小': 'x', '红': 'h', '书': 's', '抖': 'd', '音': 'y', '知': 'z', '乎': 'h',
-                '哔': 'b', '哩': 'l', '必': 'b', '应': 'y', '谷': 'g', '歌': 'g', '推': 't',
-                '特': 't', '幕': 'm', '布': 'b', '安': 'a', '卡': 'k', '牌': 'p', '分': 'f',
-                '享': 'x', '社': 's', '区': 'q', '豌': 'w', '豆': 'd', '荚': 'j', '酷': 'k',
-                '通': 't', '义': 'y', '千': 'q', '问': 'w', '喜': 'x', '马': 'm', '拉': 'l',
-                '雅': 'y', '微': 'w', '信': 'x', '淘': 't', '宝': 'b', '京': 'j', '东': 'd',
-                '头': 't', '条': 't', '百': 'b', '度': 'd', '网': 'w', '易': 'y', '搜': 's',
-                '狗': 'g', '神': 's', '奇': 'q', '多': 'd', '快': 'k', '好': 'h', '有': 'y',
-                '道': 'd', '今': 'j', '日': 'r', '热': 'r', '点': 'd', '精': 'j', '选': 'x',
-                '清': 'q', '除': 'c', '历': 'l', '史': 's', '导': 'd', '出': 'c', '外': 'w',
-                '网': 'w', '所': 's', '有': 'y', '常': 'c', '用': 'y', '编': 'b', '辑': 'j',
-                '仅': 'j', '保': 'b', '存': 'c', '微': 'w', '信': 'x', '凌': 'l', '风': 'f',
-                '云': 'y', '盘': 'p', '之': 'z', '家': 'j', '快': 'k', '速': 's', '搜': 's',
-                '索': 's', '记': 'j', '录': 'l', '藏': 'c'
-            };
-            return text.split('').map(char => {
-                // 1. 处理中文字符（严格检测Unicode中文范围）
-                if (/[\u4e00-\u9fa5]/.test(char)) {
-                    // 优先使用映射表，找不到则尝试其他方法（如使用pinyin库）
-                    return pinyinMap[char] || '';
-                }
-                // 2. 处理英文字母
-                else if (/[a-zA-Z]/.test(char)) {
-                    return char.toLowerCase();
-                }
-                // 3. 其他字符（数字、符号等）返回空字符串
-                return '';
-            }).join('');
         }
     </script>
 </body>
