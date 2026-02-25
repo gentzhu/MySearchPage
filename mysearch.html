@@ -662,7 +662,6 @@
             // 移动端ESC按钮处理
             document.getElementById('mobile-esc-btn').addEventListener('click', function (e) {
                 e.stopPropagation();
-
                 // 第一段：清空搜索框
                 if (mobileQuickSearch.value) {
                     mobileQuickSearch.value = '';
@@ -673,16 +672,18 @@
                     return;
                 }
 
-                // 第二段：取消匹配状态
-                if (document.querySelector('.highlight')) {
-                    clearMatches();
-                    showAllHistoryItems();
-                    return;
-                }
-
+                // // 第二段：取消匹配状态
+                // if (document.querySelector('.highlight')) {
+                //     clearMatches();
+                //     showAllHistoryItems();
+                //     return;
+                // }
                 // 第三段：关闭输入法
-                if (document.activeElement === mobileQuickSearch) {
-                    mobileQuickSearch.blur();
+                // if (document.activeElement === mobileQuickSearch) {
+                //     mobileQuickSearch.blur();
+                // }
+                elseif (document.activeElement === mobileQuickSearch&& !mobileQuickSearch.value) 
+                {mobileQuickSearch.blur();
                 }
             });
 
@@ -825,7 +826,6 @@ function adjustScrollableArea() {
             });
             // ESC按钮处理
             // 替换现有的 mobileEscBtn 事件监听器
-            // 替换现有的 mobileEscBtn 事件监听器
             mobileEscBtn.addEventListener('click', function (e) {
                 e.stopPropagation();
 
@@ -878,9 +878,33 @@ function adjustScrollableArea() {
 
         // 全局键盘事件处理（快速搜索）
         function handleGlobalKeyDown(e) {
-            if (e.key === 'Escape' && document.activeElement === searchInput) {
+            if (e.key === 'Escape' ) {
                 e.preventDefault();
+                if (document.activeElement === searchInput) {
+                // e.preventDefault();
                 searchInput.blur();
+                return;}
+                // ESC只取消快速搜索，不影响选中状态
+                if (quickSearchActive && quickSearchKeys.length > 0) {
+                    // e.preventDefault();
+                    quickSearchKeys = '';
+                    updateQuickSearchDisplay();
+                    // quickSearchActive = false;
+                    quicksearchhint.blur();
+                    return;
+                }
+               // 第一次按ESC：清空快速搜索状态
+                else if (quickSearchActive && quickSearchKeys.length===0) 
+                {
+                    clearMatches();
+                    showAllHistoryItems();
+                    // 显示所有元素
+                    quickSearchActive = false;
+                    document.querySelectorAll('.history-item, button[data-site]').forEach(el => {
+                    el.style.display = 'inline-block';
+                    });
+                    return;
+                }
                 return;
             }
             if (window.screen.width > 768 && !document.activeElement.matches('input, textarea') &&
@@ -913,46 +937,16 @@ function adjustScrollableArea() {
                 return;
             }
 
-            // ESC只取消快速搜索，不影响选中状态
-            if (e.key === 'Escape') {
-                if (quickSearchActive) {
-                    e.preventDefault();
-                    quickSearchKeys = '';
-                    updateQuickSearchDisplay();
-                    clearMatches();
-                    quickSearchActive = false;
-                    showAllHistoryItems();
-                }
-                return;
-            }
-
-            if (e.key === 'Escape') {
-                e.preventDefault();
-
-                // 第一次按ESC：清空快速搜索状态
-                if (quickSearchKeys || document.querySelector('.highlight')) {
-                    quickSearchKeys = '';
-                    updateQuickSearchDisplay();
-                    clearMatches();
-
-                    // 显示所有元素
-                    document.querySelectorAll('.history-item, button[data-site]').forEach(el => {
-                        el.style.display = 'inline-block';
-                    });
-
-                    return;
-                }
-
+            // if (e.key === 'Escape') {
                 // 第二次按ESC：退出输入法
-                if (document.activeElement === searchInput) {
-                    searchInput.blur();
-                }
-                if (document.activeElement === mobileQuickSearch) {
-                    mobileQuickSearch.blur();
-                }
-
-                return;
-            }
+                // if (document.activeElement === searchInput) {
+                //     searchInput.blur();
+                // }
+                // if (document.activeElement === mobileQuickSearch) {
+                //     mobileQuickSearch.blur();
+                // }
+                // return;
+            // }
             if (isEditingHistory) {
                 if (e.key === 'Enter') {
                     e.preventDefault();
@@ -1001,15 +995,15 @@ function adjustScrollableArea() {
 
             // ESC退出输入框或多选模式
             // ESC只处理快速搜索
-            if (e.key === 'Escape' && quickSearchKeys) {
-                e.preventDefault();
-                quickSearchKeys = '';
-                updateQuickSearchDisplay();
-                clearMatches();
-                quickSearchActive = false;
-                showAllHistoryItems();
-                return;
-            }
+            // if (e.key === 'Escape' && quickSearchKeys) {
+            //     e.preventDefault();
+            //     quickSearchKeys = '';
+            //     updateQuickSearchDisplay();
+            //     clearMatches();
+            //     quickSearchActive = false;
+            //     showAllHistoryItems();
+            //     return;
+            // }
 
             // 方向键导航
             if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
