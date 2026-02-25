@@ -18,6 +18,8 @@
 
         /* 固定顶部区域 */
         .fixed-header {
+                position: fixed;
+    top: 0;
             background: white;
             z-index: 100;
             padding: 10px 20px 8px 20px;
@@ -25,6 +27,8 @@
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
             margin-bottom: 10px;
             /* 增大底部外边距 */
+                        touch-action: none;
+            -webkit-overflow-scrolling: touch;
         }
 
         .header-controls {
@@ -108,7 +112,11 @@
         .scrollable-content {
             flex: 1;
             overflow-y: auto;
-            padding: 0 20px;
+            padding: 10px 2px 0;
+            margin-top:60px;
+                height: calc(100vh - 160px); /* 计算剩余高度 */
+    -webkit-overflow-scrolling: touch; /* 启用弹性滚动 */
+    box-sizing: border-box; /* 确保padding包含在高度内 */
         }
 
         .history-header {
@@ -268,7 +276,8 @@
             }
 
             .fixed-header {
-                padding: 2px 2px;
+                padding: 1px 2px;
+                                margin-bottom: 3px;
             }
 
             #search-input {
@@ -694,6 +703,20 @@
                 searchInput.focus();
             });
         });
+        window.addEventListener('load', adjustScrollableArea);
+        window.addEventListener('resize', adjustScrollableArea);
+// adjustScrollableArea();
+function adjustScrollableArea() {
+    const fixedHeader = document.querySelector('.fixed-header');
+    const scrollableContent = document.querySelector('.scrollable-content');
+    const fixedHeight = fixedHeader.offsetHeight;
+    
+    // 保持冻结线位置计算不变
+    scrollableContent.style.marginTop = fixedHeight + 'px';
+    
+    // 高度计算需考虑padding（通过box-sizing已处理）
+    scrollableContent.style.height = `calc(100vh - ${fixedHeight}px)`;
+}
         // 点击空白处退出编辑模式或关闭模态框
         function focusQuickSearch() {
         setTimeout(() => {
