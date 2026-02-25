@@ -399,7 +399,7 @@
             <button id="gitee-config">备份设置</button>
         </div>
                 <div class="btn-group flex2">
-            <!-- 按钮将通过 JavaScript 从配置文件动态生成 -->
+            <!-- 按钮将通过 JavaScript 从 IndexedDB 动态生成 -->
         </div>
 
         <div class="history-header flex1">
@@ -459,79 +459,190 @@
                 <button id="save-settings" style="margin-left: 10px;">保存设置</button>
                 <button id="upload-sites-config" style="margin-left: 10px;">上传网站配置</button>
                 <button id="download-sites-config" style="margin-left: 10px;">下载网站配置</button>
+                <button id="export-config" style="margin-left: 10px;">导出配置文件</button>
+                <button id="import-config" style="margin-left: 10px;">导入配置文件</button>
+                <input type="file" id="config-file-input" accept=".json" style="display: none;">
+            </div>
+            
+            <!-- 关闭按钮 -->
+            <div style="margin-top: 15px; text-align: right;">
+                <button id="close-settings">关闭</button>
             </div>
         </div>
     </div>
 
 
     <script>
-        // 当前网站配置（从配置文件加载）
+        // 当前网站配置（从IndexedDB加载）
         let siteUrls = {};
 
-        // 从本地文件加载网站配置
+        // IndexedDB 数据库管理类
+        class SiteConfigDB {
+            constructor() {
+                this.dbName = 'MySiteConfigDB';
+                this.dbVersion = 1;
+                this.storeName = 'siteConfig';
+                this.db = null;
+            }
+
+            // 初始化数据库
+            async init() {
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open(this.dbName, this.dbVersion);
+                    
+                    request.onerror = () => reject(request.error);
+                    request.onsuccess = () => {
+                        this.db = request.result;
+                        resolve();
+                    };
+                    
+                    request.onupgradeneeded = (event) => {
+                        const db = event.target.result;
+                        if (!db.objectStoreNames.contains(this.storeName)) {
+                            const store = db.createObjectStore(this.storeName, { keyPath: 'id' });
+                            store.createIndex('type', 'type', { unique: false });
+                        }
+                    };
+                });
+            }
+
+            // 保存配置
+            async saveConfig(config) {
+                if (!this.db) await this.init();
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.storeName], 'readwrite');
+                    const store = transaction.objectStore(this.storeName);
+                    
+                    const configData = {
+                        id: 'main',
+                        type: 'siteConfig',
+                        data: config,
+                        timestamp: Date.now()
+                    };
+                    
+                    const request = store.put(configData);
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject(request.error);
+                });
+            }
+
+            // 读取配置
+            async loadConfig() {
+                if (!this.db) await this.init();
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.storeName], 'readonly');
+                    const store = transaction.objectStore(this.storeName);
+                    const request = store.get('main');
+                    
+                    request.onsuccess = () => {
+                        if (request.result) {
+                            resolve(request.result.data);
+                        } else {
+                            resolve(null);
+                        }
+                    };
+                    request.onerror = () => reject(request.error);
+                });
+            }
+
+            // 删除配置
+            async deleteConfig() {
+                if (!this.db) await this.init();
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.storeName], 'readwrite');
+                    const store = transaction.objectStore(this.storeName);
+                    const request = store.delete('main');
+                    
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject(request.error);
+                });
+            }
+
+            // 导出配置为JSON文件
+            async exportConfig() {
+                const config = await this.loadConfig();
+                if (config) {
+                    const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'SiteUrls.json';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    return true;
+                }
+                return false;
+            }
+
+            // 从JSON文件导入配置
+            async importConfig(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = async (e) => {
+                        try {
+                            const content = e.target.result;
+                            const config = JSON.parse(content);
+                            
+                            if (config.siteUrls && config.buttonConfig) {
+                                await this.saveConfig(config);
+                                resolve(config);
+                            } else {
+                                reject(new Error('配置文件格式不正确'));
+                            }
+                        } catch (error) {
+                            reject(error);
+                        }
+                    };
+                    reader.onerror = () => reject(new Error('文件读取失败'));
+                    reader.readAsText(file, 'UTF-8');
+                });
+            }
+        }
+
+        // 全局数据库实例
+        const siteConfigDB = new SiteConfigDB();
+
+        // 从IndexedDB加载网站配置
         async function loadSiteConfig() {
             try {
-                // 首先尝试从localStorage读取
+                // 首先尝试从IndexedDB读取
+                const config = await siteConfigDB.loadConfig();
+                if (config && config.siteUrls && config.buttonConfig) {
+                    siteUrls = config.siteUrls;
+                    applyButtonConfig(config.buttonConfig);
+                    return;
+                }
+
+                // 如果IndexedDB中没有配置，尝试从localStorage迁移
                 const localConfig = localStorage.getItem('siteConfig');
                 if (localConfig) {
-                    const config = JSON.parse(localConfig);
-                    if (config.siteUrls && config.buttonConfig) {
-                        siteUrls = config.siteUrls;
-                        applyButtonConfig(config.buttonConfig);
+                    const parsedConfig = JSON.parse(localConfig);
+                    if (parsedConfig.siteUrls && parsedConfig.buttonConfig) {
+                        // 迁移到IndexedDB
+                        await siteConfigDB.saveConfig(parsedConfig);
+                        siteUrls = parsedConfig.siteUrls;
+                        applyButtonConfig(parsedConfig.buttonConfig);
+                        // 清除localStorage中的旧数据
+                        localStorage.removeItem('siteConfig');
+                        alert('已将配置从localStorage迁移到IndexedDB！数据更安全了。');
                         return;
                     }
                 }
 
-                // 尝试使用XMLHttpRequest读取本地文件
-                await loadConfigFromFile();
+                // 如果都没有，显示配置加载错误
+                showConfigLoadError();
                 
             } catch (error) {
                 showConfigLoadError();
             }
         }
 
-        // 使用XMLHttpRequest加载配置文件
-        function loadConfigFromFile() {
-            return new Promise((resolve, reject) => {
-                const xhr = new XMLHttpRequest();
-                xhr.open('GET', './SiteUrls.json', true);
-                xhr.onreadystatechange = function() {
-                    if (xhr.readyState === 4) {
-                        if (xhr.status === 200) {
-                            try {
-                                const responseText = xhr.responseText;
-                                
-                                if (!responseText || responseText.trim() === '') {
-                                    reject(new Error('配置文件为空'));
-                                    return;
-                                }
-                                
-                                const config = JSON.parse(responseText);
-                                
-                                if (config.siteUrls && config.buttonConfig) {
-                                    siteUrls = config.siteUrls;
-                                    applyButtonConfig(config.buttonConfig);
-                                    localStorage.setItem('siteConfig', JSON.stringify(config));
-                                    resolve();
-                                } else {
-                                    reject(new Error('配置文件格式不正确'));
-                                }
-                            } catch (e) {
-                                reject(new Error('配置文件解析失败: ' + e.message));
-                            }
-                        } else {
-                            reject(new Error('无法读取配置文件'));
-                        }
-                    }
-                };
-                
-                xhr.onerror = function() {
-                    reject(new Error('网络请求失败'));
-                };
-                
-                xhr.send();
-            });
-        }
+
 
         // 显示配置加载错误提示
         function showConfigLoadError() {
@@ -539,118 +650,40 @@
             btnGroup.innerHTML = `
                 <div style="padding: 20px; text-align: center; color: #666;">
                     <p>未找到网站配置，请选择以下操作：</p>
-                    <button id="load-config-file" style="margin: 5px;">选择配置文件</button>
-                    <button id="test-json-file" style="margin: 5px;">测试JSON文件</button>
                     <button id="open-settings" style="margin: 5px;">手动设置</button>
+                    <button id="import-config-btn" style="margin: 5px;">导入配置文件</button>
                     <p style="font-size: 12px; margin-top: 10px;">
-                        提示：请确保 SiteUrls.json 文件与 HTML 文件在同一目录
+                        使用IndexedDB进行本地存储，配置将自动保存，无需下载文件
                     </p>
-                    <input type="file" id="config-file-input" accept=".json" style="display: none;">
-                    <input type="file" id="test-file-input" accept=".json" style="display: none;">
+                    <input type="file" id="error-config-input" accept=".json" style="display: none;">
                 </div>
             `;
             
             // 绑定事件
-            document.getElementById('load-config-file').addEventListener('click', () => {
-                document.getElementById('config-file-input').click();
-            });
-            
-            document.getElementById('config-file-input').addEventListener('change', handleConfigFileSelect);
-            
-            document.getElementById('test-json-file').addEventListener('click', () => {
-                document.getElementById('test-file-input').click();
-            });
-            
-            document.getElementById('test-file-input').addEventListener('change', testJsonFile);
-            
             document.getElementById('open-settings').addEventListener('click', () => {
                 document.getElementById('settings-modal').style.display = 'flex';
             });
-        }
-
-        // 测试JSON文件格式
-        function testJsonFile(event) {
-            const file = event.target.files[0];
-            if (!file) return;
             
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const content = e.target.result.trim().replace(/^\uFEFF/, ''); // 移除BOM
-                    const config = JSON.parse(content);
-                    
-                    // 检查结构
-                    const checks = {
-                        'JSON格式': '✅ 有效',
-                        'siteUrls字段': config.siteUrls ? '✅ 存在' : '❌ 缺失',
-                        'buttonConfig字段': config.buttonConfig ? '✅ 存在' : '❌ 缺失',
-                        'siteUrls内容': config.siteUrls ? `✅ ${Object.keys(config.siteUrls).length}个网站` : '❌ 空',
-                        'buttonConfig内容': config.buttonConfig ? `✅ ${config.buttonConfig.length}个按钮` : '❌ 空'
-                    };
-                    
-                    let message = '文件检查结果：\n\n';
-                    for (const [key, value] of Object.entries(checks)) {
-                        message += `${key}: ${value}\n`;
-                    }
-                    message += '\n是否要应用这个配置到页面？';
-                    
-                    if (confirm(message)) {
-                        if (config.siteUrls && config.buttonConfig) {
-                            siteUrls = config.siteUrls;
-                            applyButtonConfig(config.buttonConfig);
-                            localStorage.setItem('siteConfig', JSON.stringify(config));
-                            alert('配置已成功应用到页面！');
-                        }
-                    }
-                    
-                } catch (error) {
-                    alert('JSON格式错误: ' + error.message);
-                }
-            };
+            document.getElementById('import-config-btn').addEventListener('click', () => {
+                document.getElementById('error-config-input').click();
+            });
             
-            reader.onerror = function() {
-                alert('文件读取失败');
-            };
-            
-            reader.readAsText(file, 'UTF-8');
-        }
-
-        // 处理用户选择的配置文件
-        function handleConfigFileSelect(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const content = e.target.result;
-                    
-                    if (!content || content.trim() === '') {
-                        alert('配置文件为空');
-                        return;
-                    }
-                    
-                    const config = JSON.parse(content);
-                    
-                    if (config.siteUrls && config.buttonConfig) {
+            document.getElementById('error-config-input').addEventListener('change', async (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    try {
+                        const config = await siteConfigDB.importConfig(file);
                         siteUrls = config.siteUrls;
                         applyButtonConfig(config.buttonConfig);
-                        localStorage.setItem('siteConfig', JSON.stringify(config));
-                        alert('配置文件加载成功！');
-                    } else {
-                        alert('配置文件格式不正确，缺少必要的 siteUrls 或 buttonConfig 字段');
+                        alert('配置导入成功！');
+                    } catch (error) {
+                        alert('导入失败: ' + error.message);
                     }
-                } catch (error) {
-                    alert('配置文件解析失败：' + error.message);
                 }
-            };
-            
-            reader.onerror = function() {
-                alert('文件读取失败');
-            };
-            
-            reader.readAsText(file, 'UTF-8');
+            });
         }
+
+
 
         // 应用按钮配置
         function applyButtonConfig(buttonConfig) {
@@ -677,21 +710,15 @@
 
 
 
-        // 保存网站配置到本地
-        function saveSiteConfigLocally(config) {
-            // 保存到localStorage
-            localStorage.setItem('siteConfig', JSON.stringify(config));
-            
-            // 创建并下载JSON文件
-            const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'SiteUrls.json';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+        // 保存网站配置到IndexedDB
+        async function saveSiteConfigLocally(config) {
+            try {
+                await siteConfigDB.saveConfig(config);
+                // 不再自动下载文件，用户需要时可以手动导出
+            } catch (error) {
+                alert('保存配置失败: ' + error.message);
+                throw error;
+            }
         }
 
         // 填充设置表格数据
@@ -2815,8 +2842,51 @@
             });
             
             // 绑定Gitee按钮
-            document.getElementById('gitee-config').addEventListener('click', openGiteeConfigModal);
+            document.getElementById('gitee-config').addEventListener('click', function() {
+                document.getElementById('settings-modal').style.display = 'flex';
+                populateSettingsTable();
+            });
             document.getElementById('sync-from-gitee').addEventListener('click', syncFromGitee);
+            
+            // 关闭设置模态框
+            document.getElementById('close-settings').addEventListener('click', function() {
+                document.getElementById('settings-modal').style.display = 'none';
+            });
+
+            // 导出配置按钮
+            document.getElementById('export-config').addEventListener('click', async function() {
+                try {
+                    const success = await siteConfigDB.exportConfig();
+                    if (success) {
+                        alert('配置导出成功！');
+                    } else {
+                        alert('没有可导出的配置');
+                    }
+                } catch (error) {
+                    alert('导出失败: ' + error.message);
+                }
+            });
+
+            // 导入配置按钮
+            document.getElementById('import-config').addEventListener('click', function() {
+                document.getElementById('config-file-input').click();
+            });
+
+            // 配置文件输入处理
+            document.getElementById('config-file-input').addEventListener('change', async function(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    try {
+                        const config = await siteConfigDB.importConfig(file);
+                        siteUrls = config.siteUrls;
+                        applyButtonConfig(config.buttonConfig);
+                        populateSettingsTable();
+                        alert('配置导入成功！');
+                    } catch (error) {
+                        alert('导入失败: ' + error.message);
+                    }
+                }
+            });
             
             // 从Gitee同步功能
             async function syncFromGitee() {
@@ -2906,7 +2976,7 @@
                 tbody.appendChild(row);
             });
 
-            document.getElementById('save-settings').addEventListener('click', function () {
+            document.getElementById('save-settings').addEventListener('click', async function () {
                 try {
                     // 收集表格数据并更新siteUrls
                     const newSiteUrls = {};
@@ -2951,17 +3021,17 @@
                     // 重新绑定按钮事件
                     bindButtonEvents();
 
-                    // 保存到本地
+                    // 保存到IndexedDB
                     const config = {
                         siteUrls: newSiteUrls,
                         buttonConfig: buttonConfig
                     };
-                    saveSiteConfigLocally(config);
+                    await saveSiteConfigLocally(config);
 
                     // 隐藏设置模态框
                     document.getElementById('settings-modal').style.display = 'none';
                     
-                    alert('设置已保存并导出到本地文件！');
+                    alert('设置已保存到IndexedDB！');
                 } catch (error) {
                     alert('保存设置出错: ' + error.message);
                 }
@@ -3327,4 +3397,5 @@
 
 </html>
 
+</html>
 </html>
